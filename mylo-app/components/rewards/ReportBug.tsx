@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import Sheet from '@/components/Sheet';
-import { goBack } from '@/components/NavMotion';
+import { canGoBack, goBack } from '@/components/NavMotion';
 
 /* L6 · Report a bug (368:72964): where, what happened, send. Posts to the
    website's live endpoint, which files it with the tester's username when
@@ -21,7 +21,7 @@ export default function ReportBug({ username }: { username?: string }) {
   const [area, setArea] = useState<string | null>(null);
   const [detail, setDetail] = useState('');
   const [status, setStatus] = useState<Status>('idle');
-  const close = () => (window.history.length > 1 ? goBack(router) : router.push('/settings'));
+  const close = () => (canGoBack() ? goBack(router) : router.push('/settings'));
   const text = detail.trim();
   const ok = !!area && text.length >= 15 && text.length <= 2000 && status !== 'sending';
 

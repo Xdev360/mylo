@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import Mylo from './Mylo';
 import { NavButton, Scene, WorldPage, useBack, useNow } from './ui';
-import { onDay, streak, useStore } from '@/lib/store';
+import { onDay, useStore } from '@/lib/store';
+import { useStreak } from '@/lib/goals';
 import { todayIso } from '@/lib/dates';
 import { roomArt, useHouse, useLook } from '@/lib/world';
 
@@ -11,9 +12,10 @@ import { roomArt, useHouse, useLook } from '@/lib/world';
    what Mylo's widgets show, filled from the person's own day. */
 function useDay() {
   const { items, toggle } = useStore();
+  const streakNow = useStreak();
   const mine = onDay(items, todayIso());
   const open = mine.filter(i => !i.done);
-  return { mine, open, done: mine.length - open.length, streak: streak(items), toggle };
+  return { mine, open, done: mine.length - open.length, streak: streakNow, toggle };
 }
 
 export function HomeWidgets() {

@@ -12,7 +12,7 @@ import {
 import { iso } from '@/lib/dates';
 import { FixRow, NoticedSheet, useApplyFix } from './Noticed';
 import Limit from './Limit';
-import { goBack } from '@/components/NavMotion';
+import { canGoBack, goBack } from '@/components/NavMotion';
 
 /* AI10 · Your week, read by Mylo. Done, missed and on time come from the
    person's own Today this week; what slipped is every missed thing by name,
@@ -35,7 +35,7 @@ export default function WeekView() {
 
   const noteOf = (s: Slip) => notes[slipId(week.start, s.key)];
   const save = (s: Slip) => (n: SlipNote) => setNotes(all => ({ ...all, [slipId(week.start, s.key)]: n }));
-  const close = () => (window.history.length > 1 ? goBack(router) : router.push('/ai'));
+  const close = () => (canGoBack() ? goBack(router) : router.push('/ai'));
 
   return (
     <main className="screen on-desk ai-week">

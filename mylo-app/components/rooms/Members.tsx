@@ -6,8 +6,8 @@ import ScreenHeader from '../ScreenHeader';
 import Sheet from '../Sheet';
 import { LeaveSheet, useGone } from './ChatSettings';
 import { PopMenu } from './ChatSheets';
-import { Avatar, RIcon, useToast } from './ui';
-import { ME, isAdmin, joinLink, rooms, useRoom, type Member, type Room } from '@/lib/rooms';
+import { Avatar, Gate, RIcon, useToast } from './ui';
+import { ME, errText, isAdmin, joinLink, rooms, useRoom, type Member, type Room } from '@/lib/rooms';
 
 /* LB9 · Members and roles, with the room's link and code to invite people
    (the "Your room link" card from O14). */
@@ -22,7 +22,7 @@ export function InviteSheet({ room, open, onClose }: { room: Room; open: boolean
         <span className="r-icon-tile"><RIcon name="link" size={22} /></span>
         <span className="r-pending-text"><span className="r-pending-name">{link.replace(/^https?:\/\//, '')}</span><span className="r-pending-sub">Your room link</span></span>
       </div>
-      <div className="r-codebig" aria-label={`Code ${room.code}`}>{room.code.split('').map((c, i) => <span key={i}>{c}</span>)}</div>
+      <div className={`r-codebig${room.code.length > 6 ? ' is-long' : ''}`} aria-label={`Code ${room.code}`}>{room.code.split('').map((c, i) => <span key={i}>{c}</span>)}</div>
       <div className="r-share">
         <button type="button" className="r-share-btn" onClick={() => navigator.clipboard?.writeText(text).then(() => say('Copied'), () => {})}><RIcon name="copy" size={20} />Copy</button>
         <a className="r-share-btn" href={`https://wa.me/?text=${encodeURIComponent(text)}`} target="_blank" rel="noreferrer"><RIcon name="chat-20" size={20} />WhatsApp</a>
@@ -42,12 +42,14 @@ const label = (m: Member) => m.id !== ME ? m.name : m.name && m.name !== 'You' ?
 
 export default function Members({ id, invite = false }: { id: string; invite?: boolean }) {
   const router = useRouter();
-  const { ready, room } = useRoom(id);
+  const { ready, signedOut, error, retry, room } = useRoom(id);
   const [inviting, setInviting] = useState(invite);
   const [menu, setMenu] = useState<{ m: Member; el: HTMLElement } | null>(null);
   const [leaving, setLeaving] = useState(false);
-  useGone(ready, room);
-  if (!ready || !room) return <main className="screen on-desk" aria-busy="true" />;
+  const [toast, say] = useToast();
+  useGone(ready, room && !room.peek ? room : null);
+  if (!ready || !room || room.peek) return <Gate signedOut={signedOut} error={error} retry={retry} />;
+  const run = (p: Promise<unknown>) => { p.catch(e => say(errText(e))); };
   const left = room.capacity - room.members.length;
   const admin = isAdmin(room);
   const order = [...room.members].sort((a, b) => (a.id === ME ? -1 : b.id === ME ? 1 : 0));
@@ -65,8 +67,8 @@ export default function Members({ id, invite = false }: { id: string; invite?: b
           {room.requests.map(q => (
             <div key={q.id} className="r-wantin-row">
               <Avatar name={q.name} size={28} /><span className="t-body">{q.name}</span><span className="spacer" />
-              <button type="button" className="r-pill-soft" onClick={() => rooms.setRequestDecision(room.id, q.id, false)}>Decline</button>
-              <button type="button" className="r-pill-dark" disabled={left < 1} onClick={() => rooms.setRequestDecision(room.id, q.id, true)}>Approve</button>
+              <button type="button" className="r-pill-soft" onClick={() => run(rooms.setRequestDecision(room.id, q.id, false))}>Decline</button>
+              <button type="button" className="r-pill-dark" disabled={left < 1} onClick={() => run(rooms.setRequestDecision(room.id, q.id, true))}>Approve</button>
             </div>
           ))}
         </section>
@@ -94,14 +96,15 @@ export default function Members({ id, invite = false }: { id: string; invite?: b
 
       {menu && <PopMenu anchor={menu.el} up={false} onClose={() => setMenu(null)} items={menu.m.id === ME
         ? [{ label: 'Room settings', icon: 'room', onClick: () => router.push(`/rooms/${room.id}`) }, { label: 'Leave room', icon: 'logout', danger: true, onClick: () => setLeaving(true) }]
-        : admin ? [
+        : admin && menu.m.role !== 'owner' ? [
           menu.m.role === 'admin'
-            ? { label: 'Make member', icon: 'room', onClick: () => rooms.setRole(room.id, menu.m.id, 'member') }
-            : { label: 'Make admin', icon: 'shield', onClick: () => rooms.setRole(room.id, menu.m.id, 'admin') },
-          { label: 'Remove from the room', icon: 'logout', danger: true, onClick: () => rooms.remove(room.id, menu.m.id) }
+            ? { label: 'Make member', icon: 'room', onClick: () => run(rooms.setRole(room.id, menu.m.id, 'member')) }
+            : { label: 'Make admin', icon: 'shield', onClick: () => run(rooms.setRole(room.id, menu.m.id, 'admin')) },
+          { label: 'Remove from the room', icon: 'logout', danger: true, onClick: () => run(rooms.remove(room.id, menu.m.id)) }
         ] : [{ label: 'Report', icon: 'flag', danger: true, onClick: () => router.push('/report-a-bug') }]} />}
       <InviteSheet room={room} open={inviting} onClose={() => { setInviting(false); if (invite) router.replace(`/rooms/${room.id}/members`); }} />
       <LeaveSheet room={room} open={leaving} onClose={() => setLeaving(false)} />
+      {toast}
     </main>
   );
 }

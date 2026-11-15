@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useLocal } from './local';
+import { useSession } from './session';
 import { supabase } from './supabase';
 
 /* The signed-in person's profile, or this device's when nobody is signed in.
@@ -56,6 +57,25 @@ export const badgeHex = (c: BadgeColour) => BADGE_COLOURS.find(b => b.id === c)?
 
 export const USERNAME = /^[a-z0-9_]{3,20}$/;
 export const cleanUsername = (s: string) => s.trim().toLowerCase().replace(/^@/, '');
+export const USERNAME_RULE = 'Username: 3 to 20 letters, numbers or _';
+/* What is wrong with a username, said plainly, or '' when it is fine. */
+export function usernameProblem(raw: string) {
+  const u = cleanUsername(raw);
+  if (!u) return '';
+  if (/[^a-z0-9_]/.test(u)) return USERNAME_RULE;
+  if (u.length < 3) return USERNAME_RULE;
+  if (u.length > 20) return USERNAME_RULE;
+  return '';
+}
+/* Whether someone else already goes by `u`. Unknown (null) when the server
+   cannot be asked; the save then gives the final answer. */
+export async function usernameTaken(u: string, myId: string | null): Promise<boolean | null> {
+  try {
+    const { data, error } = await supabase().from('profiles').select('id').eq('username', cleanUsername(u)).limit(1);
+    if (error) return null;
+    return Boolean(data?.length && (data[0] as { id: string }).id !== myId);
+  } catch { return null; }
+}
 
 type Row = { id: string; username?: string | null; display_name?: string | null; avatar_url?: string | null;
   is_verified?: boolean | null; verified?: boolean | null; is_premium?: boolean | null; premium?: boolean | null };
@@ -73,6 +93,7 @@ export function useProfile() {
   const [userId, setUserId] = useState<string | null>(null);
   const [remote, setRemote] = useState<Partial<Profile> | null>(null);
   const [checked, setChecked] = useState(false);
+  const { refreshProfile } = useSession();
 
   useEffect(() => {
     let live = true;
@@ -102,7 +123,7 @@ export function useProfile() {
       if (patch.name !== undefined) row.display_name = patch.name.trim().slice(0, 40) || null;
       if (patch.username !== undefined) {
         const u = cleanUsername(patch.username);
-        if (u && !USERNAME.test(u)) throw new Error('Username: 3 to 20 letters, numbers or _');
+        if (u && !USERNAME.test(u)) throw new Error(USERNAME_RULE);
         if (u) row.username = u;
       }
       if (patch.photo !== undefined) row.avatar_url = patch.photo;
@@ -115,16 +136,18 @@ export function useProfile() {
           ...('username' in row ? { username: row.username ?? '' } : {}),
           ...('avatar_url' in row ? { photo: row.avatar_url } : {})
         }));
+        // The sidebar and every other screen reading the session see it too.
+        refreshProfile().catch(() => {});
       }
     } else if (patch.username !== undefined) {
       const u = cleanUsername(patch.username);
-      if (u && !USERNAME.test(u)) throw new Error('Username: 3 to 20 letters, numbers or _');
+      if (u && !USERNAME.test(u)) throw new Error(USERNAME_RULE);
       patch = { ...patch, username: u };
     }
     const { name, username, photo, verified, premium, ...device } = patch;
     void verified; void premium;
     setLocal(prev => ({ ...prev, ...device, ...(userId ? {} : { ...(name !== undefined ? { name: name.trim().slice(0, 40) } : {}), ...(username !== undefined ? { username } : {}), ...(photo !== undefined ? { photo } : {}) }) }));
-  }, [userId, setLocal]);
+  }, [userId, setLocal, refreshProfile]);
 
   /* A cropped photo: uploaded to the avatars bucket when signed in, kept on
      the device as a small JPEG otherwise. */
@@ -142,7 +165,7 @@ export function useProfile() {
     return save({ photo: url });
   }, [userId, save]);
 
-  return { profile, signedIn: Boolean(userId), checked, save, savePhoto };
+  return { profile, signedIn: Boolean(userId), userId, checked, save, savePhoto };
 }
 
 /* A friend, read by username. Only what the profiles row holds; the rest of

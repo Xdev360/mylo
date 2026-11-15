@@ -8,7 +8,7 @@ import {
   type Crop, type PhotoFilter, type Post, type QuoteSize, type QuoteTone, type ReactionKey
 } from '@/lib/social';
 import { useHydrated } from '@/lib/local';
-import { goBack } from '@/components/NavMotion';
+import { canGoBack, goBack } from '@/components/NavMotion';
 
 /* New posts: a thought (VF6), a quote (VF7), or photos picked (VF8) and
    edited (VF9). Post hands over to the feed, which shows it going up (VF10a). */
@@ -60,7 +60,7 @@ export default function NewPost() {
   const pickInput = useRef<HTMLInputElement>(null);
   const camInput = useRef<HTMLInputElement>(null);
 
-  const close = () => (window.history.length > 1 ? goBack(router) : router.push('/feed'));
+  const close = () => (canGoBack() ? goBack(router) : router.push('/feed'));
   const publish = (p: Omit<Post, 'id' | 'by' | 'at' | 'audience' | 'reactions' | 'comments' | 'reposts'>) => {
     const id = uid();
     const ok = setPosts(all => [{ id, by: me, at: Date.now(), audience: 'Friends', reactions: {}, comments: [], reposts: [], ...p }, ...all]);
@@ -214,7 +214,7 @@ export default function NewPost() {
         </div>
         <div className="sx-field">
           <span className="t-body-s c-2">Text size</span>
-          <div className="sx-tabs" role="tablist" aria-label="Text size">
+          <div className="sx-tabs is-slide" role="tablist" aria-label="Text size" style={{ '--i': ['Small', 'Medium', 'Large'].indexOf(size), '--n': 3 } as React.CSSProperties}>
             {(['Small', 'Medium', 'Large'] as const).map(s => <button key={s} type="button" role="tab" aria-selected={size === s} className="sx-tab" onClick={() => setSize(s)}>{s}</button>)}
           </div>
         </div>

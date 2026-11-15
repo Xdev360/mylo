@@ -3,6 +3,9 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import Icon from '../Icon';
+import Skeleton from '../system/Skeleton';
+import StatusScreen from '../system/StatusScreen';
+import { setNext } from '@/lib/signin';
 import { COVER_COLOURS, initial, sticker, tone, type Cover, type Member, type Room } from '@/lib/rooms';
 
 /* Small pieces every rooms screen shares. */
@@ -14,13 +17,37 @@ export const RIcon = ({ name, size = 22, className = '' }: { name: string; size?
 export const ArtIcon = ({ name, size = 22 }: { name: string; size?: number }) =>
   <img src={`/figma/rooms/${name}.svg`} alt="" width={size} height={size} className="r-art-icon" />;
 
+/* A face we only know is there (a room seen from outside): a plain disc, not a "?". */
 export function Avatar({ name, size = 32, colour, ring = false, me = false }: { name: string; size?: number; colour?: string; ring?: boolean; me?: boolean }) {
+  const blank = !name.trim();
   return (
-    <span className={`avatar r-avatar${ring ? ' is-ring' : ''}`}
-          style={{ width: size, height: size, background: colour ?? (me ? '#2B3150' : tone(name)), fontSize: Math.round(size * 0.38) }}>
-      {initial(name)}
+    <span className={`avatar r-avatar${ring ? ' is-ring' : ''}${blank ? ' is-blank' : ''}`}
+          style={{ width: size, height: size, background: blank ? undefined : colour ?? (me ? '#2B3150' : tone(name)), fontSize: Math.round(size * 0.38) }}>
+      {blank ? null : initial(name)}
     </span>
   );
+}
+
+/* Opening a room from a list grows it out of its row, and going back folds
+   it into the same row (the view transition named r-open in rooms.css).
+   The row being opened, and the room to fold back into, live here. */
+export const roomFx = { back: null as string | null };
+const canMorph = () => typeof document !== 'undefined' && 'startViewTransition' in document && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+export function morphOpen(row: HTMLElement) {
+  if (!canMorph() || matchMedia('(min-width: 1024px)').matches) return;
+  document.querySelectorAll<HTMLElement>('[style*="r-open"]').forEach(el => { el.style.viewTransitionName = ''; });
+  row.style.viewTransitionName = 'r-open';
+  document.documentElement.dataset.nav = 'room';
+  setTimeout(() => { if (document.documentElement.dataset.nav === 'room') document.documentElement.dataset.nav = 'push'; }, 900);
+}
+export function morphBack(roomId: string, chat: HTMLElement | null) {
+  if (!canMorph() || !chat || matchMedia('(min-width: 1024px)').matches) return;
+  roomFx.back = roomId;
+  chat.style.viewTransitionName = 'r-open';
+  document.documentElement.dataset.nav = 'room-back';
+  // The history step stamps "pop" as it lands; this fold wins over it.
+  window.addEventListener('popstate', () => { document.documentElement.dataset.nav = 'room-back'; }, { once: true });
+  setTimeout(() => { roomFx.back = null; if (document.documentElement.dataset.nav === 'room-back') document.documentElement.dataset.nav = 'pop'; }, 900);
 }
 
 export function Avatars({ members, size = 24 }: { members: Member[]; size?: number }) {
@@ -29,6 +56,24 @@ export function Avatars({ members, size = 24 }: { members: Member[]; size?: numb
       {members.slice(0, 4).map(m => <Avatar key={m.id} name={m.name} size={size} me={m.id === 'me'} ring />)}
     </span>
   );
+}
+
+/* Before a rooms screen has its data: the sign-in state when there is no
+   account (rooms live on it), a retry when the server did not answer, and
+   the chats skeleton while it loads. */
+export function Gate({ signedOut, error, retry, className = 'screen on-desk' }: { signedOut?: boolean; error?: string | null; retry?: () => void; className?: string }) {
+  if (signedOut) {
+    return (
+      <main className={`${className} r-gate`}>
+        <span className="r-sent-disc"><img src="/figma/rooms/mylo-sent.svg" alt="" /></span>
+        <h1 className="r-sent-title">Sign in to use rooms</h1>
+        <p className="t-body c-2 r-center">Your rooms and chats live on your Mylo account.</p>
+        <Link href="/signin" className="btn-primary r-bottom-btn" onClick={() => setNext(window.location.pathname + window.location.search)}>Sign in</Link>
+      </main>
+    );
+  }
+  if (error) return <main className={`${className} r-gate`}><StatusScreen kind="error" onRetry={retry} cover={false} /></main>;
+  return <main className={`${className} r-gate is-loading`} aria-busy="true"><Skeleton variant="chats" /></main>;
 }
 
 /* A room's picture: a Mylo room, a photo, or a colour with its letter. */

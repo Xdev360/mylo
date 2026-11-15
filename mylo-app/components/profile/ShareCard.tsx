@@ -6,7 +6,7 @@ import Icon from '@/components/Icon';
 import ScreenHeader from '@/components/ScreenHeader';
 import { useHydrated } from '@/lib/local';
 import { badgeHex, profileUrl, useProfile, type Profile } from '@/lib/profile';
-import { streak, useStore } from '@/lib/store';
+import { useStreak } from '@/lib/goals';
 import Room from './Room';
 import { Avatar, Seal, copyText, useToast } from './bits';
 import { useRoom } from './ProfileView';
@@ -95,13 +95,13 @@ async function drawCard(svg: SVGSVGElement, p: Profile, meta: string, link: stri
 export default function ShareCard() {
   const hydrated = useHydrated();
   const { profile: p } = useProfile();
-  const { items } = useStore();
+  const streakNow = useStreak();
   const [room] = useRoom();
   const svg = useRef<SVGSVGElement>(null);
   const toast = useToast();
   if (!hydrated) return <main className="screen on-desk" aria-busy="true" />;
 
-  const days = streak(items);
+  const days = streakNow;
   const meta = p.showStreak ? `Spark · ${days} day streak` : 'Spark';
   const url = p.username ? profileUrl(p.username) : '';
   const link = url.replace(/^https?:\/\//, '');

@@ -5,19 +5,19 @@ import { useState } from 'react';
 import ScreenHeader from '../ScreenHeader';
 import { ImageViewer } from './ChatSheets';
 import { Waveform } from './Bubble';
-import { RIcon } from './ui';
+import { Gate, RIcon } from './ui';
 import { useGone } from './ChatSettings';
 import { ME, dayLabel, stamp, useRoom, voiceClips, type Message } from '@/lib/rooms';
 
 /* CT20 · Media, voice and files: what the chat has shared, newest first. */
 export default function Media({ id }: { id: string }) {
   const router = useRouter();
-  const { ready, room, messages } = useRoom(id);
+  const { ready, signedOut, error, retry, room, messages } = useRoom(id);
   const [tab, setTab] = useState<'Media' | 'Voice' | 'Files'>('Media');
-  const [open, setOpen] = useState<Message | null>(null);
+  const [open, setOpen] = useState<{ m: Message; from: HTMLImageElement | null } | null>(null);
   const [playing, setPlaying] = useState<string | null>(null);
-  useGone(ready, room);
-  if (!ready || !room) return <main className="screen on-desk" aria-busy="true" />;
+  useGone(ready, room && !room.peek ? room : null);
+  if (!ready || !room || room.peek) return <Gate signedOut={signedOut} error={error} retry={retry} />;
   const live = messages.filter(m => !m.deleted).reverse();
   const photos = live.filter(m => m.kind === 'photo');
   const voices = live.filter(m => m.kind === 'voice');
@@ -30,7 +30,7 @@ export default function Media({ id }: { id: string }) {
   return (
     <main className="screen on-desk r-media">
       <ScreenHeader title="Media" fallback={`/chats/${room.id}/settings`} />
-      <div className="r-seg" role="tablist" aria-label="Show">
+      <div className="r-seg" role="tablist" aria-label="Show" style={{ '--i': ['Media', 'Voice', 'Files'].indexOf(tab), '--n': 3 } as React.CSSProperties}>
         {(['Media', 'Voice', 'Files'] as const).map(t => (
           <button key={t} type="button" role="tab" aria-selected={tab === t} className={tab === t ? 'is-on' : ''} onClick={() => setTab(t)}>{t}</button>
         ))}
@@ -42,7 +42,7 @@ export default function Media({ id }: { id: string }) {
             {g.items.map(m => {
               const gone = m.photo!.once || !m.photo!.src;
               return (
-                <button key={m.id} type="button" className={`r-media-tile${gone ? ' is-once' : ''}`} disabled={gone} onClick={() => setOpen(m)}
+                <button key={m.id} type="button" className={`r-media-tile${gone ? ' is-once' : ''}`} disabled={gone} onClick={e => setOpen({ m, from: e.currentTarget.querySelector('img') })}
                         aria-label={m.photo!.once ? 'View once photo' : m.photo!.caption || 'Photo'}>
                   {!gone && <img src={m.photo!.src} alt="" />}
                   {m.photo!.once && <span className="r-media-once">1</span>}
@@ -68,7 +68,10 @@ export default function Media({ id }: { id: string }) {
           })}
         </div>
       )}
-      {open && <ImageViewer m={open} onClose={() => setOpen(null)} onCheer={() => router.push(`/chats/${room.id}#m-${open.id}`)} onReply={() => router.push(`/chats/${room.id}#m-${open.id}`)} />}
+      {tab === 'Media' && photos.length === 0 && <p className="t-body c-2 r-empty-note">Photos shared in {room.name} show up here.</p>}
+      {tab === 'Voice' && voices.length === 0 && <p className="t-body c-2 r-empty-note">No voice notes yet. Hold the mic in the chat to send one.</p>}
+      {tab === 'Files' && <p className="t-body c-2 r-empty-note">Files are not in rooms yet. Photos and voice notes have their own tabs.</p>}
+      {open && <ImageViewer m={open.m} from={open.from} onClose={() => setOpen(null)} onCheer={() => router.push(`/chats/${room.id}#m-${open.m.id}`)} onReply={() => router.push(`/chats/${room.id}#m-${open.m.id}`)} />}
     </main>
   );
 }

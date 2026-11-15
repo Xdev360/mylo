@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Sheet from '../Sheet';
 import Bubble from './Bubble';
 import { ArtIcon, Avatar, BareSheet, RIcon, StickerArt } from './ui';
-import { CHEERS, ME, REACTIONS, STICKERS, stamp, type CheerId, type Message, type ReactionKey, type Room, type StickerId } from '@/lib/rooms';
+import { CHEERS, ME, REACTIONS, STICKERS, caps, stamp, type CheerId, type Message, type ReactionKey, type Room, type StickerId } from '@/lib/rooms';
 
 /* The layers over a chat: the long-press menu (CT12, CT13), the add menu,
    cheer cards (CT10), stickers (CT21), a new poll (CT23), delete (CT14),
@@ -12,29 +12,72 @@ import { CHEERS, ME, REACTIONS, STICKERS, stamp, type CheerId, type Message, typ
 
 export type MenuAction = 'reply' | 'edit' | 'copy' | 'pin' | 'info' | 'delete' | 'cheer' | 'report' | 'more';
 
-export function MessageMenu({ m, el, room, onClose, onReact, onAction }: {
-  m: Message; el: HTMLElement; room: Room; onClose: () => void;
+const EASE = 'cubic-bezier(.22,1,.36,1)';
+const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* Closing a layer: play its leaving motion, then hand over. Once only. */
+function useLeave(parts: () => { el: Element | null; to: Keyframe[] }[], ms = 150) {
+  const gone = useRef(false);
+  return (then: () => void) => {
+    if (gone.current) return;
+    gone.current = true;
+    if (reduced()) { then(); return; }
+    const runs = parts().filter(p => p.el).map(p => p.el!.animate(p.to, { duration: ms, easing: 'cubic-bezier(.4,0,1,1)', fill: 'forwards' }).finished);
+    Promise.all(runs).then(then, then);
+  };
+}
+
+export function MessageMenu({ m, el, at, room, onClose, onReact, onAction }: {
+  m: Message; el: HTMLElement; at?: { x: number; y: number }; room: Room; onClose: () => void;
   onReact: (k: ReactionKey) => void; onAction: (a: MenuAction) => void;
 }) {
   const mine = m.authorId === ME;
   const stack = useRef<HTMLDivElement>(null);
-  const [pos, setPos] = useState<{ top: number; left?: number; right?: number; w: number } | null>(null);
+  const veil = useRef<HTMLButtonElement>(null);
+  const [pos, setPos] = useState<{ top: number; left?: number; right?: number; w: number; lift: number } | null>(null);
   useLayoutEffect(() => {
     const r = el.getBoundingClientRect();
     const h = stack.current?.offsetHeight ?? 400;
     const vh = window.innerHeight, vw = window.innerWidth;
-    const top = Math.max(16, Math.min(r.top - 66, vh - h - 16));
-    setPos(mine ? { top, right: Math.max(16, vw - r.right), w: r.width } : { top, left: Math.max(16, r.left), w: r.width });
+    const want = r.top - (caps.react ? 66 : 0);
+    const top = Math.max(16, Math.min(want, vh - h - 16));
+    const lift = want - top;
+    setPos(mine ? { top, right: Math.max(16, vw - r.right), w: r.width, lift } : { top, left: Math.max(16, r.left), w: r.width, lift });
   }, [el, mine]);
+  /* The bubble lifts from where it sat (and moves up if the menu needs the
+     room); the menu unfolds from the point you pressed. */
+  useLayoutEffect(() => {
+    const s = stack.current;
+    if (!pos || !s || reduced()) return;
+    s.getAnimations({ subtree: true }).forEach(a => a.cancel());
+    const copy = s.querySelector<HTMLElement>('.r-menu-copy');
+    const menu = s.querySelector<HTMLElement>('.r-menu');
+    copy?.animate([{ transform: `translateY(${pos.lift}px)` }, { transform: `translateY(${pos.lift * 0.1}px) scale(1.03)`, offset: 0.55 }, { transform: 'none' }], { duration: 340, easing: EASE });
+    if (menu) {
+      const mr = menu.getBoundingClientRect();
+      const ox = at ? at.x - mr.left : mine ? mr.width : 0;
+      const oy = at ? at.y - mr.top + pos.lift : -12;
+      menu.style.transformOrigin = `${Math.round(ox)}px ${Math.round(oy)}px`;
+      menu.animate([{ opacity: 0, transform: 'scale(.3)' }, { opacity: 1, transform: 'none' }], { duration: 300, easing: 'cubic-bezier(.34,1.25,.64,1)' });
+    }
+    s.querySelector<HTMLElement>('.r-reactbar')?.animate([{ opacity: 0, transform: 'translateY(10px) scale(.9)' }, { opacity: 1, transform: 'none' }], { duration: 260, easing: EASE });
+  }, [pos, at, mine]);
+  const leave = useLeave(() => [
+    { el: veil.current, to: [{ opacity: 0 }] },
+    { el: stack.current?.querySelector('.r-menu') ?? null, to: [{ opacity: 0, transform: 'scale(.6)' }] },
+    { el: stack.current?.querySelector('.r-reactbar') ?? null, to: [{ opacity: 0, transform: 'translateY(8px)' }] },
+    { el: stack.current?.querySelector('.r-menu-copy') ?? null, to: [{ transform: `translateY(${pos?.lift ?? 0}px)` }] }
+  ]);
+  const close = () => leave(onClose);
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') close(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  });
 
   const items: { a: MenuAction; label: string; icon: string; danger?: boolean; art?: boolean }[] = mine ? [
     { a: 'reply', label: 'Reply', icon: 'reply' },
-    ...(m.kind === 'text' ? [{ a: 'edit' as const, label: 'Edit', icon: 'pencil' }, { a: 'copy' as const, label: 'Copy', icon: 'copy' }] : []),
+    ...(m.kind === 'text' ? [...(caps.edit ? [{ a: 'edit' as const, label: 'Edit', icon: 'pencil' }] : []), { a: 'copy' as const, label: 'Copy', icon: 'copy' }] : []),
     { a: 'pin', label: room.pinned.includes(m.id) ? 'Unpin' : 'Pin', icon: 'pin' },
     { a: 'info', label: 'Info', icon: 'eye' },
     { a: 'delete', label: 'Delete', icon: 'trash', danger: true, art: true }
@@ -48,21 +91,24 @@ export function MessageMenu({ m, el, room, onClose, onReact, onAction }: {
 
   return (
     <div className="r-menu-layer" role="dialog" aria-modal="true" aria-label="Message actions">
-      <button type="button" className="r-menu-veil" aria-label="Close" onClick={onClose} />
+      <button ref={veil} type="button" className="r-menu-veil" aria-label="Close" onClick={close} />
       <div ref={stack} className={`r-menu-stack${mine ? ' is-mine' : ''}`}
            style={pos ? { top: pos.top, left: pos.left, right: pos.right } : { visibility: 'hidden' }}>
-        <div className="r-reactbar" role="group" aria-label="React">
-          {REACTIONS.map(r => (
-            <button key={r.key} type="button" aria-label={r.key} className={m.reactions?.[r.key]?.includes(ME) ? 'is-on' : ''} onClick={() => onReact(r.key)}>
-              {r.tint ? <RIcon name={r.icon} size={28} /> : <ArtIcon name={r.icon} size={28} />}
-            </button>
-          ))}
-          <button type="button" aria-label="More reactions" onClick={() => onAction('more')}><RIcon name="plus-24" size={28} className="c-3" /></button>
-        </div>
+        {caps.react && (
+          <div className="r-reactbar" role="group" aria-label="React">
+            {REACTIONS.map(r => (
+              <button key={r.key} type="button" aria-label={r.key} className={m.reactions?.[r.key]?.includes(ME) ? 'is-on' : ''} onClick={() => leave(() => onReact(r.key))}>
+                {r.tint ? <RIcon name={r.icon} size={28} /> : <ArtIcon name={r.icon} size={28} />}
+              </button>
+            ))}
+            <button type="button" aria-label="More reactions" onClick={() => leave(() => onAction('more'))}><RIcon name="plus-24" size={28} className="c-3" /></button>
+          </div>
+        )}
         <div className="r-menu-copy" style={{ width: pos?.w }}><Bubble m={m} room={room} still /></div>
         <div className="r-menu" role="menu">
           {items.map(i => (
-            <button key={i.a} type="button" role="menuitem" className={i.danger ? 'is-danger' : ''} onClick={() => onAction(i.a)}>
+            <button key={i.a} type="button" role="menuitem" className={i.danger ? 'is-danger' : ''}
+                    onClick={() => (i.a === 'copy' ? (onAction(i.a)) : leave(() => onAction(i.a)))}>
               <span>{i.label}</span>
               {i.art ? <ArtIcon name={i.icon} size={22} /> : <RIcon name={i.icon} size={22} />}
             </button>
@@ -73,26 +119,38 @@ export function MessageMenu({ m, el, room, onClose, onReact, onAction }: {
   );
 }
 
-/* A small menu that opens from a button: the composer's +, a member's dots. */
+/* A small menu that opens from a button: the composer's +, a member's dots.
+   It grows out of that button and folds back into it. */
 export function PopMenu({ anchor, items, onClose, up = true }: {
   anchor: HTMLElement; up?: boolean; onClose: () => void;
   items: { label: string; icon?: string; danger?: boolean; onClick: () => void }[];
 }) {
-  const r = anchor.getBoundingClientRect();
+  const box = useRef<HTMLDivElement>(null);
+  const [r] = useState(() => anchor.getBoundingClientRect());
   const vw = typeof window === 'undefined' ? 0 : window.innerWidth;
   const left = Math.max(12, Math.min(r.left, vw - 252));
+  const spot = up ? { left, bottom: window.innerHeight - r.top + 8 } : { left: Math.max(12, Math.min(left, r.right - 240)), top: r.bottom + 8 };
+  useLayoutEffect(() => {
+    const el = box.current; if (!el || reduced()) return;
+    el.getAnimations().forEach(a => a.cancel());
+    const b = el.getBoundingClientRect();
+    el.style.transformOrigin = `${Math.round(r.left + r.width / 2 - b.left)}px ${up ? Math.round(b.height + 8 + r.height / 2) : -Math.round(8 + r.height / 2)}px`;
+    el.animate([{ opacity: 0, transform: 'scale(.4)' }, { opacity: 1, transform: 'none' }], { duration: 260, easing: 'cubic-bezier(.34,1.2,.64,1)' });
+  }, [r, up]);
+  const leave = useLeave(() => [{ el: box.current, to: [{ opacity: 0, transform: 'scale(.5)' }] }], 140);
+  const close = () => leave(onClose);
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') close(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  });
   return (
     <div className="r-pop-layer">
-      <button type="button" className="r-pop-veil" aria-label="Close" onClick={onClose} />
-      <div className="r-menu r-pop" role="menu"
-           style={up ? { left, bottom: window.innerHeight - r.top + 8 } : { left: Math.min(left, r.right - 240), top: r.bottom + 8 }}>
+      <button type="button" className="r-pop-veil" aria-label="Close" onClick={close} />
+      <div ref={box} className="r-menu r-pop" role="menu" style={spot}>
         {items.map(i => (
-          <button key={i.label} type="button" role="menuitem" className={i.danger ? 'is-danger' : ''} onClick={() => { onClose(); i.onClick(); }}>
+          // The action runs at once (a photo picker needs the tap itself); the menu folds away after.
+          <button key={i.label} type="button" role="menuitem" className={i.danger ? 'is-danger' : ''} onClick={() => { i.onClick(); close(); }}>
             <span>{i.label}</span>{i.icon && <RIcon name={i.icon} size={22} />}
           </button>
         ))}
@@ -238,31 +296,110 @@ export function PhotoDraft({ src, onClose, onSend }: { src: string; onClose: () 
 
 /* CT8: a view once photo, open. It goes when you close it. */
 export function OnceViewer({ m, onClose }: { m: Message; onClose: () => void }) {
+  const root = useRef<HTMLDivElement>(null);
+  const leave = useLeave(() => [{ el: root.current, to: [{ opacity: 0 }] }], 180);
   return (
-    <div className="r-full r-once-view" role="dialog" aria-modal="true" aria-label="View once photo">
+    <div ref={root} className="r-full r-once-view" role="dialog" aria-modal="true" aria-label="View once photo">
       <header className="r-viewer-top">
         <Avatar name={m.authorName} size={40} ring />
         <span className="r-viewer-who"><span className="r-viewer-name">{m.authorName}</span><span className="r-viewer-sub">View once  ·  just now</span></span>
-        <button type="button" className="r-viewer-btn" aria-label="Close" onClick={onClose}><RIcon name="close-np" size={20} /></button>
+        <button type="button" className="r-viewer-btn" aria-label="Close" onClick={() => leave(onClose)}><RIcon name="close-np" size={20} /></button>
       </header>
-      <img className="r-viewer-img" src={m.photo!.src} alt="" />
+      <img className="r-viewer-img r-once-img" src={m.photo!.src} alt="" />
     </div>
   );
 }
 
-/* CT24: a photo from the chat, with cheer and reply under it. */
-export function ImageViewer({ m, onClose, onCheer, onReply }: { m: Message; onClose: () => void; onCheer: () => void; onReply: () => void }) {
+/* Where a photo sits in its bubble, as a move from the full-screen picture:
+   scaled and cropped to the thumbnail's box, with its rounded corners. */
+function thumbFrames(img: HTMLImageElement, thumb: Element | null): [Keyframe, Keyframe] | null {
+  if (!thumb || !(thumb as HTMLElement).isConnected) return null;
+  const t = thumb.getBoundingClientRect(), e = img.getBoundingClientRect();
+  if (!t.width || !e.width || t.bottom < 0 || t.top > window.innerHeight) return null;
+  const nw = img.naturalWidth || t.width, nh = img.naturalHeight || t.height;
+  const k = Math.min(e.width / nw, e.height / nh);
+  const dw = nw * k, dh = nh * k;
+  const s = Math.max(t.width / dw, t.height / dh);
+  const dx = t.left + t.width / 2 - (e.left + e.width / 2), dy = t.top + t.height / 2 - (e.top + e.height / 2);
+  const ix = Math.max(0, (e.width - t.width / s) / 2), iy = Math.max(0, (e.height - t.height / s) / 2);
+  return [
+    { transform: `translate(${dx}px, ${dy}px) scale(${s})`, clipPath: `inset(${iy}px ${ix}px round ${16 / s}px)` },
+    { transform: 'none', clipPath: `inset(${(e.height - dh) / 2}px ${(e.width - dw) / 2}px round 0px)` }
+  ];
+}
+
+/* CT24: a photo from the chat, with cheer and reply under it. It zooms out
+   of its bubble and back into it; drag it down to close. */
+export function ImageViewer({ m, from, onClose, onCheer, onReply }: { m: Message; from?: HTMLImageElement | null; onClose: () => void; onCheer: () => void; onReply: () => void }) {
   const d = new Date(m.at);
   const when = `${d.toDateString() === new Date().toDateString() ? 'Today' : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} ${stamp(m.at)}`;
+  const img = useRef<HTMLImageElement>(null);
+  const bg = useRef<HTMLDivElement>(null);
+  const root = useRef<HTMLDivElement>(null);
+  const [drag, setDrag] = useState<{ y0: number; dy: number } | null>(null);
+  const shut = useRef(false);
+  const origin = useRef(from);
+  const thumb = () => origin.current?.isConnected ? origin.current : document.querySelector(`#m-${CSS.escape(m.id)} .r-photo img`);
+
+  useLayoutEffect(() => {
+    const el = img.current, t = origin.current;
+    if (!el || reduced()) return;
+    if (t) t.style.visibility = 'hidden';
+    const chrome = root.current ? [...root.current.querySelectorAll<HTMLElement>('.r-viewer-top, .r-viewer-actions')] : [];
+    const run = () => {
+      // Measured at rest (a second run in development must not measure the first one mid-flight).
+      [el, bg.current, ...chrome].forEach(x => x?.getAnimations().forEach(a => a.cancel()));
+      const f = thumbFrames(el, t ?? null);
+      if (f) el.animate(f, { duration: 360, easing: EASE });
+      else el.animate([{ opacity: 0, transform: 'scale(.92)' }, { opacity: 1, transform: 'none' }], { duration: 260, easing: EASE });
+      bg.current?.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300, easing: 'ease-out' });
+      chrome.forEach(c => c.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 240, delay: 120, easing: 'ease-out', fill: 'backwards' }));
+    };
+    if (el.complete && el.naturalWidth) run(); else el.addEventListener('load', run, { once: true });
+    return () => { if (t) t.style.visibility = ''; };
+  }, []);
+
+  function close() {
+    if (shut.current) return;
+    shut.current = true;
+    const el = img.current;
+    const t = thumb();
+    const done = () => { if (t instanceof HTMLElement) t.style.visibility = ''; onClose(); };
+    if (!el || reduced()) { done(); return; }
+    if (t instanceof HTMLElement) t.style.visibility = 'hidden';
+    // Measured where it rests, not where the finger dragged it.
+    const lift = el.style.transform || 'none';
+    el.style.transform = '';
+    const f = thumbFrames(el, t);
+    const anim = f
+      ? el.animate([{ ...f[1], transform: lift }, f[0]], { duration: 280, easing: EASE, fill: 'forwards' })
+      : el.animate([{ opacity: 1, transform: lift }, { opacity: 0, transform: `${lift === 'none' ? '' : lift} scale(.9)` }], { duration: 200, easing: 'ease-in', fill: 'forwards' });
+    bg.current?.animate([{ opacity: drag ? Number(getComputedStyle(bg.current).opacity) : 1 }, { opacity: 0 }], { duration: 260, easing: 'ease-out', fill: 'forwards' });
+    root.current?.querySelectorAll<HTMLElement>('.r-viewer-top, .r-viewer-actions').forEach(c => c.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 140, fill: 'forwards' }));
+    anim.finished.then(done, done);
+  }
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') close(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
+
+  const dy = drag?.dy ?? 0;
   return (
-    <div className="r-full r-viewer" role="dialog" aria-modal="true" aria-label="Photo">
+    <div ref={root} className="r-full r-viewer" role="dialog" aria-modal="true" aria-label="Photo">
+      <div ref={bg} className="r-viewer-bg" style={dy ? { opacity: Math.max(0.2, 1 - dy / 400) } : undefined} />
       <header className="r-viewer-top">
-        <button type="button" className="r-viewer-btn" aria-label="Close" onClick={onClose}><img src="/figma/rooms/v-close.svg" alt="" width={19} height={19} /></button>
+        <button type="button" className="r-viewer-btn" aria-label="Close" onClick={close}><img src="/figma/rooms/v-close.svg" alt="" width={19} height={19} /></button>
         <Avatar name={m.authorName} size={36} me={m.authorId === ME} ring />
         <span className="r-viewer-who"><span className="r-viewer-name">{m.authorId === ME ? 'You' : m.authorName}</span><span className="r-viewer-sub">{[when, m.photo?.caption].filter(Boolean).join(' · ')}</span></span>
         <a className="r-viewer-btn" aria-label="Download" href={m.photo!.src} download={`mylo-${m.id}.jpg`}><img src="/figma/rooms/v-download.svg" alt="" width={19} height={19} /></a>
       </header>
-      <img className="r-viewer-img" src={m.photo!.src} alt={m.photo?.caption || 'Photo'} />
+      <img ref={img} className="r-viewer-img" src={m.photo!.src} alt={m.photo?.caption || 'Photo'} draggable={false}
+           style={dy ? { transform: `translateY(${dy}px) scale(${1 - Math.min(0.15, dy / 2000)})` } : undefined}
+           onPointerDown={e => { if (e.button === 0) { e.currentTarget.setPointerCapture(e.pointerId); setDrag({ y0: e.clientY, dy: 0 }); } }}
+           onPointerMove={e => { if (drag) setDrag({ ...drag, dy: Math.max(0, e.clientY - drag.y0) }); }}
+           onPointerUp={() => { if (drag && drag.dy > 110) close(); else setDrag(null); }}
+           onPointerCancel={() => setDrag(null)} />
       <div className="r-viewer-actions">
         <button type="button" className="r-viewer-action" onClick={onCheer}><img src="/figma/rooms/v-cheer.svg" alt="" width={18} height={18} />Cheer</button>
         <button type="button" className="r-viewer-action" onClick={onReply}><img src="/figma/rooms/v-reply.svg" alt="" width={18} height={18} />Reply</button>

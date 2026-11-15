@@ -2,10 +2,11 @@
 
 import '@/styles/system.css';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import Icon from '@/components/Icon';
 import { supabase } from '@/lib/supabase';
-import { clearDevice, useSession } from '@/lib/system';
+import { SUPPORT_EMAIL, clearDevice, go, leave, useSession } from '@/lib/system';
 import { Page } from './SettingsPages';
 import { Hero } from './ui';
 
@@ -20,6 +21,7 @@ import { Hero } from './ui';
 
 /* ST10 */
 export function DeleteWarning() {
+  const router = useRouter();
   return (
     <Page>
       <div className="sys-state">
@@ -35,7 +37,8 @@ export function DeleteWarning() {
       </div>
       <div className="sys-actions">
         <Link href="/settings/delete-confirm" className="sys-btn is-danger">Continue</Link>
-        <Link href="/settings" className="sys-btn is-soft">Keep my account</Link>
+        {/* Back where they came from (Settings, or Your data), not a new copy of it. */}
+        <button type="button" className="sys-btn is-soft" onClick={() => leave(router, '/settings')}>Keep my account</button>
       </div>
     </Page>
   );
@@ -52,8 +55,8 @@ export function DeleteConfirm() {
   const [err, setErr] = useState('');
   const armed = typed.trim() === 'DELETE';
 
-  const go = async () => {
-    if (!armed || !ready) return;
+  const remove = async () => {
+    if (!armed || !ready || busy) return;
     setBusy(true); setErr('');
     try {
       if (user) {
@@ -63,10 +66,17 @@ export function DeleteConfirm() {
         await sb.auth.signOut();
       }
       clearDevice();
+      try { sessionStorage.clear(); } catch { /* blocked */ }
       // A full load, so nothing still held in memory writes back.
       window.location.replace('/settings/deleted');
     } catch (e) {
-      setErr((e as { message?: string })?.message || 'Something went wrong. Try again.');
+      const m = (e as { message?: string; code?: string })?.message || '';
+      const code = (e as { code?: string })?.code;
+      /* The server function is not there yet: say so plainly, and how to get it done. */
+      setErr(code === 'PGRST202' || /request_account_deletion|schema cache|not find the function/i.test(m)
+        ? `Deleting accounts from the app is not switched on yet. Email ${SUPPORT_EMAIL} and we will do it for you. Nothing was deleted.`
+        : /fetch|network/i.test(m) ? 'No connection. Nothing was deleted. Try again when you are back online.'
+        : `${m || 'Something went wrong.'} Nothing was deleted.`);
       setBusy(false);
     }
   };
@@ -83,12 +93,12 @@ export function DeleteConfirm() {
       <label className="sys-field-label" htmlFor="sys-delete" style={{ marginTop: 32 }}>Type DELETE to confirm</label>
       <div className={`sys-input${typed ? ' is-danger' : ''}`}>
         <input id="sys-delete" value={typed} onChange={e => setTyped(e.target.value.toUpperCase())} autoCapitalize="characters" autoComplete="off" spellCheck={false}
-               onKeyDown={e => { if (e.key === 'Enter') void go(); }} />
+               enterKeyHint="done" onKeyDown={e => { if (e.key === 'Enter') void remove(); }} aria-describedby="sys-delete-why" />
       </div>
-      <p className="sys-grace"><Icon name="system/time" size={24} />You have 30 days to change your mind. Log in to cancel.</p>
+      <p className="sys-grace" id="sys-delete-why"><Icon name="system/time" size={24} />You have 30 days to change your mind. Log in to cancel.</p>
       {err && <p className="sys-error" role="alert">{err}</p>}
       <div className="sys-actions">
-        <button type="button" className="sys-btn is-danger" disabled={!armed || busy || !ready} aria-busy={busy} onClick={go}>Delete forever</button>
+        <button type="button" className="sys-btn is-danger" disabled={!armed || busy || !ready} aria-busy={busy} onClick={remove}>Delete forever</button>
       </div>
     </Page>
   );
@@ -96,6 +106,7 @@ export function DeleteConfirm() {
 
 /* ST12 */
 export function Deleted() {
+  const router = useRouter();
   return (
     <main className="screen on-desk sys-screen">
       <div className="sys-state" style={{ paddingTop: 116 }}>
@@ -104,7 +115,7 @@ export function Deleted() {
         <p className="sys-state-body">Thanks for the time with Mylo. If you change your mind in 30 days, just log in.</p>
       </div>
       <div className="sys-actions">
-        <Link href="/welcome" className="sys-btn is-soft">Close</Link>
+        <button type="button" className="sys-btn is-soft" onClick={() => go(router, '/welcome', 'tab', true)}>Close</button>
       </div>
     </main>
   );

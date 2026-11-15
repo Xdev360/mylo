@@ -11,6 +11,8 @@ import { useStore } from '@/lib/store';
 import { useHydrated } from '@/lib/local';
 import { addDays, fromIso, iso, todayIso, weekdayName } from '@/lib/dates';
 import { useMeta, weekOf } from '@/lib/goals';
+import { stampNav } from '../NavMotion';
+import { SlidePill, useSlidePill } from '../SlidePill';
 
 /* N7 · Plan another day (368:13716). Tomorrow unless ?day= says otherwise;
    the strip moves between days; what is already on the day can be ticked. */
@@ -32,6 +34,7 @@ function Plan() {
   const name = weekdayName(d);
   const things = thingsOn(items, all, day);
   const rel = day === today ? 'Today' : day === tomorrow ? 'Tomorrow' : null;
+  const strip = useSlidePill<HTMLElement>(day);
 
   return (
     <main className="screen on-desk g-plan">
@@ -41,13 +44,14 @@ function Plan() {
         <h1 className="sheet-title">Plan {name}.</h1>
         {things.length === 0 && <p className="g-meta13">Nothing yet. Add what matters.</p>}
       </section>
-      <nav className="g-pweek" aria-label="Days">
+      <nav ref={strip} className="g-pweek slide-track" aria-label="Days">
+        <SlidePill />
         {weekOf(d).map(w => {
           const wd = iso(w); const t = thingsOn(items, all, wd);
           const dot = !t.length ? '' : wd < today ? (t.every(x => x.done) ? 'is-green' : t.some(x => x.done) ? 'is-amber' : 'is-red') : 'is-ink';
           return (
             <button key={wd} type="button" className="g-pday" aria-pressed={wd === day} disabled={wd < today}
-                    onClick={() => router.replace(`/plan?day=${wd}`)}>
+                    onClick={() => { stampNav('none'); router.replace(`/plan?day=${wd}`); }}>
               <span className="g-pday-d">{w.toLocaleDateString('en-GB', { weekday: 'short' })}</span>
               <span className="g-pday-n">{w.getDate()}</span>
               <i className={`g-pday-dot ${dot}`} />

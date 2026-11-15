@@ -1,18 +1,24 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { morph, pause } from '@/components/apps/motion';
 import Icon from '@/components/Icon';
 import RwCard from './Card';
 import { BackBtn, Chest, CloseBtn, Confetti, KeyPill, Sparkles } from './bits';
 import { keyLine } from './Hub';
-import { CARD_TOTAL, EGGS, SHARDS_FOR_CARD, TIERS, cardById, eggArt, useRewards, type Opened, type Tier } from '@/lib/rewards';
+import { COLLECTABLE, EGGS, SHARDS_FOR_CARD, TIERS, cardById, eggArt, useRewards, type Opened, type Tier } from '@/lib/rewards';
 
 /* The Sunday chest. U11 · Gold chest ready (877:123524) and XT7 · Chest
    dropped a level (877:125539) when it can open; the same screen, waiting,
    on any other day. Opening it shows what came out: XT3 · Wood chest result,
    XT4 · Silver chest result, U12 · New card (Legendary) and XT5 · Double
-   becomes a shard. */
+   becomes a shard.
+
+   Opening is one sequence: the chest rattles harder three times while its
+   glow builds, bursts into a flash, and the result rises out of the flash:
+   the card turns over, the ring and glow open, then the title, the line and
+   the buttons. The key is spent only when the result is in. */
 
 const INSIDE: Record<Tier, string> = {
   wood: 'Inside: 1 card.',
@@ -22,7 +28,9 @@ const INSIDE: Record<Tier, string> = {
 
 export default function ChestView() {
   const r = useRewards();
-  const [opening, setOpening] = useState(false);
+  const [opening, setOpening] = useState<null | 'shake' | 'burst'>(null);
+  const alive = useRef(true);
+  useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
   if (!r.ready) return <main className="screen" aria-busy="true" />;
   const { week, canOpen, openedThisWeek } = r;
   const result = openedThisWeek && !openedThisWeek.seen ? openedThisWeek : null;
@@ -36,10 +44,15 @@ export default function ChestView() {
     : keyLine(week.toKey);
   const back = week.dropped ? `Show up 5 days this week and ${week.tier === 'silver' ? 'Gold' : 'Silver'} is back next Sunday. Nothing you own is lost.` : INSIDE[week.tier];
 
-  function open() {
+  async function open() {
     if (!canOpen || opening) return;
-    setOpening(true);
-    window.setTimeout(() => { r.openChest(); setOpening(false); }, 750);
+    setOpening('shake');
+    await pause(1250);
+    if (!alive.current) return;
+    setOpening('burst');
+    await pause(320);
+    if (!alive.current) return;
+    morph(() => { r.openChest(); setOpening(null); });
   }
 
   return (
@@ -53,7 +66,7 @@ export default function ChestView() {
         <p className="t-body c-2">{week.isSunday ? 'Sunday evening' : 'This week'}</p>
         <h2 className="rw-display">{title}</h2>
       </div>
-      <section className={`rw-stage${opening ? ' is-opening' : ''}`} aria-label={`${tier} chest`}>
+      <section className={`rw-stage${opening ? ` is-opening is-${opening}` : ''}`} aria-label={`${tier} chest`} aria-busy={!!opening}>
         <span className="rw-stage-glow" />
         <Sparkles />
         <span className="rw-stage-chest"><Chest tier={week.tier} size={220} /></span>
@@ -62,9 +75,10 @@ export default function ChestView() {
       <KeyPill className="rw-cost">Uses 1 key</KeyPill>
       <p className="rw-chest-inside">{back}</p>
       <span className="spacer" />
-      <button type="button" className="btn-primary rw-wide" disabled={!canOpen || opening} onClick={open}>
-        {canOpen ? 'Open chest' : 'Opens Sunday'}
+      <button type="button" className="btn-primary rw-wide" disabled={!canOpen || !!opening} onClick={open}>
+        {canOpen ? 'Open chest' : openedThisWeek ? 'Opened this week' : 'Opens Sunday'}
       </button>
+      {opening && <span className={`rw-flash is-${opening}`} aria-hidden />}
     </main>
   );
 }
@@ -76,11 +90,12 @@ function Result({ rec }: { rec: Opened }) {
   const n = r.owned.length;
   const title = rec.dup ? 'Already yours' : card.rarity === 'legendary' ? 'Legendary!' : card.rarity === 'epic' ? 'Epic card!' : card.rarity === 'rare' ? 'Rare card!' : 'New card';
   const line = rec.dup ? `So it turns into a shard. ${r.state.shards} of ${SHARDS_FOR_CARD} shards.`
-    : card.rarity === 'legendary' ? `Card ${n} of ${CARD_TOTAL} in your collection`
-    : `From your ${TIERS[rec.tier].name} chest. Card ${n} of ${CARD_TOTAL}.`;
+    : card.rarity === 'legendary' ? `Card ${n} of ${COLLECTABLE} in your collection`
+    : `From your ${TIERS[rec.tier].name} chest. Card ${n} of ${COLLECTABLE}.`;
   const go = (href: string) => { r.seeResult(); router.push(href); };
   return (
-    <main className="rw-reveal" aria-labelledby="rw-reveal-title">
+    <main className="rw-reveal is-arriving" aria-labelledby="rw-reveal-title">
+      <span className="rw-flash is-out" aria-hidden />
       <div className="rw-reveal-col">
         <span className="rw-reveal-close"><CloseBtn onClick={() => go('/rewards')} /></span>
         <h1 id="rw-reveal-title" className="rw-reveal-title">{title}</h1>

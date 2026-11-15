@@ -5,7 +5,8 @@ import { FunctionsFetchError, FunctionsHttpError, FunctionsRelayError } from '@s
 import { supabase } from './supabase';
 import { addDays, fromIso, iso, thisWeek, todayIso } from './dates';
 import type { Tone } from './parse';
-import type { Item, Kind } from './store';
+import { useStore, type Item, type Kind } from './store';
+import { useMeta, type Meta } from './goals';
 
 /* Mylo AI, the real one: the `mylo` edge function in supabase/functions/mylo.
    It takes { mode: 'goals' | 'chat', text, today, categories, context,
@@ -65,17 +66,35 @@ export const fromGoal = (g: GoalDraft): Draft => ({
 });
 
 /* A day thing is a task on Today; a thing on repeat is a system; anything
-   wider than a day is a goal. Repeat days and the reminder ride along on the
-   item (lib/store.tsx keeps whatever it is given) until Item names them. */
-export function toItem(d: Draft): Omit<Item, 'id' | 'done'> {
+   wider than a day is a goal. Repeat days and the reminder go in the goals
+   area's details (lib/goals Meta), where Today, the calendar and E1 read
+   them: a "Mon, Wed, Fri" draft lands on those days, not every day. */
+export function toItem(d: Draft): { item: Omit<Item, 'id' | 'done'>; meta: Meta } {
   const kind: Kind = d.repeat.length ? 'system' : d.scope === 'day' ? 'task' : 'goal';
   const item = {
     kind, title: d.title.trim() || 'Goal', date: d.date, time: d.time, minutes: d.minutes,
-    tag: d.cat ? { label: d.cat, tone: CAT_LOOK[d.cat].tone } : undefined,
-    repeat: d.repeat.length ? d.repeat : undefined,
-    remind: d.remind && d.time ? 15 : undefined
+    tag: d.cat ? { label: d.cat, tone: CAT_LOOK[d.cat].tone } : undefined
   };
-  return item;
+  const meta: Meta = d.repeat.length === 7 ? { repeat: 'daily' } : d.repeat.length ? { repeat: 'days', days: [...d.repeat].sort() } : {};
+  if (d.remind && d.time) meta.remind = true;
+  if (d.shared) meta.room = true;
+  return { item, meta };
+}
+
+/* Adds drafts the way the person kept them; returns where they went. */
+export function useAddDrafts() {
+  const { add } = useStore();
+  const { patch } = useMeta();
+  return (drafts: Draft[]) => {
+    let today = 0, later = 0;
+    for (const d of drafts) {
+      const { item, meta } = toItem(d);
+      const id = add(item);
+      if (Object.keys(meta).length) patch(id, meta);
+      if (item.kind === 'task' && item.date === todayIso()) today++; else later++;
+    }
+    return { today, later };
+  };
 }
 
 const DAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];

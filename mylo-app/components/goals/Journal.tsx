@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import Icon from '../Icon';
+import { stampNav } from '../NavMotion';
+import { SlidePill, useSlidePill } from '../SlidePill';
 import ScreenHeader from '../ScreenHeader';
 import Sheet from '../Sheet';
 import { Confetti } from './Moments';
@@ -156,6 +158,7 @@ function Entries() {
   const [copied, setCopied] = useState(false);
   const empty = Object.keys(journal).length === 0;
   useEffect(() => { if (empty) router.replace('/journal/new'); }, [empty, router]);
+  const strip = useSlidePill<HTMLElement>(q.get('day'));
   if (empty) return <main className="screen on-desk" aria-busy="true" />;
 
   const today = todayIso();
@@ -178,11 +181,12 @@ function Entries() {
       <ScreenHeader title="Journal" fallback="/today" actions={
         <button type="button" className="back-btn" aria-label="More" onClick={() => setMenu(true)}><Icon name="goals/more" size={19} /></button>
       } />
-      <nav className="g-jstrip" aria-label="This week">
+      <nav ref={strip} className="g-jstrip slide-track" aria-label="This week">
+        <SlidePill />
         {weekOf(d).map((w, i) => {
           const k = iso(w); const x = journal[k];
           return (
-            <button key={k} type="button" className="g-jstrip-day" aria-pressed={k === day} disabled={k > today} onClick={() => router.replace(`/journal?day=${k}`)}>
+            <button key={k} type="button" className="g-jstrip-day" aria-pressed={k === day} disabled={k > today} onClick={() => { stampNav('none'); router.replace(`/journal?day=${k}`); }}>
               <span>{['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i]}</span>
               {x?.mood ? <img src={sticker(x.mood)} alt={x.mood} width={34} height={34} /> : <i className="g-jstrip-dot" />}
             </button>

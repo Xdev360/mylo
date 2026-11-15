@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 
 /* Which way a navigation goes, for the page transition in globals.css:
    opening something deeper slides it in from the right (push), going back
@@ -15,8 +16,35 @@ export function navDirection(from: string, to: string): 'push' | 'pop' | 'tab' {
   if (a === 0 && b === 0) return 'tab';
   return b > a ? 'push' : b < a ? 'pop' : 'tab';
 }
-export function stampNav(dir: 'push' | 'pop' | 'tab') {
+/* 'none' is a change inside the same screen (another day, another tab of a
+   segmented control): the page holds still and only what changed moves. */
+export function stampNav(dir: 'push' | 'pop' | 'tab' | 'none') {
   document.documentElement.dataset.nav = dir;
+}
+
+/* How deep into the app this tab is: every entry the app pushes carries its
+   index in history.state, replacing keeps it, and going back restores the
+   older entry's own index. A screen opened straight from a link or another
+   site sits at 0, so its back button goes to a sensible screen instead of
+   leaving the app. */
+const IDX = '__myloIdx';
+let patched = false;
+function patchHistory() {
+  if (patched || typeof window === 'undefined') return;
+  patched = true;
+  const idx = () => (history.state && typeof history.state[IDX] === 'number' ? history.state[IDX] as number : 0);
+  const push = history.pushState.bind(history), replace = history.replaceState.bind(history);
+  history.pushState = (state, unused, url) => push({ ...(state ?? {}), [IDX]: idx() + 1 }, unused, url);
+  history.replaceState = (state, unused, url) => replace({ ...(state ?? {}), [IDX]: idx() }, unused, url);
+}
+patchHistory();
+export function canGoBack() {
+  return typeof window !== 'undefined' && !!history.state && (history.state[IDX] ?? 0) > 0;
+}
+/* Back if there is somewhere in the app to go back to, otherwise to `fallback`. */
+export function backOr(router: { back: () => void; replace: (href: string) => void }, fallback: string) {
+  if (canGoBack()) goBack(router);
+  else { stampNav('pop'); router.replace(fallback); }
 }
 
 /* Going back with the app's own back buttons. The router's back is not a
@@ -47,12 +75,25 @@ export function goBack(router: { back: () => void }) {
 }
 
 export default function NavMotion() {
+  const path = usePathname();
+  // React drops the incoming page out of a transition it starts whenever it
+  // thinks the root wasn't touched (it sets html's view-transition-name to
+  // none, but only when nothing is set inline). Naming the root inline keeps
+  // the new page in, so a pushed screen slides in rather than appearing
+  // under the old one as it leaves.
+  useEffect(() => { document.documentElement.style.viewTransitionName = 'root'; }, []);
+  // Once a move has played, the next one starts from a quiet crossfade, so a
+  // navigation nobody stamped never replays the last one's direction.
+  useEffect(() => {
+    const t = setTimeout(() => stampNav('tab'), 450);
+    return () => clearTimeout(t);
+  }, [path]);
   useEffect(() => {
     function onClick(e: MouseEvent) {
       if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       const a = (e.target as Element | null)?.closest?.('a[href]') as HTMLAnchorElement | null;
       if (!a || a.target === '_blank' || a.origin !== location.origin) return;
-      stampNav(navDirection(location.pathname, a.pathname));
+      stampNav(a.pathname === location.pathname ? 'none' : navDirection(location.pathname, a.pathname));
     }
     // Back and forward from the browser or a swipe: treat as going back.
     const onPop = () => stampNav('pop');

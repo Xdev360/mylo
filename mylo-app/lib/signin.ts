@@ -24,27 +24,54 @@ export type Onboarding = {
   photo: string | null;
   nudges: 'on' | 'off' | null;
   done: boolean;
+  /** The step the person was last on, so coming back picks up there. */
+  at: Step | null;
 };
 export const ONBOARDING_KEY = 'mylo.onboarding.v1';
 /* The character's own name until the person picks one (O6, O7). */
 export const DEFAULT_MYLO_NAME = 'Momo';
 export const EMPTY_ONBOARDING: Onboarding = {
   want: [], time: null, who: null, birthday: null, vibe: 'playful', myloName: DEFAULT_MYLO_NAME,
-  minutes: null, nudge: true, nudgeTime: '07:30', goal: '', goalId: null, photo: null, nudges: null, done: false
+  minutes: null, nudge: true, nudgeTime: '07:30', goal: '', goalId: null, photo: null, nudges: null, done: false, at: null
 };
 
-/* The steps behind /onboarding/[step], in order. S1/S2 (/age) sit between
-   "who" and "vibe"; the progress bar counts the first eight. */
-export const STEPS = ['want', 'time', 'who', 'vibe', 'name', 'rhythm', 'goal', 'badge', 'save', 'photo', 'nudges', 'people', 'done'] as const;
+/* The steps behind /onboarding/[step], in order, one flow from O3 to O15
+   with the age check (S1/S2) between "who" and "vibe". The progress bar
+   counts the eight drawn with dashes. */
+export const STEPS = ['want', 'time', 'who', 'age', 'vibe', 'name', 'rhythm', 'goal', 'badge', 'save', 'photo', 'nudges', 'people', 'done'] as const;
 export type Step = typeof STEPS[number];
 export const PROGRESS_STEPS = 8;
 export const isStep = (s: string): s is Step => (STEPS as readonly string[]).includes(s);
-export const stepPath = (s: Step | 'age') => (s === 'age' ? '/age' : `/onboarding/${s}`);
-export function nextStep(s: Step): string {
-  if (s === 'who') return '/age';
-  if (s === 'done') return '/today';
-  return stepPath(STEPS[STEPS.indexOf(s) + 1]);
+export const stepPath = (s: Step) => `/onboarding/${s}`;
+export const stepIndex = (s: Step) => STEPS.indexOf(s);
+
+/* What the top row shows on each step, as the frames draw it: the dashes
+   (and which one is lit), Skip on the steps that can be passed over, and
+   no row at all on O15. */
+export type StepMeta = { progress?: number; skip?: boolean; noHeader?: boolean };
+export const STEP_META: Record<Step, StepMeta> = {
+  want: { progress: 1, skip: true }, time: { progress: 2, skip: true }, who: { progress: 3, skip: true },
+  age: {}, vibe: { progress: 4 }, name: { progress: 5 }, rhythm: { progress: 6 }, goal: { progress: 7, skip: true },
+  badge: { progress: 8 }, save: {}, photo: { skip: true }, nudges: {}, people: { skip: true }, done: { noHeader: true }
+};
+
+/* Where Continue (or Skip) leads. Skipping the goal also passes over the
+   badge that celebrates it; a person who already has an account never sees
+   "Save your Mylo". Null means the flow is over. */
+export function nextStep(s: Step, { signedIn = false, skipped = false } = {}): Step | null {
+  if (s === 'goal' && skipped) return signedIn ? 'photo' : 'save';
+  if (s === 'badge') return signedIn ? 'photo' : 'save';
+  if (s === 'done') return null;
+  return STEPS[stepIndex(s) + 1];
 }
+/* Where Back leads when there is no record of the way in (a fresh tab). */
+export function prevStep(s: Step, { signedIn = false } = {}): Step | null {
+  if (s === 'want') return null;
+  if (s === 'photo') return signedIn ? 'badge' : 'save';
+  return STEPS[stepIndex(s) - 1];
+}
+/* Every step after the age check waits for a birthday. */
+export const needsAge = (s: Step, ob: Onboarding) => stepIndex(s) > stepIndex('age') && !ob.birthday;
 
 /* ── Age check (S1, S2) ───────────────────────────────────────────────────── */
 export const AGE_KEY = 'mylo.signin.age.v1';

@@ -5,7 +5,10 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import Icon from '@/components/Icon';
 import { gate, type Feature } from '@/lib/apps';
-import { streak, useStore } from '@/lib/store';
+import { useStore } from '@/lib/store';
+import { useStreak } from '@/lib/goals';
+import { petName, useRewards } from '@/lib/rewards';
+import { keyLine } from '@/components/rewards/Hub';
 import { FlameUnlocked, FreezeSheet, LaterSheet, LockedSheet } from './Moments';
 
 /* LX1 · Apps (launch, with locks), 878:114201. The Apps tab's root. A tile
@@ -16,7 +19,7 @@ type Tile = { id: string; title: string; sub: string; open?: string; icon: strin
 const TILES: Tile[] = [
   { id: 'focus', title: 'Focus', sub: '25 min, room muted', icon: 'app-focus', href: '/focus' },
   { id: 'journal', title: 'Journal', sub: 'One line a night', icon: 'app-journal', href: '/journal' },
-  { id: 'chest', title: 'Sunday chest', sub: 'Opens at Kindle', icon: 'app-chest', href: '/chest' },
+  { id: 'chest', title: 'Sunday chest', sub: 'Opens at Kindle', icon: 'app-chest', href: '/chest', gate: 'chest' },
   { id: 'place', title: 'Mylo’s place', sub: 'Your room and looks', icon: 'app-place', href: '/house' },
   { id: 'games', title: 'Games', sub: 'Opens at Flame', open: 'Chess and Chance with your room', icon: 'app-games', href: '/games', gate: 'games', badge: 'flame' },
   { id: 'challenges', title: 'Challenges', sub: 'Opens at Flame', open: 'Dare a friend, or run one together', icon: 'app-challenges', href: '/challenges', gate: 'challenges', badge: 'flame' },
@@ -34,10 +37,18 @@ export default function AppsHub() {
   const router = useRouter();
   const params = useSearchParams();
   const moment = params.get('moment');
-  const { items, ready } = useStore();
+  const { ready } = useStore();
+  const streakNow = useStreak();
   const [locked, setLocked] = useState<Feature | null>(null);
   const [later, setLater] = useState(false);
   const clearMoment = () => router.replace('/apps', { scroll: false });
+  // Open tiles say where things stand, from the same numbers the rewards screens use.
+  const rw = useRewards();
+  const buddy = rw.state.pets.find(p => p.id === rw.state.out) ?? rw.state.pets[0];
+  const live: Record<string, string> = rw.ready ? {
+    chest: rw.canOpen ? 'Open chest' : keyLine(rw.week.toKey),
+    pets: buddy ? petName(buddy) : 'Hatch an egg'
+  } : {};
 
   return (
     <main className="screen on-desk ax-hub">
@@ -64,7 +75,7 @@ export default function AppsHub() {
               {state !== 'open' && t.badge && <img className="ax-tile-badge" src={`/figma/apps/badge-${t.badge}.svg`} alt="" width={30} height={30} />}
               <span className="ax-tile-text">
                 <span className="ax-tile-title">{t.title}</span>
-                <span className="ax-tile-sub">{state === 'open' && t.open ? t.open : t.sub}</span>
+                <span className="ax-tile-sub">{state === 'open' ? live[t.id] ?? t.open ?? t.sub : t.sub}</span>
               </span>
               {state !== 'open' && <img className="ax-tile-lock" src="/figma/apps/i-lock-18.svg" alt="" width={18} height={18} />}
             </>
@@ -91,7 +102,7 @@ export default function AppsHub() {
 
       <LockedSheet feature={locked} onClose={() => setLocked(null)} />
       <LaterSheet open={later || moment === 'later'} onClose={() => { setLater(false); if (moment) clearMoment(); }} />
-      <FreezeSheet open={moment === 'freeze'} onClose={clearMoment} streak={ready ? streak(items) : 0} />
+      <FreezeSheet open={moment === 'freeze'} onClose={clearMoment} streak={ready ? streakNow : 0} />
       <FlameUnlocked open={moment === 'flame'} onClose={clearMoment} />
     </main>
   );

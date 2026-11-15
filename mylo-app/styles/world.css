@@ -580,3 +580,44 @@ a.w-shelf-item:active{ scale:.96; }
 .w-collection .w-shelf-item{ border-radius:14px; }
 /* WebKit does not stretch a button's flex children; size them to the card. */
 .w-room-art, .w-room-label, .w-style-art, .w-style-label, .w-card-art, .w-card-label, .w-theme-art, .w-theme-label, .w-bg-thumb{ width:100%; }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Motion. Customising shows on the figure as it happens: the colour blends,
+   a new face fades in, a piece put on drops into place, and the figure gives
+   a small squash (components/apps/motion.ts bump). Tabs pass their ink in
+   the direction you went and the panel slides the same way.
+   ────────────────────────────────────────────────────────────────────────── */
+.mylo-tint{ transition:fill .45s ease; }
+.w-stage-mylo .mylo-face, .w-hero-mylo .mylo-face{ animation:w-face-in .28s ease-out both; transform-origin:50% 42%; }
+.w-stage-mylo .mylo-wear, .w-hero-mylo .mylo-wear{ animation:w-wear-in .45s cubic-bezier(.34,1.56,.64,1) both; }
+.w-stage-mylo .mylo-style, .w-hero-mylo .mylo-style{ animation:w-face-in .35s ease-out both; }
+@keyframes w-face-in{ from{ opacity:.15; scale:.92; } }
+@keyframes w-wear-in{ from{ opacity:0; translate:0 -14%; } }
+.w-pane{ display:flex; flex-direction:column; gap:14px; }
+@keyframes w-slide-r{ from{ opacity:0; translate:28px 0; } }
+@keyframes w-slide-l{ from{ opacity:0; translate:-28px 0; } }
+.w-slide-r{ animation:w-slide-r .32s cubic-bezier(.22,1,.36,1) both; }
+.w-slide-l{ animation:w-slide-l .32s cubic-bezier(.22,1,.36,1) both; }
+.w-chips[data-dir] .w-tab{
+  background-image:linear-gradient(var(--primary), var(--primary)); background-repeat:no-repeat; background-size:0% 100%;
+  transition:background-size .32s cubic-bezier(.22,1,.36,1), color .2s ease, border-color .2s ease, scale .2s cubic-bezier(.34,1.56,.64,1);
+}
+.w-chips[data-dir] .w-tab.is-on{ background-color:var(--surface); background-size:100% 100%; }
+.w-chips[data-dir="r"] .w-tab{ background-position:right center; } .w-chips[data-dir="r"] .w-tab.is-on{ background-position:left center; }
+.w-chips[data-dir="l"] .w-tab{ background-position:left center; } .w-chips[data-dir="l"] .w-tab.is-on{ background-position:right center; }
+:root:root[data-nav="moment"]::view-transition-old(root){ animation:w-vt-out .22s ease both; }
+:root:root[data-nav="moment"]::view-transition-new(root){ animation:w-vt-in .42s cubic-bezier(.22,1,.36,1) both; }
+@keyframes w-vt-out{ to{ opacity:0; } }
+@keyframes w-vt-in{ from{ opacity:0; scale:1.015; } }
+@media (prefers-reduced-motion: reduce){
+  .mylo-tint, .w-chips[data-dir] .w-tab{ transition:none; }
+  .mylo-face, .mylo-wear, .mylo-style, .w-slide-r, .w-slide-l{ animation:none !important; }
+}
+/* EG1 to EG2: the egg settles into the ring, which fills to the days so far. */
+::view-transition-group(w-egg){ animation-duration:.5s; animation-timing-function:cubic-bezier(.34,1.3,.64,1); }
+.w-ring-fill{ animation:w-ring-in 1s cubic-bezier(.22,1,.36,1) .25s both; }
+@keyframes w-ring-in{ from{ stroke-dasharray:0 var(--ring-c, 820); } }
+.w-ring-egg{ animation:w-wobble 3.2s ease-in-out infinite; transform-origin:50% 90%; }
+@media (prefers-reduced-motion: reduce){ .w-ring-fill, .w-ring-egg{ animation:none; } }
+.w-coll-pane{ gap:inherit; }
+.w-shelf-item.is-empty{ display:grid; place-items:center; color:var(--text-3); border:1.5px dashed var(--line); background:none; }

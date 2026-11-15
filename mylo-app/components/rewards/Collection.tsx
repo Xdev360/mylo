@@ -6,6 +6,7 @@ import { useState } from 'react';
 import Icon from '@/components/Icon';
 import RwCard, { LockedTile } from './Card';
 import { BackBtn } from './bits';
+import { useSlideDir } from '@/components/apps/ui';
 import { CARDS, EGGS, RARITIES, RARITY, SHARDS_FOR_CARD, eggArt, petArt, petName, useRewards, type Rarity } from '@/lib/rewards';
 
 /* U2 · Collection (877:124425): Cards, Pets, Eggs, filtered by rarity, every
@@ -24,6 +25,7 @@ export default function Collection({ pick = false }: { pick?: boolean }) {
   const [tab, setTab] = useState<Tab>('cards');
   const [filter, setFilter] = useState<Rarity | 'all'>('all');
   const [chosen, setChosen] = useState<string | null>(null);
+  const slide = useSlideDir(['cards', 'pets', 'eggs'] as const, tab, 'rw');
   if (!r.ready) return <main className="screen" aria-busy="true" />;
   const { state } = r;
   const has = (id: string) => (state.cards[id] ?? 0) > 0;
@@ -40,7 +42,7 @@ export default function Collection({ pick = false }: { pick?: boolean }) {
         {pick ? <span className="rw-shards">{Math.min(state.shards, SHARDS_FOR_CARD)} of {SHARDS_FOR_CARD} shards{ready ? ' ready' : ''}</span> : <span className="rw-top-gap" />}
       </header>
 
-      <div className="rw-chips" role="tablist" aria-label="Collection">
+      <div className="rw-chips" role="tablist" aria-label="Collection" data-dir={slide.endsWith('-l') ? 'l' : 'r'}>
         {(['cards', 'pets', 'eggs'] as Tab[]).map(t => (
           <button key={t} type="button" role="tab" aria-selected={tab === t} className={`rw-chip is-tab${tab === t ? ' is-on' : ''}`} onClick={() => setTab(t)}>
             {t === 'cards' ? 'Cards' : t === 'pets' ? 'Pets' : 'Eggs'}
@@ -48,6 +50,7 @@ export default function Collection({ pick = false }: { pick?: boolean }) {
         ))}
       </div>
 
+      <div key={tab} className={`rw-pane ${slide}`} role="tabpanel">
       {tab === 'cards' && <>
         <div className="rw-chips rw-chips-r" aria-label="Rarity">
           {(['all', ...RARITIES] as const).map(f => (
@@ -56,7 +59,7 @@ export default function Collection({ pick = false }: { pick?: boolean }) {
             </button>
           ))}
         </div>
-        <div className="rw-grid">
+        <div className="rw-grid" key={filter}>
           {shown.map(c => {
             if (pick && pickable(c.rarity)) return (
               <button key={c.id} type="button" className={`rw-grid-cell rw-pickable${chosen === c.id ? ' is-chosen' : ''}`} aria-pressed={chosen === c.id} onClick={() => setChosen(c.id)}>
@@ -79,7 +82,7 @@ export default function Collection({ pick = false }: { pick?: boolean }) {
             </Link>
           ))}
           {state.pets.length === 0 && (
-            <Link href="/rewards/nest" className="rw-tile rw-slot is-empty">
+            <Link href="/eggs" className="rw-tile rw-slot is-empty">
               <span className="rw-slot-plus"><Icon name="rewards/i-plus" size={20} /></span>
               <span className="rw-slot-hint">Hatch an egg</span>
             </Link>
@@ -96,13 +99,15 @@ export default function Collection({ pick = false }: { pick?: boolean }) {
             </Link>
           ))}
           {!state.nest && state.eggs.length === 0 && (
-            <Link href="/rewards/nest" className="rw-tile rw-slot is-empty">
+            <Link href={state.firstEgg ? '/rewards/nest' : '/eggs'} className="rw-tile rw-slot is-empty">
               <span className="rw-slot-plus"><Icon name="rewards/i-egg" size={20} /></span>
               <span className="rw-slot-hint">Your nest</span>
             </Link>
           )}
         </div>
       )}
+
+      </div>
 
       {pick && (
         <div className="rw-foot">

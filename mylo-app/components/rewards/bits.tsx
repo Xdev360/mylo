@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Icon from '@/components/Icon';
 import { badgeArt, chestArt, levelArt, type Tier } from '@/lib/rewards';
-import { goBack } from '@/components/NavMotion';
+import { canGoBack, goBack } from '@/components/NavMotion';
 
 /* Small pieces shared by the rewards screens. */
 
@@ -14,7 +14,7 @@ export function BackBtn({ fallback = '/rewards', light = false }: { fallback?: s
   const router = useRouter();
   return (
     <button type="button" className={`back-btn${light ? ' rw-on-dark' : ''}`} aria-label="Back"
-            onClick={() => (window.history.length > 1 ? goBack(router) : router.push(fallback))}>
+            onClick={() => (canGoBack() ? goBack(router) : router.push(fallback))}>
       <Icon name="chevron-right" size={20} className="flip" />
     </button>
   );
@@ -76,7 +76,7 @@ export function Confetti({ thin = false }: { thin?: boolean }) {
     <span className={`rw-confetti${thin ? ' is-thin' : ''}`} aria-hidden>
       {BITS.map(([x, y, w, h, c, r], i) => (
         <span key={i} style={{ left: `${x}%`, top: `${y}%`, width: thin ? Math.max(5, w * 0.45) : w * 0.7, height: thin ? Math.max(10, h * 0.9) : h * 0.7,
-          background: c, rotate: `${r}deg`, animationDelay: `${(i % 7) * 60}ms` }} />
+          background: c, rotate: `${r}deg`, '--d': `${(i % 7) * 60}ms` } as React.CSSProperties} />
       ))}
     </span>
   );

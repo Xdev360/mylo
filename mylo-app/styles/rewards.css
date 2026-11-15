@@ -179,8 +179,8 @@ a.rw-tile:active,button.rw-tile:active{ scale:.97; }
 .rw-locked-text{ font-size:10px; line-height:12px; color:#6B6B73; }
 
 /* ── U2 / XT6 · collection ─────────────────────────────────────────────── */
-.rw-coll > .rw-chips-r{ margin-top:-5px; }
-.rw-coll > .rw-grid{ margin-top:-3px; }
+.rw-coll .rw-pane > .rw-chips-r{ margin-top:-5px; }
+.rw-coll .rw-pane > .rw-grid{ margin-top:-3px; }
 .rw-chips{ display:flex; gap:8px; overflow-x:auto; scrollbar-width:none; margin:0 -20px; padding:0 20px; }
 .rw-chips-r{ margin-top:-6px; }
 .rw-chip{ flex:none; height:33px; padding:0 12px; border-radius:99px; background:var(--surface); color:var(--ink); font-size:14px; font-weight:600;
@@ -493,3 +493,102 @@ button.rw-bcell:active{ scale:.95; }
 .rw-dl-go{ flex:1; height:52px; font-size:16px; }
 .rw-dl-share{ display:grid; place-items:center; width:84px; height:52px; border-radius:99px; background:var(--surface); }
 .rw-dl-share:disabled{ opacity:.5; }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Moments. Opening the chest, a card turning over, an egg hatching and a
+   level up each play as one sequence instead of a page swap.
+   ────────────────────────────────────────────────────────────────────────── */
+:root:root[data-nav="moment"]::view-transition-old(root){ animation:rw-vt-out .2s ease both; }
+:root:root[data-nav="moment"]::view-transition-new(root){ animation:rw-vt-in .4s cubic-bezier(.22,1,.36,1) both; }
+@keyframes rw-vt-out{ to{ opacity:0; } }
+@keyframes rw-vt-in{ from{ opacity:0; } }
+@keyframes rw-rise{ from{ opacity:0; translate:0 16px; } }
+@keyframes rw-drop{ from{ opacity:0; translate:0 -18px; scale:1.1; } }
+
+/* The chest: three rattles, each harder, while the glow builds; then it
+   swells into a flash the result comes out of. */
+.rw-stage.is-opening .rw-stage-chest{ animation:rw-rattle 1.25s cubic-bezier(.36,.07,.19,.97) both; }
+.rw-stage.is-opening .rw-stage-glow{ transition:scale 1.25s cubic-bezier(.5,0,.75,0), opacity .6s ease; scale:1.9; opacity:1; }
+.rw-stage.is-opening .rw-sparkles > span{ animation-duration:.6s; }
+.rw-stage.is-burst .rw-stage-chest{ animation:rw-swell .32s cubic-bezier(.5,0,.75,0) both; }
+@keyframes rw-rattle{
+  0%{ rotate:0deg; } 8%{ rotate:-3deg; } 16%{ rotate:3deg; } 24%{ rotate:0deg; }
+  36%{ rotate:-6deg; translate:0 -4px; } 44%{ rotate:6deg; } 52%{ rotate:0deg; translate:0 0; }
+  64%{ rotate:-9deg; translate:0 -10px; } 70%{ rotate:9deg; } 76%{ rotate:-7deg; } 82%{ rotate:7deg; } 90%{ rotate:-3deg; translate:0 -4px; } 100%{ rotate:0deg; translate:0 0; }
+}
+@keyframes rw-swell{ to{ scale:1.35; filter:brightness(1.8); } }
+.rw-flash{ position:fixed; inset:0; z-index:80; pointer-events:none; background:radial-gradient(circle at 50% 45%, #FFF8E1, #FFE7A8 40%, rgba(255,231,168,0) 75%); opacity:0; }
+.rw-flash.is-burst{ animation:rw-flash-in .32s ease-in both; }
+.rw-flash.is-out{ animation:rw-flash-out .7s ease-out both; }
+@keyframes rw-flash-in{ to{ opacity:1; } }
+@keyframes rw-flash-out{ from{ opacity:1; } to{ opacity:0; } }
+
+/* The result rises out of the flash: the card turns, the ring opens, then the words. */
+.rw-reveal.is-arriving .rw-reveal-card{ animation-delay:.15s; animation-duration:.8s; }
+.rw-reveal.is-arriving .rw-reveal-ring{ animation:rw-ring .9s cubic-bezier(.22,1,.36,1) .1s both; }
+.rw-reveal.is-arriving .rw-reveal-glow{ animation:rw-glow 1.2s ease-out both; }
+.rw-reveal.is-arriving .rw-reveal-title{ animation:rw-drop .5s cubic-bezier(.34,1.56,.64,1) .55s both; }
+.rw-reveal.is-arriving .rw-chip-float{ animation:rw-chip .5s cubic-bezier(.34,1.56,.64,1) .85s both; }
+.rw-reveal.is-arriving .rw-reveal-line{ animation:rw-rise .45s cubic-bezier(.22,1,.36,1) .9s both; }
+.rw-reveal.is-arriving .rw-reveal-col > button{ animation:rw-rise .45s cubic-bezier(.22,1,.36,1) 1s both; }
+.rw-reveal.is-arriving .rw-reveal-col > button + button{ animation-delay:1.08s; }
+.rw-reveal.is-arriving .rw-confetti > span{ animation-delay:calc(.35s + var(--d, 0ms)); }
+@keyframes rw-ring{ from{ scale:.3; opacity:0; } }
+@keyframes rw-glow{ 0%{ scale:.4; opacity:0; } 50%{ opacity:1; } }
+@keyframes rw-chip{ from{ opacity:0; scale:.6; } }
+
+/* The egg: it shakes harder and harder, a flash, and the buddy pops out. */
+.rw-nest.is-cracking .rw-nest-egg{ animation:rw-crack 1.5s cubic-bezier(.36,.07,.19,.97) both; }
+.rw-nest.is-cracking .rw-nest-glow{ transition:scale 1.5s cubic-bezier(.5,0,.75,0), opacity .6s ease; scale:1.6; background:rgba(255,226,140,.55); }
+@keyframes rw-crack{
+  0%{ rotate:0deg; } 10%{ rotate:-4deg; } 20%{ rotate:4deg; } 30%{ rotate:0deg; }
+  45%{ rotate:-8deg; } 52%{ rotate:8deg; } 60%{ rotate:0deg; }
+  70%{ rotate:-12deg; } 75%{ rotate:12deg; } 80%{ rotate:-10deg; } 85%{ rotate:10deg; } 92%{ rotate:-4deg; scale:1.06; } 100%{ rotate:0deg; scale:1.15; filter:brightness(1.6); }
+}
+.rw-night.is-born .rw-nest-pet{ animation:rw-born .8s cubic-bezier(.34,1.56,.64,1) .15s both; }
+.rw-night.is-born .rw-nest-glow{ animation:rw-glow 1.2s ease-out both; }
+.rw-night.is-born .rw-hatched, .rw-night.is-born .rw-night-sub{ animation:rw-drop .5s cubic-bezier(.34,1.56,.64,1) .5s both; }
+.rw-night.is-born .rw-nest-title, .rw-night.is-born .rw-nest-days{ animation:rw-rise .45s cubic-bezier(.22,1,.36,1) .75s both; }
+@keyframes rw-born{ 0%{ scale:.2; translate:-50% 60px; opacity:0; } 60%{ opacity:1; } 100%{ scale:1; translate:-50% 0; } }
+.rw-nest-egg.is-in{ animation:rw-settle .55s cubic-bezier(.34,1.56,.64,1) both, rw-wobble 3.2s ease-in-out .6s infinite; }
+@keyframes rw-settle{ from{ translate:-42% -40px; scale:.7; opacity:0; } }
+.rw-nest-bar > span{ transition:width .8s cubic-bezier(.22,1,.36,1); animation:rw-bar 1s cubic-bezier(.22,1,.36,1) .2s both; }
+@keyframes rw-bar{ from{ width:0; } }
+
+/* Level up: the badge lands, the rays open, the words and the track follow. */
+.rw-levelup{ animation:rw-vt-in .3s ease both; }
+.rw-levelup-art .rw-hex{ animation:rw-born-c .8s cubic-bezier(.34,1.56,.64,1) .1s both; }
+.rw-levelup-art .rw-rays{ animation:rw-ring .9s cubic-bezier(.22,1,.36,1) both, rw-spin 30s linear infinite; }
+.rw-levelup-col > .rw-level-name{ animation:rw-drop .5s cubic-bezier(.34,1.56,.64,1) .5s both; }
+.rw-levelup-col > :is(p, .rw-lu-track, .btn-primary, .rw-lu-perk, .rw-link){ animation:rw-rise .45s cubic-bezier(.22,1,.36,1) .65s both; }
+.rw-levelup-col > .btn-primary{ animation-delay:.8s; }
+.rw-levelup-col > .rw-lu-perk, .rw-levelup-col > .rw-link{ animation-delay:.9s; }
+.rw-lu-track .rw-track > span{ animation:rw-bar 1s cubic-bezier(.22,1,.36,1) .9s both; }
+@keyframes rw-born-c{ 0%{ scale:.2; opacity:0; rotate:-20deg; } 100%{ scale:1; opacity:1; rotate:0deg; } }
+
+/* Tabs and filters: the panel slides the way you went. */
+@keyframes rw-slide-r{ from{ opacity:0; translate:28px 0; } }
+@keyframes rw-slide-l{ from{ opacity:0; translate:-28px 0; } }
+.rw-slide-r{ animation:rw-slide-r .32s cubic-bezier(.22,1,.36,1) both; }
+.rw-slide-l{ animation:rw-slide-l .32s cubic-bezier(.22,1,.36,1) both; }
+.rw-chips[data-dir] .rw-chip.is-tab{
+  background-image:linear-gradient(var(--primary), var(--primary)); background-repeat:no-repeat; background-size:0% 100%;
+  transition:background-size .32s cubic-bezier(.22,1,.36,1), color .2s ease, scale .2s cubic-bezier(.34,1.56,.64,1);
+}
+.rw-chips[data-dir] .rw-chip.is-tab.is-on{ background-color:var(--surface); background-size:100% 100%; }
+.rw-chips[data-dir="r"] .rw-chip.is-tab{ background-position:right center; } .rw-chips[data-dir="r"] .rw-chip.is-tab.is-on{ background-position:left center; }
+.rw-chips[data-dir="l"] .rw-chip.is-tab{ background-position:left center; } .rw-chips[data-dir="l"] .rw-chip.is-tab.is-on{ background-position:right center; }
+.rw-grid-cell{ animation:rw-rise .35s cubic-bezier(.22,1,.36,1) both; animation-delay:calc(var(--n, 0) * 30ms); }
+
+@media (prefers-reduced-motion: reduce){
+  .rw-stage.is-opening .rw-stage-chest, .rw-reveal *, .rw-night *, .rw-levelup, .rw-levelup *, .rw-flash, .rw-slide-r, .rw-slide-l, .rw-grid-cell{ animation:none !important; }
+  .rw-flash{ display:none; }
+}
+.rw-confetti > span{ animation-delay:var(--d, 0ms); }
+.rw-pane{ display:flex; flex-direction:column; gap:inherit; }
+/* L4: the sheet rises, the badge lands on it, then the words and buttons. */
+.rw-modal-scrim{ animation:rw-vt-in .3s ease both; }
+.rw-modal-sheet > .rw-hex{ animation:rw-born-c .7s cubic-bezier(.34,1.56,.64,1) .25s both; }
+.rw-modal-sheet > :is(.rw-new, .rw-modal-title, p){ animation:rw-rise .4s cubic-bezier(.22,1,.36,1) .5s both; }
+.rw-modal-sheet > :is(button, a){ animation:rw-rise .4s cubic-bezier(.22,1,.36,1) .62s both; }
+@media (prefers-reduced-motion: reduce){ .rw-modal *{ animation:none !important; } }

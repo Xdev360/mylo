@@ -6,8 +6,8 @@ import Icon from '@/components/Icon';
 import { useHydrated } from '@/lib/local';
 import { BADGE_COLOURS, badgeHex, useProfile, type BadgeColour as Colour } from '@/lib/profile';
 import { useStore } from '@/lib/store';
+import { flash, leave } from '@/lib/system';
 import { Avatar, Seal } from './bits';
-import { goBack } from '@/components/NavMotion';
 
 /* P28 · Badge colour (932:130089): your seal, how it looks next to your name
    in a chat, and the colours to pick from. */
@@ -21,7 +21,7 @@ export default function BadgeColour() {
   const colour = pick ?? p.badge;
   const hex = badgeHex(colour);
   const line = [...items].reverse().find(i => i.kind === 'task')?.title ?? p.bio;
-  const back = () => (window.history.length > 1 ? goBack(router) : router.push('/profile'));
+  const back = () => leave(router, '/profile');
 
   return (
     <main className="screen on-desk pf-badge-screen">
@@ -53,7 +53,7 @@ export default function BadgeColour() {
           </button>
         ))}
       </div>
-      <button type="button" className="btn-primary pf-wide pf-badge-save" onClick={() => { save({ badge: colour }); back(); }}>Save badge</button>
+      <button type="button" className="btn-primary pf-wide pf-badge-save" onClick={() => { if (colour !== p.badge) { save({ badge: colour }); flash('Badge saved'); } back(); }}>Save badge</button>
     </main>
   );
 }

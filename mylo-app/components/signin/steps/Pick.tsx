@@ -1,9 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import Icon from '@/components/Icon';
-import { nextStep, type Onboarding } from '@/lib/signin';
-import type { StepProps } from '../OnboardingStep';
-import { Art, Cta, Foot, OnboardHeader, Screen } from '../ui';
+import type { Onboarding } from '@/lib/signin';
+import { useFoot, type StepProps } from '../OnboardingFlow';
+import { Art } from '../ui';
 
 /* ── O3 What you want (877:107732) ─────────────────────────────────────── */
 const WANTS = [
@@ -16,18 +17,26 @@ const WANTS = [
 ];
 const MAX_WANTS = 3;
 
-export function Want({ ob, update, go }: StepProps) {
+export function Want({ ob, update, next }: StepProps) {
   const picked = ob.want;
+  const [touched, setTouched] = useState(false);
+  const [full, setFull] = useState(0);
   const flip = (id: string) => {
-    if (picked.includes(id)) update({ want: picked.filter(w => w !== id) });
+    setTouched(true);
+    if (picked.includes(id)) { setFull(0); update({ want: picked.filter(w => w !== id) }); }
     else if (picked.length < MAX_WANTS) update({ want: [...picked, id] });
+    else setFull(n => n + 1); // a fourth tap: the line below says why nothing happened
   };
+  useFoot({
+    label: 'Continue', disabled: !picked.length, onClick: () => next(),
+    note: picked.length >= MAX_WANTS && full ? 'Three is the most. Tap one to swap it' : `${picked.length} picked. Change these anytime`,
+    noteHidden: !picked.length
+  });
   return (
-    <Screen>
-      <OnboardHeader progress={1} skip={nextStep('want')} fallback="/welcome" />
+    <>
       <h1 className="si-title si-title-top">What do you want more of?</h1>
       <p className="t-body c-2 si-sub">Pick up to three</p>
-      <div className="si-wants" role="group" aria-label="Pick up to three">
+      <div className="si-wants" role="group" aria-label="Pick up to three" data-touched={touched || undefined}>
         {WANTS.map(w => {
           const on = picked.includes(w.id);
           const full = !on && picked.length >= MAX_WANTS;
@@ -43,10 +52,7 @@ export function Want({ ob, update, go }: StepProps) {
           );
         })}
       </div>
-      <Foot note={<span className={picked.length ? '' : 'si-hide'}>{picked.length} picked. Change these anytime</span>}>
-        <Cta disabled={!picked.length} onClick={() => go(nextStep('want'))}>Continue</Cta>
-      </Foot>
-    </Screen>
+    </>
   );
 }
 
@@ -57,16 +63,19 @@ const TIMES: { id: NonNullable<Onboarding['time']>; title: string; sub: string; 
   { id: 'night', title: 'Night owl', sub: 'After 8 PM', icon: 'signin/i-moon', tone: 'var(--tint-blue)', ink: 'var(--blue)' }
 ];
 
-export function Time({ ob, update, go }: StepProps) {
+export function Time({ ob, update, next }: StepProps) {
+  const [touched, setTouched] = useState(false);
+  useFoot({ label: 'Continue', disabled: !ob.time, onClick: () => next() });
   return (
-    <Screen>
-      <OnboardHeader progress={2} skip={nextStep('time')} />
+    <>
       <h1 className="si-title si-title-top">When do you get things done?</h1>
-      <div className="si-times" role="radiogroup" aria-label="When do you get things done?">
+      <div className="si-times" role="radiogroup" aria-label="When do you get things done?" data-touched={touched || undefined}
+           onKeyDown={e => radioKeys(e, TIMES.map(t => t.id), ob.time, id => { setTouched(true); update({ time: id }); })}>
         {TIMES.map(t => {
           const on = ob.time === t.id;
           return (
-            <button key={t.id} type="button" role="radio" aria-checked={on} className={`si-time${on ? ' is-on' : ''}`} onClick={() => update({ time: t.id })}>
+            <button key={t.id} type="button" role="radio" aria-checked={on} tabIndex={on || (!ob.time && t === TIMES[0]) ? 0 : -1}
+                    className={`si-time${on ? ' is-on' : ''}`} onClick={() => { setTouched(true); update({ time: t.id }); }}>
               <span className="si-time-icon" style={{ background: t.tone, color: t.ink }}><Icon name={t.icon} size={28} /></span>
               <span className="si-time-text"><span className="t-title-s">{t.title}</span><span className="t-body-s c-2">{t.sub}</span></span>
             </button>
@@ -77,10 +86,7 @@ export function Time({ ob, update, go }: StepProps) {
         <Art name="mylo-wink" w={36} h={43} />
         <span className="t-body-s c-2">Mylo plans your hard stuff for this window.</span>
       </p>
-      <Foot>
-        <Cta disabled={!ob.time} onClick={() => go(nextStep('time'))}>Continue</Cta>
-      </Foot>
-    </Screen>
+    </>
   );
 }
 
@@ -110,16 +116,19 @@ function WhoArt({ id }: { id: NonNullable<Onboarding['who']> }) {
   return <span className="si-who-art"><Art name="mylo-happy" w={84} h={101} className="si-who-solo" /></span>;
 }
 
-export function Who({ ob, update, go }: StepProps) {
+export function Who({ ob, update, next }: StepProps) {
+  const [touched, setTouched] = useState(false);
+  useFoot({ label: 'Continue', disabled: !ob.who, onClick: () => next() });
   return (
-    <Screen>
-      <OnboardHeader progress={3} skip={nextStep('who')} />
+    <>
       <h1 className="si-title si-title-top">Who keeps you honest?</h1>
-      <div className="si-who" role="radiogroup" aria-label="Who keeps you honest?">
+      <div className="si-who" role="radiogroup" aria-label="Who keeps you honest?" data-touched={touched || undefined}
+           onKeyDown={e => radioKeys(e, WHO.map(w => w.id), ob.who, id => { setTouched(true); update({ who: id }); })}>
         {WHO.map(w => {
           const on = ob.who === w.id;
           return (
-            <button key={w.id} type="button" role="radio" aria-checked={on} className={`si-who-card${on ? ' is-on' : ''}`} onClick={() => update({ who: w.id })}>
+            <button key={w.id} type="button" role="radio" aria-checked={on} tabIndex={on || (!ob.who && w === WHO[0]) ? 0 : -1}
+                    className={`si-who-card${on ? ' is-on' : ''}`} onClick={() => { setTouched(true); update({ who: w.id }); }}>
               <WhoArt id={w.id} />
               <span className="t-title-s">{w.title}</span>
               <span className="t-caption c-2">{w.sub}</span>
@@ -127,9 +136,17 @@ export function Who({ ob, update, go }: StepProps) {
           );
         })}
       </div>
-      <Foot>
-        <Cta disabled={!ob.who} onClick={() => go(nextStep('who'))}>Continue</Cta>
-      </Foot>
-    </Screen>
+    </>
   );
+}
+
+/* Arrow keys move the pick round a radio group, and focus with it. */
+function radioKeys<T extends string>(e: React.KeyboardEvent<HTMLElement>, ids: T[], cur: T | null, pick: (id: T) => void) {
+  const step = e.key === 'ArrowDown' || e.key === 'ArrowRight' ? 1 : e.key === 'ArrowUp' || e.key === 'ArrowLeft' ? -1 : 0;
+  if (!step) return;
+  e.preventDefault();
+  const at = cur ? ids.indexOf(cur) : step > 0 ? -1 : 0;
+  const i = (at + step + ids.length) % ids.length;
+  pick(ids[i]);
+  (e.currentTarget.querySelectorAll<HTMLElement>('[role="radio"]')[i])?.focus();
 }

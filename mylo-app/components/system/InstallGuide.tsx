@@ -5,8 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import Icon from '@/components/Icon';
 import ScreenHeader from '@/components/ScreenHeader';
-import { captureInstall, detectPlatform, isStandalone, useInstallPrompt, type Platform } from '@/lib/system';
-import { goBack } from '@/components/NavMotion';
+import { captureInstall, detectPlatform, go, isStandalone, leave, useInstallPrompt, type Platform } from '@/lib/system';
 
 /* InstallGuide, S10 (iPhone, Safari) and S11 (Android and desktop, Chrome):
    how to put Mylo on the home screen. Where the browser offers its own
@@ -45,11 +44,16 @@ export default function InstallGuide({ platform }: { platform?: Platform }) {
   const [outcome, setOutcome] = useState<string | null>(null);
   useEffect(() => { captureInstall(); }, []);
 
-  const leave = () => (window.history.length > 1 ? goBack(router) : router.push('/today'));
+  const [busy, setBusy] = useState(false);
+  const back = () => leave(router, '/settings');
   const install = async () => {
-    const r = await prompt();
-    setOutcome(r);
-    if (r === 'accepted') router.push('/today');
+    if (busy) return;
+    setBusy(true);
+    try {
+      const r = await prompt();
+      setOutcome(r);
+      if (r === 'accepted') go(router, '/today', 'tab', true);
+    } finally { setBusy(false); }
   };
   const done = installed || standalone || outcome === 'accepted';
 
@@ -82,8 +86,8 @@ export default function InstallGuide({ platform }: { platform?: Platform }) {
       </div>
       <div className="sys-actions">
         {canPrompt && !done
-          ? <button type="button" className="sys-btn" onClick={install}>Install app</button>
-          : <button type="button" className="sys-btn" onClick={leave}>Got it</button>}
+          ? <button type="button" className="sys-btn" onClick={install} disabled={busy}>Install app</button>
+          : <button type="button" className="sys-btn" onClick={back}>Got it</button>}
       </div>
     </main>
   );

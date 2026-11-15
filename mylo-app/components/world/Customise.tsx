@@ -6,12 +6,12 @@ import { useRouter } from 'next/navigation';
 import Icon from '@/components/Icon';
 import Mylo from './Mylo';
 import { lookPicture, shareOrSave } from './compose';
+import { bump } from '@/components/apps/motion';
+import { useSlideDir } from '@/components/apps/ui';
 import { Switch, Toast, WorldHeader, WorldPage, useBack, wi } from './ui';
-import { useLocal } from '@/lib/local';
-import { useStore } from '@/lib/store';
+import { EGGS, eggArt, petArt, petName, useRewards } from '@/lib/rewards';
 import {
-  BACKDROPS, COLOURS, EXTRAS, FACES, HATCH_DAYS, KEYS, OUTFITS, RARITY, SCENES, STYLES,
-  activeDays, shuffleLook, useLook, type Egg, type Look, type Rarity
+  BACKDROPS, COLOURS, EXTRAS, FACES, OUTFITS, RARITY, SCENES, STYLES, shuffleLook, useLook, type Look, type Rarity
 } from '@/lib/world';
 
 type SetDraft = (f: (l: Look) => Look) => void;
@@ -113,11 +113,16 @@ function ScenePanel({ look, set }: { look: Look; set: SetDraft }) {
   );
 }
 
-function Tabs<T extends string>({ tabs, value, onChange, className = '' }: { tabs: { id: T; label: string }[]; value: T; onChange: (t: T) => void; className?: string }) {
+/* The ink passes from the old tab to the new one, in the direction you went,
+   and a tab cut off at the edge scrolls into view. */
+export function Tabs<T extends string>({ tabs, value, onChange, className = '', dir, label }: {
+  tabs: { id: T; label: string }[]; value: T; onChange: (t: T) => void; className?: string; dir?: string; label?: string;
+}) {
   return (
-    <div className={`w-chips ${className}`} role="tablist">
+    <div className={`w-chips ${className}`} role="tablist" aria-label={label} data-dir={dir?.endsWith('-l') ? 'l' : 'r'}>
       {tabs.map(t => (
-        <button key={t.id} type="button" role="tab" aria-selected={value === t.id} className={`w-tab${value === t.id ? ' is-on' : ''}`} onClick={() => onChange(t.id)}>{t.label}</button>
+        <button key={t.id} type="button" role="tab" aria-selected={value === t.id} className={`w-tab${value === t.id ? ' is-on' : ''}`}
+                onClick={e => { e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' }); onChange(t.id); }}>{t.label}</button>
       ))}
     </div>
   );
@@ -138,7 +143,10 @@ function MakeBody() {
   const [tab, setTab] = useState<MTab>('colour');
   const [naming, setNaming] = useState(false);
   const [toast, setToast] = useState(false);
-  const set: SetDraft = f => setDraft(f);
+  const stage = useRef<HTMLDivElement>(null);
+  const slide = useSlideDir(M_TABS.map(t => t.id), tab, 'w');
+  // Every change shows on the figure at once, with a little squash so it reads as a change.
+  const set: SetDraft = f => { setDraft(f); bump(stage.current?.querySelector('.w-stage-mylo')); };
   const scene = SCENES.find(s => s.id === draft.scene) ?? SCENES[0];
   const save = () => { setSaved({ ...draft, name: draft.name.trim() || 'Mylo' }); setToast(true); };
   const hideToast = useCallback(() => setToast(false), []);
@@ -146,7 +154,7 @@ function MakeBody() {
     <>
       <WorldHeader title="Make your Mylo" fallback="/apps"
                    actions={<button type="button" className="w-save" onClick={save}>Save</button>} />
-      <div className={`w-stage${scene.id === 'night' ? ' is-night' : ''}`} style={{ background: `linear-gradient(180deg, ${scene.from}, ${scene.to})` }}>
+      <div ref={stage} className={`w-stage${scene.id === 'night' ? ' is-night' : ''}`} style={{ background: `linear-gradient(180deg, ${scene.from}, ${scene.to})` }}>
         {naming ? (
           <input className="w-name w-name-input" autoFocus maxLength={16} value={draft.name} aria-label="Mylo’s name"
                  onChange={e => setDraft(l => ({ ...l, name: e.target.value }))}
@@ -156,16 +164,18 @@ function MakeBody() {
             {draft.name || 'Mylo'}<Icon name={wi('pencil')} size={16} className="c-2" />
           </button>
         )}
-        <button type="button" className="w-shuffle" aria-label="Shuffle" onClick={() => setDraft(l => shuffleLook(l))}><Icon name={wi('shuffle')} size={18} /></button>
+        <button type="button" className="w-shuffle" aria-label="Shuffle" onClick={() => set(l => shuffleLook(l))}><Icon name={wi('shuffle')} size={18} /></button>
         <span className="w-stage-floor" />
         <Mylo look={draft} className="w-stage-mylo" shadow={false} label={draft.name} />
       </div>
-      <Tabs tabs={M_TABS} value={tab} onChange={setTab} className="w-mtabs" />
-      {tab === 'colour' && <ColourPanel look={draft} set={set} />}
-      {tab === 'face' && <FacePanel look={draft} set={set} />}
-      {tab === 'outfit' && <WearPanel look={draft} set={set} kind="outfit" />}
-      {tab === 'extras' && <WearPanel look={draft} set={set} kind="extras" />}
-      {tab === 'scene' && <ScenePanel look={draft} set={set} />}
+      <Tabs tabs={M_TABS} value={tab} onChange={setTab} className="w-mtabs" dir={slide} label="Make your Mylo" />
+      <div key={tab} className={`w-pane ${slide}`} role="tabpanel">
+        {tab === 'colour' && <ColourPanel look={draft} set={set} />}
+        {tab === 'face' && <FacePanel look={draft} set={set} />}
+        {tab === 'outfit' && <WearPanel look={draft} set={set} kind="outfit" />}
+        {tab === 'extras' && <WearPanel look={draft} set={set} kind="extras" />}
+        {tab === 'scene' && <ScenePanel look={draft} set={set} />}
+      </div>
       <Toast text="Look saved. Friends see it now." show={toast} onDone={hideToast} />
     </>
   );
@@ -187,13 +197,15 @@ function StudioBody({ start }: { start: STab }) {
   const [tab, setTab] = useState<STab>(start);
   const [toast, setToast] = useState(false);
   const hideToast = useCallback(() => setToast(false), []);
-  const set: SetDraft = f => setDraft(f);
+  const hero = useRef<HTMLDivElement>(null);
+  const slide = useSlideDir(S_TABS.map(t => t.id), tab, 'w');
+  const set: SetDraft = f => { setDraft(f); bump(hero.current?.querySelector('.w-hero-mylo')); };
   const bd = BACKDROPS.find(b => b.id === draft.backdrop) ?? BACKDROPS[1];
   const owned = BACKDROPS.filter(b => !b.from);
   const ownedStyles = STYLES.filter(s => !s.from);
   return (
     <>
-      <div className="w-hero" style={{ backgroundImage: `url(/figma/world/bg/${bd.hero ?? bd.id}.svg)` }}>
+      <div ref={hero} className="w-hero" style={{ backgroundImage: `url(/figma/world/bg/${bd.hero ?? bd.id}.svg)` }}>
         <button type="button" className="back-btn w-hero-back" aria-label="Back" onClick={back}><Icon name={wi('back')} size={20} /></button>
         <button type="button" className="w-save is-raised" onClick={() => { setSaved(draft); setToast(true); }}>Save look</button>
         <Mylo look={draft} className="w-hero-mylo" label={draft.name} />
@@ -201,7 +213,8 @@ function StudioBody({ start }: { start: STab }) {
       </div>
       <section className="w-style-panel">
         <span className="w-grabber" />
-        <Tabs tabs={S_TABS} value={tab} onChange={setTab} className="w-stabs" />
+        <Tabs tabs={S_TABS} value={tab} onChange={setTab} className="w-stabs" dir={slide} label="Mylo style" />
+        <div key={tab} className={`w-pane ${slide}`} role="tabpanel">
         {tab === 'colour' && <ColourPanel look={draft} set={set} />}
         {tab === 'face' && <FacePanel look={draft} set={set} />}
         {tab === 'extras' && <WearPanel look={draft} set={set} kind="extras" />}
@@ -244,6 +257,7 @@ function StudioBody({ start }: { start: STab }) {
             </div>
           </div>
         )}
+        </div>
         <Link href="/style/collection" className="w-more t-body-s c-2">Collection<Icon name="chevron-right" size={16} /></Link>
       </section>
     </>
@@ -252,6 +266,7 @@ function StudioBody({ start }: { start: STab }) {
 
 /* ── MS4 · Collection · Backgrounds (879:181296) ───────────────────────── */
 type CTab = 'outfits' | 'backgrounds' | 'pets' | 'eggs';
+const C_TABS: { id: CTab; label: string }[] = [{ id: 'outfits', label: 'Outfits' }, { id: 'backgrounds', label: 'Backgrounds' }, { id: 'pets', label: 'Pets' }, { id: 'eggs', label: 'Eggs' }];
 const TIERS: Rarity[] = ['legendary', 'epic', 'rare', 'common', 'special'];
 
 export function Collection() {
@@ -259,9 +274,9 @@ export function Collection() {
 }
 function CollectionBody() {
   const [tab, setTab] = useState<CTab>('backgrounds');
-  const { items } = useStore();
-  const [egg] = useLocal<Egg>(KEYS.egg, { foundOn: null });
-  const hatched = activeDays(items, egg.foundOn).days >= HATCH_DAYS;
+  const slide = useSlideDir(C_TABS.map(t => t.id), tab, 'w');
+  const r = useRewards();
+  const eggs = [...(r.state.nest ? [r.state.nest] : []), ...r.state.eggs];
   const shelves = tab === 'backgrounds'
     ? TIERS.map(t => ({ t, list: BACKDROPS.filter(b => b.rarity === t).map(b => ({ id: b.id, label: b.label, locked: !!b.from, src: `/figma/world/bg/${b.id}.svg`, href: `/style/card/${b.id}` })) }))
     : tab === 'outfits'
@@ -270,13 +285,8 @@ function CollectionBody() {
   return (
     <>
       <h1 className="w-h1 w-h1-l">Collection</h1>
-      <div className="w-chips" role="tablist" aria-label="Collection">
-        {(['outfits', 'backgrounds', 'pets', 'eggs'] as CTab[]).map(c => (
-          <button key={c} type="button" role="tab" aria-selected={tab === c} className={`w-tab${tab === c ? ' is-on' : ''}`} onClick={() => setTab(c)}>
-            {c[0].toUpperCase() + c.slice(1)}
-          </button>
-        ))}
-      </div>
+      <Tabs tabs={C_TABS} value={tab} onChange={setTab} dir={slide} label="Collection" />
+      <div key={tab} className={`w-pane w-coll-pane ${slide}`} role="tabpanel">
       {shelves.filter(s => s.list.length).map(s => (
         <section key={s.t} className="w-shelf" aria-label={RARITY[s.t].label}>
           <h2 className="w-tier"><span style={{ background: RARITY[s.t].color }} />{RARITY[s.t].label}</h2>
@@ -291,12 +301,25 @@ function CollectionBody() {
           </div>
         </section>
       ))}
-      {tab === 'pets' && hatched && (
-        <div className="w-shelf-row"><Link href="/pets" className="w-shelf-item is-fit" aria-label="Momo"><img src="/figma/world/momo.svg" alt="" /></Link></div>
+      {tab === 'pets' && r.ready && (
+        <div className="w-shelf-row">
+          {r.state.pets.map(p => (
+            <Link key={p.id} href="/pets" className="w-shelf-item is-fit" aria-label={petName(p)}><img src={petArt(p.kind)} alt="" /></Link>
+          ))}
+          {!r.state.pets.length && <Link href="/eggs" className="w-shelf-item is-fit is-empty" aria-label="Hatch an egg"><Icon name="rewards/i-plus" size={22} /></Link>}
+        </div>
       )}
-      {tab === 'eggs' && egg.foundOn && !hatched && (
-        <div className="w-shelf-row"><Link href="/eggs" className="w-shelf-item is-fit" aria-label="Hatching soon"><img src="/figma/world/egg-warm.svg" alt="" /></Link></div>
+      {tab === 'eggs' && r.ready && (
+        <div className="w-shelf-row">
+          {eggs.map(e => (
+            <Link key={e.id} href="/eggs" className="w-shelf-item is-fit" aria-label={EGGS[e.kind].name}>
+              <img src={e.first ? '/figma/world/egg-warm.svg' : eggArt(e.kind)} alt="" />
+            </Link>
+          ))}
+          {!eggs.length && <Link href={r.state.firstEgg ? '/rewards/nest' : '/eggs'} className="w-shelf-item is-fit is-empty" aria-label="Your nest"><Icon name="rewards/i-egg" size={22} /></Link>}
+        </div>
       )}
+      </div>
     </>
   );
 }

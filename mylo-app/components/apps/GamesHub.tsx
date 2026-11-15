@@ -58,7 +58,7 @@ export default function GamesHub() {
 
       {live && chess && (
         <section className="ax-turn">
-          <Link href="/games/chess" aria-label="Open chess"><ChessBoard board={live.pos.board} className="is-thumb" /></Link>
+          <Link href="/games/chess" aria-label="Open chess"><ChessBoard board={live.pos.board} className="is-thumb" name="ax-chess" /></Link>
           <div className="ax-turn-text">
             <span className="ax-turn-chip"><span className={`ax-dot${yourMove ? '' : ' is-wait'}`} />{yourMove ? 'Your move' : 'Their move'}</span>
             <p className="ax-turn-title">Chess with Mylo</p>

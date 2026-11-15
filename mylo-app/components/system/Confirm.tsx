@@ -1,7 +1,7 @@
 'use client';
 
 import '@/styles/system.css';
-import { useEffect, useId, useRef } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 
 /* Confirm, the centred dialog of S23–S26 and ST9: title, one line, a main
    button and a way out, over a dim layer.
@@ -51,6 +51,17 @@ export default function Confirm({ open, title, body, confirmLabel, cancelLabel =
 }) {
   const id = useId();
   const cancel = useRef<HTMLButtonElement>(null);
+  /* A second tap while the first is still working does nothing. */
+  const [pending, setPending] = useState(false);
+  const working = busy || pending;
+  const confirm = async () => {
+    if (working) return;
+    const r = onConfirm();
+    if (r && typeof (r as Promise<void>).then === 'function') {
+      setPending(true);
+      try { await r; } finally { setPending(false); }
+    }
+  };
   const onCancelRef = useRef(onCancel);
   useEffect(() => { onCancelRef.current = onCancel; }, [onCancel]);
   useEffect(() => {
@@ -68,8 +79,8 @@ export default function Confirm({ open, title, body, confirmLabel, cancelLabel =
         <h2 id={`${id}-t`}>{title}</h2>
         {body && <p id={`${id}-b`}>{body}</p>}
         <div className="sys-dialog-actions">
-          <button type="button" className={`sys-btn${tone === 'danger' ? ' is-danger' : ''}`} disabled={busy} aria-busy={busy}
-                  onClick={() => { void onConfirm(); }}>{confirmLabel}</button>
+          <button type="button" className={`sys-btn${tone === 'danger' ? ' is-danger' : ''}`} disabled={working} aria-busy={working}
+                  onClick={() => { void confirm(); }}>{confirmLabel}</button>
           <button ref={cancel} type="button" className="sys-btn is-soft" onClick={onCancel}>{cancelLabel}</button>
         </div>
       </div>

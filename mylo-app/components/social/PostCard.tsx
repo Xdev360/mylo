@@ -55,17 +55,19 @@ export default function PostCard({ post, detail = false, onReactions, onShare, o
   const [hover, setHover] = useState<ReactionKey | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const held = useRef(false);
+  // Counts reactions given here, so the heart pops for a tap and not on every load.
+  const [bump, setBump] = useState(0);
 
   const mine = post.reactions[me.handle];
   const count = Object.keys(post.reactions).length;
   const reposted = post.reposts.includes(me.handle);
 
-  const react = (k: ReactionKey | null) => setPosts(all => all.map(p => {
+  const react = (k: ReactionKey | null) => { if (k) setBump(b => b + 1); setPosts(all => all.map(p => {
     if (p.id !== post.id) return p;
     const r = { ...p.reactions };
     if (k) r[me.handle] = k; else delete r[me.handle];
     return { ...p, reactions: r };
-  }));
+  })); };
   const repost = () => setPosts(all => all.map(p => p.id !== post.id ? p : {
     ...p, reposts: p.reposts.includes(me.handle) ? p.reposts.filter(h => h !== me.handle) : [...p.reposts, me.handle]
   }));
@@ -127,11 +129,11 @@ export default function PostCard({ post, detail = false, onReactions, onShare, o
 
         <footer className="sx-actions">
           <span className="sx-act">
-            <button type="button" className={`sx-act-btn sx-heart${mine ? ' is-on' : ''}`}
+            <button type="button" className={`sx-act-btn sx-heart${mine ? ' is-on' : ''}${bump ? ' is-bumped' : ''}`}
                     aria-label={mine ? `Remove your reaction` : 'Love. Hold for more reactions'} aria-pressed={!!mine}
                     onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={() => { if (timer.current) clearTimeout(timer.current); }}
                     onClick={tapHeart} onContextMenu={e => { e.preventDefault(); setPicking(true); }}>
-              <SIcon name="heart" />
+              <SIcon key={bump} name="heart" />
             </button>
             <button type="button" className="sx-act-n" onClick={() => onReactions(post)} aria-label={`${count} reactions, see who`}>{count}</button>
           </span>

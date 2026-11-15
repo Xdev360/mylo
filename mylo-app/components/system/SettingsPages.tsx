@@ -8,9 +8,9 @@ import Icon from '@/components/Icon';
 import ScreenHeader from '@/components/ScreenHeader';
 import Confirm from './Confirm';
 import PermissionPrimer from './PermissionPrimer';
-import { Group, Row, SectionLabel, Segmented } from './ui';
+import { Group, Row, SectionLabel, Segmented, useToast } from './ui';
 import {
-  BUILD, LANGUAGES, SITE, setDocLang, SUPPORT_EMAIL, VERSION, clearDevice, downloadDeviceData, since,
+  BUILD, LANGUAGES, SITE, setDocLang, SUPPORT_EMAIL, VERSION, clearDevice, downloadDeviceData, go, since,
   usePeople, usePrefs, usePrivacy, useSession, useWords, type Person, type Privacy
 } from '@/lib/system';
 
@@ -64,7 +64,13 @@ export function PrivacyBody() {
 const TINTS = ['var(--tint-amber)', 'var(--tint-green)', 'var(--tint-blue)', 'var(--tint-red)'];
 export function PeopleBody({ list }: { list: 'blocked' | 'muted' }) {
   const [people, setPeople] = usePeople(list);
-  const remove = (p: Person) => setPeople(all => all.filter(x => x.id !== p.id));
+  const [going, setGoing] = useState<string[]>([]);
+  /* The row folds away before it leaves the list. */
+  const remove = (p: Person) => {
+    if (going.includes(p.id)) return;
+    setGoing(g => [...g, p.id]);
+    setTimeout(() => { setPeople(all => all.filter(x => x.id !== p.id)); setGoing(g => g.filter(x => x !== p.id)); }, 240);
+  };
   const blocked = list === 'blocked';
   return (
     <>
@@ -72,7 +78,7 @@ export function PeopleBody({ list }: { list: 'blocked' | 'muted' }) {
       {people.length > 0 && (
         <ul className="sys-people">
           {people.map((p, i) => (
-            <li key={p.id} className="sys-person">
+            <li key={p.id} className={`sys-person${going.includes(p.id) ? ' is-going' : ''}`}>
               <span className="sys-person-avatar" style={{ background: TINTS[i % TINTS.length] }} aria-hidden>{p.name.charAt(0).toUpperCase()}</span>
               <span className="sys-person-text">
                 <span className="sys-row-label">{p.name}</span>
@@ -92,10 +98,16 @@ export function PeopleBody({ list }: { list: 'blocked' | 'muted' }) {
 export function WordsBody() {
   const [words, setWords] = useWords();
   const [draft, setDraft] = useState('');
+  const [going, setGoing] = useState<string[]>([]);
   const add = () => {
-    const w = draft.trim().toLowerCase();
+    const w = draft.trim().toLowerCase().replace(/\s+/g, ' ');
     if (w && !words.includes(w)) setWords([...words, w]);
     setDraft('');
+  };
+  const drop = (w: string) => {
+    if (going.includes(w)) return;
+    setGoing(g => [...g, w]);
+    setTimeout(() => { setWords(all => all.filter(x => x !== w)); setGoing(g => g.filter(x => x !== w)); }, 200);
   };
   return (
     <>
@@ -107,8 +119,8 @@ export function WordsBody() {
       {words.length > 0 && (
         <ul className="sys-words">
           {words.map(w => (
-            <li key={w} className="sys-word">{w}
-              <button type="button" aria-label={`Remove ${w}`} onClick={() => setWords(words.filter(x => x !== w))}><Icon name="close" size={14} /></button>
+            <li key={w} className={`sys-word${going.includes(w) ? ' is-going' : ''}`}>{w}
+              <button type="button" aria-label={`Remove ${w}`} onClick={() => drop(w)}><Icon name="close" size={14} /></button>
             </li>
           ))}
         </ul>
@@ -229,9 +241,10 @@ export function NotificationsBody() {
 export function DataBody() {
   const { user } = useSession();
   const [clear, setClear] = useState(false);
+  const toast = useToast();
   return (
     <>
-      <button type="button" className="sys-box" onClick={() => { downloadDeviceData(user ? { account: { id: user.id, email: user.email } } : undefined); }}>
+      <button type="button" className="sys-box" onClick={() => { downloadDeviceData(user ? { account: { id: user.id, email: user.email } } : undefined); toast.show('Your data is downloading'); }}>
         <Icon name="system/download" size={24} />
         <span className="sys-box-text"><span className="sys-box-label">Download my data</span><span className="sys-box-sub">Everything, as a file</span></span>
         <Icon name="system/chevron" size={20} className="sys-row-chev" />
@@ -256,7 +269,8 @@ export function DataBody() {
         <span>Removes you, your Mylo and your photos. Friends keep nothing. You have 30 days to change your mind.</span>
       </Link>
       <Confirm open={clear} title="Clear AI memory?" body="Mylo forgets your chats." confirmLabel="Clear AI memory" cancelLabel="Cancel"
-               onCancel={() => setClear(false)} onConfirm={() => { clearDevice('mylo.ai.'); setClear(false); }} />
+               onCancel={() => setClear(false)} onConfirm={() => { clearDevice('mylo.ai.'); setClear(false); toast.show('AI memory cleared'); }} />
+      {toast.node}
     </>
   );
 }
@@ -266,7 +280,7 @@ export function useNeedsAccount() {
   const s = useSession();
   const router = useRouter();
   useEffect(() => {
-    if (s.ready && !s.user) router.replace('/signin');
+    if (s.ready && !s.user) go(router, '/signin', 'push', true);
   }, [s.ready, s.user, router]);
   return s;
 }

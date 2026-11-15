@@ -9,9 +9,11 @@
 body:has(.r-chat:not(.is-desk)) .tabbar,
 body:has(.r-full) .tabbar,
 body:has(.r-preview) .tabbar,
-body:has(.r-yours, .r-find, .r-join, .r-sent, .r-requests, .r-members, .r-roomset, .r-movezoom, .r-settings, .r-wallpaper, .r-media, .r-info) .tabbar{ display:none; }
-.screen:is(.r-yours, .r-find, .r-join, .r-sent, .r-requests, .r-members, .r-roomset, .r-movezoom, .r-settings, .r-wallpaper, .r-media, .r-info){ padding-bottom:calc(env(safe-area-inset-bottom) + 16px); }
-@media (min-width:1024px){ .screen.on-desk:is(.r-yours, .r-find, .r-join, .r-sent, .r-requests, .r-members, .r-roomset, .r-movezoom, .r-settings, .r-wallpaper, .r-media, .r-info){ padding-bottom:32px; } }
+/* Your rooms (LB1) is a place you land from elsewhere with no back button:
+   it keeps the tab bar so it is never a dead end. */
+body:has(.r-find, .r-join, .r-sent, .r-requests, .r-members, .r-roomset, .r-movezoom, .r-settings, .r-wallpaper, .r-media, .r-info) .tabbar{ display:none; }
+.screen:is(.r-find, .r-join, .r-sent, .r-requests, .r-members, .r-roomset, .r-movezoom, .r-settings, .r-wallpaper, .r-media, .r-info){ padding-bottom:calc(env(safe-area-inset-bottom) + 16px); }
+@media (min-width:1024px){ .screen.on-desk:is(.r-find, .r-join, .r-sent, .r-requests, .r-members, .r-roomset, .r-movezoom, .r-settings, .r-wallpaper, .r-media, .r-info){ padding-bottom:32px; } }
 
 .r-art-icon{ display:inline-block; flex:none; }
 .r-avatar{ font-weight:600; line-height:1; }
@@ -524,3 +526,140 @@ body:has(.r-yours, .r-find, .r-join, .r-sent, .r-requests, .r-members, .r-roomse
 .r-mz-zoom input::-webkit-slider-thumb{ -webkit-appearance:none; width:20px; height:20px; border-radius:50%; background:var(--ink); border:0; }
 .r-mz-zoom input::-moz-range-thumb{ width:20px; height:20px; border-radius:50%; background:var(--ink); border:0; }
 .r-movezoom .r-roomcard-cover{ height:128px; }
+
+/* ── Before the data: sign in, retry, loading (server rooms) ───────────── */
+.r-gate{ align-items:stretch; justify-content:center; gap:16px; }
+.r-gate.is-loading{ justify-content:flex-start; padding-top:calc(env(safe-area-inset-top) + 24px); }
+.r-thread-state{ padding:16px 0; }
+.r-older{ align-self:center; padding:4px 0 8px; }
+.r-code.is-long{ gap:4px; }
+.r-code.is-long .r-code-box{ font-size:15px; border-radius:8px; }
+.r-codebig.is-long{ gap:4px; }
+.r-codebig.is-long span{ font-size:15px; border-radius:8px; }
+
+/* ── Motion: a chat that feels alive ─────────────────────────────────────
+   Mine rises out of the composer, theirs slides in from the side; the day
+   chip for a new day fades in with them. The pill counts what arrived while
+   you read further up. Sheets and menus grow from where they were opened. */
+.r-avatar.is-blank{ background:var(--surface-2); }
+.r-slot{ display:flex; flex-direction:column; }
+.r-msg.is-in-mine .r-msg-col{ transform-origin:100% 100%; animation:r-in-mine .42s cubic-bezier(.2,1.1,.3,1) both; }
+.r-msg.is-in-theirs .r-msg-col{ transform-origin:0 100%; animation:r-in-theirs .4s cubic-bezier(.2,1.1,.3,1) both; }
+.r-msg.is-in-theirs.is-desk > .r-avatar{ animation:r-fade .3s ease both; }
+@keyframes r-in-mine{ from{ opacity:0; translate:0 22px; scale:.86; } 45%{ opacity:1; } }
+@keyframes r-in-theirs{ from{ opacity:0; translate:-22px 4px; scale:.9; } 45%{ opacity:1; } }
+.r-day.is-in{ animation:r-fade .3s ease both; }
+.r-msg.is-pending .r-hold{ opacity:.82; transition:opacity .2s ease; }
+.r-msg .r-hold{ transition:opacity .2s ease; }
+.r-clock{ position:relative; display:inline-block; width:10px; height:10px; margin-left:4px; border-radius:50%; border:1.2px solid currentColor; vertical-align:-1px; }
+.r-clock::before{ content:''; position:absolute; left:3.4px; top:1px; width:1.2px; height:3.4px; background:currentColor; border-radius:1px; transform-origin:50% 100%; animation:r-tick 1s linear infinite; }
+@keyframes r-tick{ to{ rotate:360deg; } }
+
+.r-jump-dock{ position:sticky; z-index:5; bottom:0; height:0; }
+.r-jump{ position:absolute; right:16px; bottom:14px; display:flex; align-items:center; gap:6px; height:40px; min-width:40px; padding:0 10px; justify-content:center;
+  border-radius:999px; background:var(--bg); color:var(--ink); box-shadow:var(--r-shadow); border:1px solid var(--line); font-size:13px; font-weight:600; line-height:16px;
+  opacity:0; translate:0 12px; scale:.9; pointer-events:none; transition:opacity .2s ease, translate .25s cubic-bezier(.22,1,.36,1), scale .25s cubic-bezier(.34,1.56,.64,1); }
+.r-jump.is-on{ opacity:1; translate:0 0; scale:1; pointer-events:auto; }
+.r-jump span{ padding-left:4px; }
+.r-jump-arrow{ rotate:180deg; color:var(--ink); }
+.r-jump:active{ scale:.94; }
+:root[data-theme="dark"] .r-jump{ background:var(--surface); }
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .r-jump{ background:var(--surface); } }
+
+/* The composer grows with what you type, up to five lines. */
+.r-input{ height:auto; min-height:40px; align-items:flex-end; }
+.r-input textarea{ flex:1; min-width:0; display:block; height:40px; max-height:120px; padding:10px 0; border:0; outline:none; resize:none; background:none; color:var(--ink); font:inherit; font-size:15px; line-height:20px; overflow-y:auto; scrollbar-width:none; }
+.r-input textarea::placeholder{ color:var(--text-3); }
+.r-input-sticker{ height:40px; }
+.r-composer{ align-items:flex-end; }
+.r-composer.is-desk .r-input{ min-height:44px; }
+.r-composer.is-desk .r-input textarea{ height:44px; padding:12px 0; font-size:14px; }
+.r-composer.is-desk .r-input-sticker{ height:44px; }
+.r-mic{ animation:r-swap .22s cubic-bezier(.34,1.56,.64,1); transition:scale .2s cubic-bezier(.34,1.56,.64,1); }
+.r-mic:active{ scale:.92; }
+@keyframes r-swap{ from{ scale:.5; opacity:0; } }
+.r-replybar{ animation:r-bar-in .24s cubic-bezier(.22,1,.36,1); }
+@keyframes r-bar-in{ from{ translate:0 100%; opacity:0; } }
+.r-composer.is-tall, .r-rec-row.is-hold{ animation:r-fade .18s ease; }
+.r-rec-big{ animation:r-grow .22s cubic-bezier(.34,1.56,.64,1); }
+.r-lock-hint, .r-hold-chip{ animation:r-rise .3s cubic-bezier(.22,1,.36,1) both; }
+@keyframes r-grow{ from{ scale:.4; opacity:0; } }
+@keyframes r-rise{ from{ opacity:0; translate:0 16px; } }
+
+/* Poll bars fill when the poll draws and slide when a vote moves. */
+.r-poll-fill{ animation:r-fill .7s cubic-bezier(.22,1,.36,1) .1s both; }
+@keyframes r-fill{ from{ width:0; } }
+.r-poll-opt{ transition:box-shadow .2s ease, scale .2s cubic-bezier(.34,1.56,.64,1); }
+.r-poll-opt:not(:disabled):active{ scale:.98; }
+
+/* The photo viewer: the picture moves on its own, the black behind it fades. */
+.r-viewer{ background:none; animation:none; }
+.r-viewer-bg{ position:absolute; inset:0; background:#000; }
+.r-viewer > :not(.r-viewer-bg){ position:relative; }
+.r-viewer-img{ touch-action:none; will-change:transform; }
+.r-once-img{ animation:r-zoom .3s cubic-bezier(.22,1,.36,1); }
+@keyframes r-zoom{ from{ opacity:0; scale:.92; } }
+.r-full.r-draft{ animation:r-slide-up .32s cubic-bezier(.22,1,.36,1); }
+@keyframes r-slide-up{ from{ translate:0 40px; opacity:0; } }
+
+/* Lists: rows and cards settle in, and press down a little. */
+.r-chatrow, .r-desk-row, .r-roomcard, .r-request, .r-member{ animation:r-rise .32s cubic-bezier(.22,1,.36,1) both; }
+.r-chatlist > :nth-child(2){ animation-delay:.03s; } .r-chatlist > :nth-child(3){ animation-delay:.06s; } .r-chatlist > :nth-child(4){ animation-delay:.09s; } .r-chatlist > :nth-child(n+5){ animation-delay:.12s; }
+.r-chatrow:active{ background:var(--surface-2); }
+.r-roomcard{ transition:scale .2s cubic-bezier(.34,1.56,.64,1); }
+.r-roomcard:has(.r-roomcard-link:active){ scale:.985; }
+
+/* Segmented controls: the highlight slides between options. */
+.r-seg{ position:relative; isolation:isolate; }
+.r-seg button{ position:relative; z-index:1; transition:color .2s ease; }
+.r-seg button.is-on{ background:none; box-shadow:none; }
+.r-seg::before{ content:''; position:absolute; z-index:0; top:4px; bottom:4px; left:calc(4px + var(--i, 0) * (100% - 8px) / var(--n, 3)); width:calc((100% - 8px) / var(--n, 3) - 4px * (var(--n, 3) - 1) / var(--n, 3));
+  border-radius:999px; background:var(--bg); box-shadow:0 1px 4px rgba(20,20,42,.08); transition:left .32s cubic-bezier(.22,1,.36,1); }
+.r-cat{ transition:background-color .2s ease, color .2s ease, border-color .2s ease, scale .2s cubic-bezier(.34,1.56,.64,1); }
+.r-cat:active{ scale:.95; }
+
+/* Opening a room from Chats grows it out of its row; back folds it in. */
+@media (max-width:1023px) and (prefers-reduced-motion:no-preference){
+  :root[data-nav="room"] .r-chat:not(.is-desk){ view-transition-name:r-open; }
+  /* React hides the old page when it draws the new one live; here the list
+     must stay under the room growing out of it. */
+  :root[data-nav="room"]::view-transition-group(root){ opacity:1 !important; }
+  :root[data-nav="room"]::view-transition-old(root){ animation:r-vt-sink .42s cubic-bezier(.22,1,.36,1) both; }
+  :root[data-nav="room"]::view-transition-new(root){ animation:r-vt-hide .42s both; }
+  :root[data-nav="room-back"]::view-transition-old(root){ animation:r-vt-hide .4s both; }
+  :root[data-nav="room-back"]::view-transition-new(root){ animation:r-vt-sink .4s cubic-bezier(.22,1,.36,1) reverse both; }
+  ::view-transition-group(r-open){ animation-duration:.42s; animation-timing-function:cubic-bezier(.22,1,.36,1); border-radius:20px; overflow:clip; }
+  ::view-transition-image-pair(r-open){ overflow:clip; }
+  /* The room keeps its top (header first) as the box grows; the row stays its own size. */
+  ::view-transition-old(r-open), ::view-transition-new(r-open){ height:100%; object-fit:cover; object-position:top center; }
+  :root[data-nav="room"]::view-transition-old(r-open), :root[data-nav="room-back"]::view-transition-new(r-open){ object-fit:none; object-position:center; }
+  :root[data-nav="room"]::view-transition-old(r-open){ animation:r-vt-out .1s ease-out both; }
+  :root[data-nav="room"]::view-transition-new(r-open){ animation:r-vt-in .06s ease-out both; }
+  :root[data-nav="room-back"]::view-transition-old(r-open){ animation:r-vt-out .16s ease-in .16s both; }
+  :root[data-nav="room-back"]::view-transition-new(r-open){ animation:r-vt-in .16s ease-out .14s both; }
+}
+@keyframes r-vt-sink{ to{ scale:.96; opacity:.7; } }
+@keyframes r-vt-hide{ from, to{ opacity:0; } }
+@keyframes r-vt-out{ to{ opacity:0; } }
+@keyframes r-vt-in{ from{ opacity:0; } }
+/* On a desk the room list holds still while the chat beside it changes. */
+@media (min-width:1024px){ .r-desk-list{ view-transition-name:r-desk-list; } .r-rail{ view-transition-name:r-rail; } }
+
+@media (prefers-reduced-motion:reduce){
+  .r-msg .r-msg-col, .r-day.is-in, .r-jump, .r-mic, .r-replybar, .r-poll-fill, .r-once-img, .r-full.r-draft, .r-chatrow, .r-desk-row, .r-roomcard, .r-request, .r-member,
+  .r-rec-big, .r-lock-hint, .r-hold-chip, .r-composer.is-tall, .r-rec-row.is-hold, .r-clock::before{ animation:none !important; transition:none !important; }
+  .r-seg::before{ transition:none; }
+}
+.r-empty-note{ padding:24px 8px; text-align:center; }
+.r-firstroom{ display:flex; flex-direction:column; gap:10px; padding:20px; border-radius:24px; background:var(--surface); border:1px solid var(--line); animation:r-rise .32s cubic-bezier(.22,1,.36,1) .05s both; }
+.r-btn-soft.is-small{ height:52px; background:var(--bg); font-size:15px; font-weight:500; }
+.r-looking{ animation:r-blink 1.2s ease infinite; }
+.r-rail-card{ display:flex; flex-direction:column; gap:6px; padding:16px; border-radius:16px; background:var(--bg); animation:r-rise .3s cubic-bezier(.22,1,.36,1) both; }
+.r-rail-card-title{ font-size:14px; font-weight:600; line-height:18px; }
+.r-rail-bar{ display:block; height:6px; margin-top:6px; border-radius:3px; background:var(--surface-2); overflow:hidden; }
+.r-rail-bar span{ display:block; height:100%; border-radius:3px; background:var(--green); transition:width .5s cubic-bezier(.22,1,.36,1); }
+/* A quote never widens its bubble: it trims to one line in every browser. */
+.r-quote{ min-width:0; overflow:hidden; align-self:stretch; }
+.r-quote-name, .r-quote-text{ display:block; max-width:100%; }
+.r-thread-empty{ display:flex; flex-direction:column; align-items:center; gap:6px; margin:auto 0 12px; padding:24px 16px; text-align:center; animation:r-rise .4s cubic-bezier(.22,1,.36,1) both; }
+.r-thread-empty .r-pill-dark{ margin-top:10px; }

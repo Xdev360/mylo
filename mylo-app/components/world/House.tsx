@@ -9,6 +9,8 @@ import Mylo from './Mylo';
 import { KeysChip, Menu, Scene, WorldHeader, WorldPage, useBack, useNow, wi } from './ui';
 import { todayIso } from '@/lib/dates';
 import { DECOR, ROOMS, ROOM_STYLES, WALK_GOAL, roomArt, useHouse, useLook, useWalks, type House, type RoomId } from '@/lib/world';
+import { useRewards } from '@/lib/rewards';
+import { keyLine } from '@/components/rewards/Hub';
 
 /* Where Mylo stands in each room (left, top, width): on H1's tiles as
    fractions of the visible 173 x 104 picture, in a room as fractions of the
@@ -21,12 +23,20 @@ const ROOM_AT: Record<RoomId, [number, number, number]> = {
 };
 const TILE_ART: Partial<Record<RoomId, string>> = { bedroom: 'tile-bedroom', living: 'tile-living', gym: 'tile-gym', garden: 'tile-garden' };
 
-/* Keys come from levelling up, and levels are the server's: until it gives
-   one, everybody has none. The chip opens what H7 says about them. */
-function KeysSheet({ open, onClose, keys }: { open: boolean; onClose: () => void; keys: number }) {
+/* Keys are the rewards keys (lib/rewards.ts): 5 active days in a week earn
+   one, the Sunday chest uses one, a room style uses one. The chip shows the
+   same number the rewards hub does and opens what H7 says about them. */
+const KEY_RULE = '5 active days in a week earns 1 key. Level ups give 1 more.';
+function useKeys() {
+  const r = useRewards();
+  return { keys: r.ready ? r.keys : 0, next: keyLine(r.week.toKey), spend: r.spendKeys };
+}
+function KeysSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { keys, next } = useKeys();
   return (
-    <Sheet open={open} onClose={onClose} title={`You have ${keys} ${keys === 1 ? 'key' : 'keys'}`} sub="Next key at Flame">
-      <p className="t-caption c-3 w-center">Keys only come from levelling up. They cannot be bought or sent.</p>
+    <Sheet open={open} onClose={onClose} title={`You have ${keys} ${keys === 1 ? 'key' : 'keys'}`} sub={next}>
+      <p className="t-caption c-3 w-center">{KEY_RULE}</p>
+      <Link href="/rewards" className="w-text-btn w-center">Rewards</Link>
     </Sheet>
   );
 }
@@ -40,6 +50,7 @@ function HouseBody() {
   const [house, setHouse] = useHouse();
   const [look] = useLook();
   const [keys, setKeys] = useState(false);
+  const owned = useKeys().keys;
   const go = (id: RoomId) => {
     if (id === 'photo') { router.push('/photo'); return; }
     setHouse(h => ({ ...h, here: id }));
@@ -50,7 +61,7 @@ function HouseBody() {
     <>
       <header className="w-top">
         <h1 className="w-h1">Home</h1>
-        <KeysChip keys={house.keys} onClick={() => setKeys(true)} />
+        <KeysChip keys={owned} onClick={() => setKeys(true)} />
       </header>
       <div className="w-house-grid">
         <img className="w-roof" src="/figma/world/roof.svg" alt="" />
@@ -78,7 +89,7 @@ function HouseBody() {
         })}
       </div>
       <p className="t-caption c-2">Mylo moves to the room you need. Tap a room to go there.</p>
-      <KeysSheet open={keys} onClose={() => setKeys(false)} keys={house.keys} />
+      <KeysSheet open={keys} onClose={() => setKeys(false)} />
     </>
   );
 }
@@ -94,6 +105,7 @@ function RoomBody({ room }: { room: RoomId }) {
   const [look] = useLook();
   const [menu, setMenu] = useState(false);
   const [keys, setKeys] = useState(false);
+  const owned = useKeys().keys;
   const r = ROOMS.find(x => x.id === room)!;
   useEffect(() => { if (house.here !== room) setHouse(h => ({ ...h, here: room })); }, [house.here, room, setHouse]);
   const move = (id: RoomId) => { setMenu(false); if (id === 'photo') router.push('/photo'); else router.replace(`/house/${id}`); };
@@ -113,7 +125,7 @@ function RoomBody({ room }: { room: RoomId }) {
           </Menu>
         </div>
         <span className="spacer" />
-        <KeysChip keys={house.keys} onClick={() => setKeys(true)} />
+        <KeysChip keys={owned} onClick={() => setKeys(true)} />
       </header>
       <Scene art={art} look={look} at={ROOM_AT[room]} className="w-scene-room" mirror={room === 'bedroom' && house.flipped} label={`${look.name} in the ${r.label.toLowerCase()}`} />
       {room === 'living' && <Treats house={house} setHouse={setHouse} />}
@@ -124,7 +136,7 @@ function RoomBody({ room }: { room: RoomId }) {
           <Link href="/house/styles" className="w-link-row"><Icon name={wi('home')} size={22} /><span className="t-body">Bedroom style</span><Icon name="chevron-right" size={18} className="c-3" /></Link>
         </div>
       )}
-      <KeysSheet open={keys} onClose={() => setKeys(false)} keys={house.keys} />
+      <KeysSheet open={keys} onClose={() => setKeys(false)} />
     </>
   );
 }
@@ -288,13 +300,15 @@ function UseKeyBody({ style }: { style: string }) {
   const back = useBack('/house/styles');
   const [house, setHouse] = useHouse();
   const [look] = useLook();
+  const { keys, next, spend } = useKeys();
   const s = ROOM_STYLES.find(x => x.id === style && 'keys' in x);
-  useEffect(() => { if (!s) router.replace('/house/styles'); }, [s, router]);
-  if (!s || !('keys' in s)) return null;
-  const can = house.keys >= s.keys;
+  const owned = !!s && house.owned.includes(s.id);
+  useEffect(() => { if (!s || owned) router.replace('/house/styles'); }, [s, owned, router]);
+  if (!s || !('keys' in s) || owned) return null;
+  const can = keys >= s.keys;
   const use = () => {
-    if (!can) return;
-    setHouse(h => ({ ...h, keys: h.keys - s.keys, owned: [...h.owned, s.id], bedroom: s.id }));
+    if (!can || !spend(s.keys)) return;
+    setHouse(h => (h.owned.includes(s.id) ? h : { ...h, owned: [...h.owned, s.id], bedroom: s.id }));
     router.replace('/house/bedroom');
   };
   return (
@@ -308,11 +322,11 @@ function UseKeyBody({ style }: { style: string }) {
         <div className="w-keys-card">
           <span className="w-key-tile is-gold"><Icon name={wi('key')} size={24} /></span>
           <span className="w-key-tile"><Icon name={wi('key')} size={24} /></span>
-          <span className="w-grow"><span className="t-title-s">You have {house.keys} {house.keys === 1 ? 'key' : 'keys'}</span><span className="t-caption c-2">Next key at Flame</span></span>
+          <span className="w-grow"><span className="t-title-s">You have {keys} {keys === 1 ? 'key' : 'keys'}</span><span className="t-caption c-2">{next}</span></span>
         </div>
         <button type="button" className="btn-primary w-wide" onClick={use} disabled={!can}><Icon name={wi('key')} size={20} />Use 1 key</button>
         <button type="button" className="w-text-btn" onClick={back}>Not now</button>
-        <p className="t-caption c-3 w-center">Keys only come from levelling up. They cannot be bought or sent.</p>
+        <p className="t-caption c-3 w-center">{KEY_RULE}</p>
       </section>
     </>
   );

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { RIcon } from './ui';
 import { Waveform, nameTone } from './Bubble';
 import { ME, type Message, type Room } from '@/lib/rooms';
@@ -27,7 +27,7 @@ export default function Composer({ room, reply, editing, desk, onCancel, onSend,
   const [drag, setDrag] = useState({ x: 0, y: 0 });
   const [take, setTake] = useState<{ blob: Blob; url: string; seconds: number; bars: number[] } | null>(null);
   const [listen, setListen] = useState({ t: 0, on: false });
-  const input = useRef<HTMLInputElement>(null);
+  const input = useRef<HTMLTextAreaElement>(null);
   const rec = useRef<Rec | null>(null);
   const pending = useRef<'none' | 'starting' | 'cancelled'>('none');
   const from = useRef({ x: 0, y: 0, at: 0 });
@@ -38,6 +38,12 @@ export default function Composer({ room, reply, editing, desk, onCancel, onSend,
   useEffect(() => { if (editing) input.current?.focus(); }, [editing]);
   useEffect(() => { if (reply) input.current?.focus(); }, [reply]);
   useEffect(() => () => { stopAll(); }, []);
+  // Grow with the text, up to five lines, then scroll inside.
+  useLayoutEffect(() => {
+    const t = input.current; if (!t) return;
+    t.style.height = '';
+    if (t.scrollHeight > t.clientHeight + 1) t.style.height = `${Math.min(t.scrollHeight, 120)}px`;
+  }, [text, phase]);
 
   function stopAll() {
     const r = rec.current; if (!r) return;
@@ -173,16 +179,17 @@ export default function Composer({ room, reply, editing, desk, onCancel, onSend,
           <button type="button" className="r-add" aria-label="Add" onClick={e => onAdd(e.currentTarget)}><RIcon name="plus-24" size={24} /></button>
           <label className="r-input">
             <span className="sr-only">Message {room.name}</span>
-            <input ref={input} value={text} placeholder={`Message ${room.name}`} enterKeyHint="send"
-                   onChange={e => setText(e.target.value)}
-                   onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); } if (e.key === 'Escape' && (reply || editing)) { onCancel(); setText(''); } }} />
+            <textarea ref={input} rows={1} value={text} placeholder={`Message ${room.name}`} enterKeyHint="send" maxLength={4000}
+                      onChange={e => setText(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); submit(); } if (e.key === 'Escape' && (reply || editing)) { onCancel(); setText(''); } }} />
             <button type="button" className="r-input-sticker" aria-label="Stickers" onClick={onSticker}><RIcon name="sticker" size={desk ? 20 : 24} /></button>
           </label>
         </>}
         {typing && phase === 'idle'
-          ? <button type="button" className="r-mic is-send" aria-label={editing ? 'Save' : 'Send'} onClick={submit}><RIcon name="send" size={24} /></button>
+          ? <button key="send" type="button" className="r-mic is-send" aria-label={editing ? 'Save' : 'Send'}
+                    onPointerDown={e => e.preventDefault()} onClick={submit}><RIcon name="send" size={24} /></button>
           : (
-            <button type="button" className={`r-mic${phase === 'hold' ? ' is-rec' : ''}`} aria-label="Hold to record a voice note"
+            <button key="mic" type="button" className={`r-mic${phase === 'hold' ? ' is-rec' : ''}`} aria-label="Hold to record a voice note"
                     onPointerDown={micDown} onPointerMove={micMove} onPointerUp={micUp} onPointerCancel={() => phase === 'hold' && cancel()}
                     onContextMenu={e => e.preventDefault()}
                     onKeyDown={e => { if ((e.key === 'Enter' || e.key === ' ') && phase === 'idle') { e.preventDefault(); setPhase('locked'); setSecs(0); setBars([]); begin(); } }}>

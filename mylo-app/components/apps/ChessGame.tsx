@@ -9,6 +9,7 @@ import { useHydrated, useLocal } from '@/lib/local';
 import { headToHead, uid, useResults } from '@/lib/apps';
 import * as C from './chess';
 import ChessBoard from './ChessBoard';
+import { morph } from './motion';
 import { Avatar, Confetti, Head, useToast } from './ui';
 
 /* G2 · Chess · your move (879:114987), G3 · won (879:115141), G4 · lost or
@@ -51,8 +52,10 @@ export default function ChessGame() {
   const ready = useHydrated();
   const [save, setSave] = useLocal<ChessSave>(CHESS_KEY, fresh());
   if (!ready) return <main className="screen on-desk" aria-busy="true" />;
+  // Ending and starting again change the whole screen in place, as one moment.
+  const rematch = () => morph(() => setSave(fresh()));
   return save.over
-    ? <ChessOver save={save} onRematch={() => setSave(fresh())} />
+    ? <ChessOver save={save} onRematch={rematch} />
     : <ChessPlay key={save.id} save={save} setSave={setSave} />;
 }
 
@@ -70,8 +73,10 @@ function ChessPlay({ save, setSave }: { save: ChessSave; setSave: (s: ChessSave 
 
   const finish = useCallback((outcome: 'won' | 'lost' | 'draw', how: string) => {
     const moves = Math.ceil(save.line.length / 2);
-    setSave(s => (s.over ? s : { ...s, over: { outcome, how, moves } }));
-    setResults(r => (r.some(x => x.id === save.id) ? r : [{ id: save.id, game: 'chess', vs: VS, outcome, at: new Date().toISOString(), moves, how }, ...r]));
+    morph(() => {
+      setSave(s => (s.over ? s : { ...s, over: { outcome, how, moves } }));
+      setResults(r => (r.some(x => x.id === save.id) ? r : [{ id: save.id, game: 'chess', vs: VS, outcome, at: new Date().toISOString(), moves, how }, ...r]));
+    });
   }, [save.id, save.line.length, setSave, setResults]);
 
   const commit = useCallback((m: C.Move) => {
@@ -88,7 +93,8 @@ function ChessPlay({ save, setSave }: { save: ChessSave; setSave: (s: ChessSave 
     const id = setInterval(() => { const t = Date.now(); setNow(t); setSince(s => s || t); }, 250);
     return () => clearInterval(id);
   }, []);
-  const left = (s: C.Side) => save.clocks[s] - (pos.turn === s && since && now ? now - since : 0);
+  // The last tick can be older than the last move, so time spent never goes below nought.
+  const left = (s: C.Side) => save.clocks[s] - (pos.turn === s && since && now ? Math.max(0, now - since) : 0);
 
   // Endings, and running out of time.
   useEffect(() => {
@@ -134,6 +140,7 @@ function ChessPlay({ save, setSave }: { save: ChessSave; setSave: (s: ChessSave 
   const diff = C.material(pos.board);
   const up = (d: number) => (d <= 0 ? '' : d === 1 ? ' · up a pawn' : ` · up ${d}`);
   const checkSq = C.inCheck(pos) ? pos.board.indexOf(`${pos.turn}K`) : null;
+  const ended = C.ending(pos, keys);
 
   return (
     <main className="screen on-desk ax-no-tabs no-tabs ax-game">
@@ -144,7 +151,8 @@ function ChessPlay({ save, setSave }: { save: ChessSave; setSave: (s: ChessSave 
         <span className={`ax-clock${!yourTurn ? ' is-on' : ''}`}>{clockText(left('b'))}</span>
       </div>
       <div className="ax-board-wrap">
-        <ChessBoard board={pos.board} className="is-live" selected={sel} targets={targets} last={last} check={checkSq} onSquare={tap} />
+        <ChessBoard board={pos.board} className="is-live" selected={sel} targets={targets} last={last} check={checkSq} onSquare={tap} name="ax-chess" />
+        {ended && <span className="ax-ending" role="status">{ended === 'checkmate' ? 'Checkmate' : 'Draw'}</span>}
         {promo && (
           <div className="ax-promo" role="dialog" aria-label="Promote to">
             {(['Q', 'R', 'B', 'N'] as C.Kind[]).map(k => (
@@ -167,13 +175,13 @@ function ChessPlay({ save, setSave }: { save: ChessSave; setSave: (s: ChessSave 
       </div>
       <div className="ax-actions">
         <Link href="/chats" className="ax-action"><Icon name="apps/i-chat" size={24} />Chat</Link>
-        <button type="button" className="ax-action" onClick={() => (C.acceptsDraw(pos, 'b') ? finish('draw', 'Draw by agreement') : showToast(`${VS} plays on.`))}><Icon name="apps/i-hand" size={24} />Offer draw</button>
-        <button type="button" className="ax-action" onClick={() => finish('lost', 'Resigned')}><Icon name="apps/i-flag" size={24} />Resign</button>
+        <button type="button" className="ax-action" disabled={!!ended} onClick={() => (C.acceptsDraw(pos, 'b') ? finish('draw', 'Draw by agreement') : showToast(`${VS} plays on.`))}><Icon name="apps/i-hand" size={24} />Offer draw</button>
+        <button type="button" className="ax-action" disabled={!!ended} onClick={() => finish('lost', 'Resigned')}><Icon name="apps/i-flag" size={24} />Resign</button>
       </div>
       {toast}
       <Sheet open={menu} onClose={() => setMenu(false)} title={`Chess · ${VS}`}>
         <div className="ax-menu">
-          <button type="button" className="ax-menu-row" onClick={() => { setMenu(false); setSave(fresh()); }}><Icon name="apps/i-repeat" size={22} />Start again</button>
+          <button type="button" className="ax-menu-row" onClick={() => { setMenu(false); morph(() => setSave(fresh())); }}><Icon name="apps/i-repeat" size={22} />Start again</button>
           <Link href="/games" className="ax-menu-row"><Icon name="apps/i-more" size={22} />All games</Link>
         </div>
       </Sheet>
@@ -226,7 +234,7 @@ function ChessOver({ save, onRematch }: { save: ChessSave; onRematch: () => void
       <p className="ax-how">{over.how}</p>
       <h1 className="ax-result-title">{over.outcome === 'draw' ? 'Even match' : `${VS} won`}</h1>
       <p className="ax-14 c-2 ax-center">Good game. Rematch any time.</p>
-      <ChessBoard board={pos.board} className="is-final" label="Final position" />
+      <ChessBoard board={pos.board} className="is-final" label="Final position" name="ax-chess" />
       <span className="spacer" />
       <div className="ax-pair">
         <button type="button" className="ax-btn" onClick={onRematch}>Rematch</button>

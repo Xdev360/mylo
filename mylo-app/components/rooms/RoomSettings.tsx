@@ -8,8 +8,8 @@ import RoomPreview from './RoomPreview';
 import { Choices, LeaveSheet, useGone } from './ChatSettings';
 import { PopMenu } from './ChatSheets';
 import { RoomCard } from './YourRooms';
-import { Avatars, CoverArt, RIcon, Row, Toggle, useToast } from './ui';
-import { COVER_COLOURS, SCENES, adminName, isAdmin, isMember, roomStreak, rooms, shrinkPhoto, useRoom, wallpaper, type Cover, type Message, type Notify, type Room } from '@/lib/rooms';
+import { Avatars, CoverArt, Gate, RIcon, Row, Toggle, useToast } from './ui';
+import { COVER_COLOURS, SCENES, adminName, caps, errText, isAdmin, isMember, roomStreak, rooms, shrinkPhoto, useRoom, wallpaper, type Cover, type Message, type Notify, type Room } from '@/lib/rooms';
 
 
 /* LB2 · Room settings (admin) and LB5 (member), with LB3 · Change room
@@ -46,13 +46,15 @@ function PictureSheet({ room, open, onClose, onPicked }: { room: Room; open: boo
           );
         })}
       </div>
-      <h3 className="t-title-s r-pic-h">Or a colour</h3>
-      <div className="r-colours" role="radiogroup" aria-label="Colour">
-        {COVER_COLOURS.map(c => {
-          const cv: Cover = { kind: 'colour', colour: c };
-          return <button key={c} type="button" role="radio" aria-checked={on(cv)} aria-label={c} className={`r-colour${on(cv) ? ' is-on' : ''}`} style={{ '--c': c } as React.CSSProperties} onClick={() => setPick(cv)} />;
-        })}
-      </div>
+      {caps.coverColour && <>
+        <h3 className="t-title-s r-pic-h">Or a colour</h3>
+        <div className="r-colours" role="radiogroup" aria-label="Colour">
+          {COVER_COLOURS.map(c => {
+            const cv: Cover = { kind: 'colour', colour: c };
+            return <button key={c} type="button" role="radio" aria-checked={on(cv)} aria-label={c} className={`r-colour${on(cv) ? ' is-on' : ''}`} style={{ '--c': c } as React.CSSProperties} onClick={() => setPick(cv)} />;
+          })}
+        </div>
+      </>}
       <p className="r-note"><RIcon name="lock-16" size={16} />Only admins can change this. Members see who set it.</p>
       <button type="button" className="btn-primary" onClick={() => onPicked(pick)}>Use this picture</button>
       {toast}
@@ -98,7 +100,7 @@ function MoveZoom({ room, all, cover, onCancel, onSave }: { room: Room; all: Mes
   );
 }
 
-function NameSheet({ room, open, onClose }: { room: Room; open: boolean; onClose: () => void }) {
+function NameSheet({ room, open, onClose, onError }: { room: Room; open: boolean; onClose: () => void; onError: (text: string) => void }) {
   const [name, setName] = useState(room.name);
   const [about, setAbout] = useState(room.about);
   return (
@@ -108,22 +110,30 @@ function NameSheet({ room, open, onClose }: { room: Room; open: boolean; onClose
       <label className="r-field"><span className="r-field-label">Description</span>
         <input className="r-field-input" value={about} maxLength={80} placeholder="Gym every weekday. No excuses." onChange={e => setAbout(e.target.value)} /></label>
       <button type="button" className="btn-primary" aria-disabled={!name.trim()}
-              onClick={() => { if (!name.trim()) return; rooms.update(room.id, { name: name.trim(), about: about.trim() }); onClose(); }}>Save</button>
+              onClick={() => {
+                if (!name.trim()) return;
+                const patch: Partial<Room> = {};
+                if (name.trim() !== room.name) patch.name = name.trim();
+                if (about.trim() !== room.about) patch.about = about.trim();
+                rooms.update(room.id, patch).catch(e => onError(errText(e)));
+                onClose();
+              }}>Save</button>
     </Sheet>
   );
 }
 
 export default function RoomSettings({ id }: { id: string }) {
   const router = useRouter();
-  const { ready, room, all } = useRoom(id);
+  const { ready, signedOut, error, retry, room, all } = useRoom(id);
   const [sheet, setSheet] = useState<null | 'picture' | 'name' | 'notify' | 'join' | 'leave'>(null);
   const [moving, setMoving] = useState<Exclude<Cover, { kind: 'colour' }> | null>(null);
   const [more, setMore] = useState<HTMLElement | null>(null);
+  const [toast, say] = useToast();
   useGone(ready, room, '/rooms');
-  if (!ready || !room) return <main className="screen on-desk" aria-busy="true" />;
+  if (!ready || !room) return <Gate signedOut={signedOut} error={error} retry={retry} />;
   if (!isMember(room)) return <RoomPreview id={id} />;
   const admin = isAdmin(room);
-  const set = (p: Partial<Room>) => rooms.update(room.id, p);
+  const set = (p: Partial<Room>) => { rooms.update(room.id, p).catch(e => say(errText(e))); };
   const streak = roomStreak(all);
   const owner = adminName(room);
   const wp = wallpaper(room.wallpaper);
@@ -166,7 +176,7 @@ export default function RoomSettings({ id }: { id: string }) {
       {admin && <>
         <p className="t-label c-3 r-sec">Joining</p>
         <div className="card list r-group">
-          <Row tile="plain" icon="user-plus" label="Who can join" value={room.joinPolicy} onClick={() => setSheet('join')} />
+          {caps.joinPolicy && <Row tile="plain" icon="user-plus" label="Who can join" value={room.joinPolicy} onClick={() => setSheet('join')} />}
           <Row tile="plain" icon="compass" label="Show in Find a room" right={<Toggle label="Show in Find a room" on={room.findable} onChange={v => set({ findable: v })} />} />
           <Row tile="plain" icon="shield" label="Join requests" value={room.requests.length ? `${room.requests.length} waiting` : 'None'} href={`/rooms/${room.id}/requests`} />
         </div>
@@ -180,7 +190,7 @@ export default function RoomSettings({ id }: { id: string }) {
 
       <PictureSheet room={room} open={sheet === 'picture'} onClose={() => setSheet(null)}
                     onPicked={c => { setSheet(null); if (c.kind === 'colour') set({ cover: c }); else setMoving(c); }} />
-      {sheet === 'name' && <NameSheet room={room} open onClose={() => setSheet(null)} />}
+      {sheet === 'name' && <NameSheet room={room} open onClose={() => setSheet(null)} onError={say} />}
       <Choices open={sheet === 'notify'} title="Notifications" options={['All messages', 'Check-ins and cheers', 'Off'] as const}
                value={room.notify} onPick={(v: Notify) => set({ notify: v })} onClose={() => setSheet(null)} />
       <Choices open={sheet === 'join'} title="Who can join" options={['Ask to join', 'Anyone with the code'] as const}
@@ -191,6 +201,7 @@ export default function RoomSettings({ id }: { id: string }) {
         { label: 'Invite someone', icon: 'user-plus', onClick: () => router.push(`/rooms/${room.id}/members?invite=1`) },
         { label: 'How it looks in Find a room', icon: 'compass', onClick: () => router.push(`/rooms/${room.id}/preview`) }
       ]} />}
+      {toast}
     </main>
   );
 }

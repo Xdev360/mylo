@@ -7,11 +7,11 @@ import { useState, useSyncExternalStore } from 'react';
 import Icon from '@/components/Icon';
 import ScreenHeader from '@/components/ScreenHeader';
 import { supabase } from '@/lib/supabase';
-import { VERSION, haptic, shortEmail, usePeople, usePrefs, useProfile, useSession, whoIs } from '@/lib/system';
+import { VERSION, go, haptic, shortEmail, usePeople, usePrefs, useProfile, useSession, whoIs } from '@/lib/system';
 import Confirm, { CONFIRMS } from './Confirm';
 import PermissionPrimer from './PermissionPrimer';
 import { AboutBody, HelpBody, LanguageBody, NotificationsBody, PeopleBody, PrivacyBody } from './SettingsPages';
-import { Group, Row, SectionLabel, Toggle } from './ui';
+import { Group, Row, SectionLabel, Toggle, useToast } from './ui';
 
 /* ST1 · Settings on a phone (877:125671), DT8 · Settings on a wide screen
    (948:27826). ST9 is ST1 with the log out confirm open (/settings/logout). */
@@ -36,7 +36,8 @@ function zones(): string[] {
 
 export default function SettingsHome({ logout = false }: { logout?: boolean }) {
   const router = useRouter();
-  const { user } = useSession();
+  const { ready, user } = useSession();
+  const toast = useToast();
   const profile = useProfile(user);
   const who = whoIs(user, profile);
   const [prefs, setPrefs] = usePrefs();
@@ -49,12 +50,20 @@ export default function SettingsHome({ logout = false }: { logout?: boolean }) {
   const [tab, setTab] = useState<'account' | 'notifications' | 'privacy' | 'safety' | 'devices' | 'appearance' | 'help'>('account');
 
   const acct = (path: string) => (user ? path : '/signin');
-  const askLogout = () => (user ? setConfirm(true) : router.push('/signin'));
-  const closeLogout = () => { setConfirm(false); if (logout) router.replace('/settings'); };
+  const askLogout = () => (user ? setConfirm(true) : go(router, '/signin'));
+  const closeLogout = () => { setConfirm(false); if (logout) router.replace('/settings', { scroll: false }); };
+  /* Signing out ends at the welcome screen, as a fresh start: what is saved
+     on this device stays (it is not the account's to take), and back does
+     not return to a signed-in Settings. */
   const doLogout = async () => {
+    if (busy) return;
     setBusy(true);
-    try { await supabase().auth.signOut(); } finally { setBusy(false); setConfirm(false); router.push('/welcome'); }
+    try { await supabase().auth.signOut(); } catch { /* the session is dropped on this device either way */ }
+    setConfirm(false);
+    go(router, '/welcome', 'tab', true);
   };
+  /* /settings/logout opened with nobody signed in: there is nothing to log out of. */
+  const confirmOpen = confirm && (!logout || !ready || Boolean(user));
   const r = prefs.reminders;
   const flip = (k: keyof typeof r) => (v: boolean) => {
     if (v && k !== 'quiet' && typeof Notification !== 'undefined' && Notification.permission === 'default') setPrimer(true);
@@ -110,7 +119,8 @@ export default function SettingsHome({ logout = false }: { logout?: boolean }) {
           <Row icon="system/mylo" label="About Mylo" href="/settings/about" />
         </Group>
         <Group>
-          <Row icon="system/logout" label="Log out" danger onClick={askLogout} />
+          {/* Signed out there is nothing to log out of; the me card above says Sign in. */}
+          {(!ready || user) && <Row icon="system/logout" label="Log out" danger onClick={askLogout} />}
           <Row icon="system/trash" label="Delete account" danger href="/settings/delete" />
         </Group>
         <p className="sys-foot">Mylo {VERSION}</p>
@@ -120,12 +130,13 @@ export default function SettingsHome({ logout = false }: { logout?: boolean }) {
       <main className="dt8 only-desk">
         <h1 className="dt8-title">Settings</h1>
         <div className="dt8-cols">
-          <nav className="dt8-nav" aria-label="Settings">
+          <nav className="dt8-nav" aria-label="Settings" style={{ '--i': NAV.findIndex(n => n[0] === tab) } as React.CSSProperties}>
+            <span className="dt8-nav-pill" aria-hidden />
             {NAV.map(([id, label, icon]) => (
               <button key={id} type="button" aria-current={tab === id} onClick={() => setTab(id)}><Icon name={icon} size={18} />{label}</button>
             ))}
           </nav>
-          <div className="dt8-main">
+          <div className="dt8-main" key={tab}>
             {tab === 'account' && (
               <>
                 <section className="dt8-card" aria-labelledby="dt8-account">
@@ -199,7 +210,8 @@ export default function SettingsHome({ logout = false }: { logout?: boolean }) {
         </div>
       </main>
 
-      <Confirm open={confirm} {...CONFIRMS.logOut()} busy={busy} onCancel={closeLogout} onConfirm={doLogout} />
+      <Confirm open={confirmOpen} {...CONFIRMS.logOut()} busy={busy} onCancel={closeLogout} onConfirm={doLogout} />
+      {toast.node}
       <PermissionPrimer kind="notifications" open={primer} onClose={() => setPrimer(false)} />
     </>
   );

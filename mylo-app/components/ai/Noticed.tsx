@@ -8,7 +8,7 @@ import Sheet from '../Sheet';
 import { useHydrated, useLocal } from '@/lib/local';
 import { useStore } from '@/lib/store';
 import {
-  askMylo, DAILY, fromGoal, readWeek, REASONS, SLIPS_KEY, slipId, toItem, USAGE_KEY, useNow, usedToday,
+  askMylo, DAILY, fromGoal, readWeek, REASONS, SLIPS_KEY, slipId, useAddDrafts, USAGE_KEY, useNow, usedToday,
   type Slip, type SlipNote, type Usage
 } from '@/lib/ai';
 import { addDays, iso } from '@/lib/dates';
@@ -44,10 +44,10 @@ export function FixRow({ note, onApply }: { note: SlipNote; onApply: () => void 
 }
 
 export function useApplyFix() {
-  const { add } = useStore();
+  const addDrafts = useAddDrafts();
   return (note: SlipNote, save: (n: SlipNote) => void) => {
     if (!note.fix || note.applied) return;
-    add(toItem(note.fix));
+    addDrafts([note.fix]);
     save({ ...note, applied: true });
   };
 }

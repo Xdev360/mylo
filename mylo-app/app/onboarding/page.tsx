@@ -1,6 +1,8 @@
-import { redirect } from 'next/navigation';
+import OnboardingStart from '@/components/signin/OnboardingStart';
 
-/* Onboarding starts at its first step, O3. */
+export const metadata = { title: 'Get started · Mylo' };
+
+/* /onboarding picks up where the person left off, or starts at O3. */
 export default function Onboarding() {
-  redirect('/onboarding/want');
+  return <OnboardingStart />;
 }

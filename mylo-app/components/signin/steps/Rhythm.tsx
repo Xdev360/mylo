@@ -1,11 +1,9 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Icon from '@/components/Icon';
 import { clock } from '@/lib/dates';
-import { nextStep } from '@/lib/signin';
-import type { StepProps } from '../OnboardingStep';
-import { Cta, Foot, OnboardHeader, Screen } from '../ui';
+import { useFoot, type StepProps } from '../OnboardingFlow';
 
 /* ── O8 Daily rhythm (877:108021). The dial runs once round for an hour, in
    five minute steps: drag the knob, tap the ring, use the arrow keys, or
@@ -51,18 +49,24 @@ function Dial({ minutes, onChange }: { minutes: number; onChange: (m: number) =>
   );
 }
 
-export function Rhythm({ ob, update, go }: StepProps) {
-  const [minutes, setMinutes] = useState(ob.minutes ?? 30);
-  const [nudge, setNudge] = useState(ob.nudge);
-  const [at, setAt] = useState(ob.nudgeTime);
+export function Rhythm({ ob, update, next }: StepProps) {
+  // A draft until "Set my rhythm"; Back and forward keep it, Skip leaves the
+  // saved answer as it was.
+  const [minutes, setMinutes] = useState(() => draft?.minutes ?? ob.minutes ?? 30);
+  const [nudge, setNudge] = useState(() => draft?.nudge ?? ob.nudge);
+  const [at, setAt] = useState(() => draft?.at ?? ob.nudgeTime);
+  useEffect(() => { draft = { minutes, nudge, at }; }, [minutes, nudge, at]);
+  useFoot({
+    label: 'Set my rhythm', onClick: () => { update({ minutes, nudge, nudgeTime: at }); next(); },
+    note: 'Skip for now', onNote: () => next({ skipped: true })
+  });
   const timeRef = useRef<HTMLInputElement>(null);
   const pickTime = () => {
     const el = timeRef.current; if (!el) return;
     try { el.showPicker(); } catch { el.focus(); el.click(); }
   };
   return (
-    <Screen>
-      <OnboardHeader progress={6} />
+    <>
       <h1 className="si-title si-title-top">Small time, big wins</h1>
       <p className="t-body c-2 si-sub">How long can you give each day?</p>
       <div className="si-dial-wrap">
@@ -84,9 +88,7 @@ export function Rhythm({ ob, update, go }: StepProps) {
         </span>
         <button type="button" role="switch" aria-checked={nudge} aria-label="A little nudge" className="si-switch" onClick={() => setNudge(n => !n)} />
       </div>
-      <Foot note="Skip for now" onNote={() => go(nextStep('rhythm'))}>
-        <Cta onClick={() => { update({ minutes, nudge, nudgeTime: at }); go(nextStep('rhythm')); }}>Set my rhythm</Cta>
-      </Foot>
-    </Screen>
+    </>
   );
 }
+let draft: { minutes: number; nudge: boolean; at: string } | null = null;

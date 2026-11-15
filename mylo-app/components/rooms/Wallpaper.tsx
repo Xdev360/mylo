@@ -3,17 +3,17 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import ScreenHeader from '../ScreenHeader';
-import { RIcon } from './ui';
+import { Gate, RIcon } from './ui';
 import { useGone } from './ChatSettings';
 import { WALLPAPERS, rooms, useRoom, type WallpaperId } from '@/lib/rooms';
 
 /* CT19 · Chat wallpaper. The locked ones come from chests. */
 export default function Wallpaper({ id }: { id: string }) {
   const router = useRouter();
-  const { ready, room } = useRoom(id);
+  const { ready, signedOut, error, retry, room } = useRoom(id);
   const [pick, setPick] = useState<WallpaperId | null | undefined>(undefined);
-  useGone(ready, room);
-  if (!ready || !room) return <main className="screen on-desk" aria-busy="true" />;
+  useGone(ready, room && !room.peek ? room : null);
+  if (!ready || !room || room.peek) return <Gate signedOut={signedOut} error={error} retry={retry} />;
   const chosen = pick === undefined ? room.wallpaper : pick;
   return (
     <main className="screen on-desk r-wallpaper">

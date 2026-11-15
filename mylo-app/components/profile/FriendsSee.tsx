@@ -2,10 +2,13 @@
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useState } from 'react';
 import Icon from '@/components/Icon';
 import ScreenHeader from '@/components/ScreenHeader';
 import { useHydrated } from '@/lib/local';
 import { useProfile } from '@/lib/profile';
+import { leave } from '@/lib/system';
+import { Tabs } from './bits';
 
 /* P22a/b/c · What friends see: Cards (877:115754), Pets (877:116472),
    Badges (877:116618). You pick what shows, in order. A new account has no
@@ -24,20 +27,26 @@ export default function FriendsSee() {
   const router = useRouter();
   const params = useSearchParams();
   const { profile: p } = useProfile();
-  const tab = (TABS.find(t => t.id === params.get('tab'))?.id ?? 'cards') as Tab;
+  const first = (TABS.find(t => t.id === params.get('tab'))?.id ?? 'cards') as Tab;
+  /* The tab is kept in the address (so a reload or a shared link opens it)
+     without a navigation, so the pill slides and the panel moves. */
+  const [state, setState] = useState<{ tab: Tab; dir: 'fwd' | 'back' | null }>({ tab: first, dir: null });
+  const tab = state.tab;
   const T = TABS.find(t => t.id === tab)!;
+  const pick = (id: Tab) => {
+    if (id === tab) return;
+    const order = TABS.map(t => t.id) as Tab[];
+    setState({ tab: id, dir: order.indexOf(id) > order.indexOf(tab) ? 'fwd' : 'back' });
+    window.history.replaceState(window.history.state, '', `/profile/showcase?tab=${id}`);
+  };
   if (!hydrated) return <main className="screen on-desk" aria-busy="true" />;
   const picked = tab === 'cards' ? p.showcase : tab === 'pets' ? p.pets : p.badges;
 
   return (
     <main className="screen on-desk pf-see">
       <ScreenHeader title="What friends see" fallback="/profile/edit" />
-      <div className="pf-tabs is-three" role="tablist" aria-label="What friends see">
-        {TABS.map(t => (
-          <button key={t.id} type="button" role="tab" aria-selected={t.id === tab} className="pf-tab"
-                  onClick={() => router.replace(`/profile/showcase?tab=${t.id}`, { scroll: false })}>{t.label}</button>
-        ))}
-      </div>
+      <Tabs tabs={TABS} value={tab} onChange={pick} label="What friends see" className="is-three" />
+      <div className={`pf-see-body${state.dir ? ` pf-pane is-${state.dir}` : ''}`} key={tab} role="tabpanel">
       <div className="pf-see-head">
         <p className="t-body c-2">Pick up to {T.max}. They show in this order.</p>
         <span className="pf-count t-body-s">{picked.length} of {T.max}</span>
@@ -61,8 +70,9 @@ export default function FriendsSee() {
         </div>
         <p className="t-body-s c-3">Locked badges cannot be shown yet.</p>
       </>}
+      </div>
 
-      <button type="button" className="btn-primary pf-wide pf-bottom-btn" onClick={() => router.push('/profile/edit')}>Save</button>
+      <button type="button" className="btn-primary pf-wide pf-bottom-btn" onClick={() => leave(router, '/profile/edit')}>Save</button>
     </main>
   );
 }

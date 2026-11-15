@@ -31,7 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={figtree.variable} suppressHydrationWarning>
       <body>
         {/* A folded sidebar and a chosen theme are stamped before the first paint, so nothing jumps. */}
-        <script dangerouslySetInnerHTML={{ __html: "try{var d=document.documentElement;if(localStorage.getItem('mylo.side')==='rail')d.dataset.side='rail';var t=JSON.parse(localStorage.getItem('mylo.world.theme.v1')||'null');if(t==='light'||t==='dark')d.dataset.theme=t}catch(e){}" }} />
+        <script dangerouslySetInnerHTML={{ __html: "try{var d=document.documentElement;if(localStorage.getItem('mylo.side')==='rail')d.dataset.side='rail';var t=JSON.parse(localStorage.getItem('mylo.world.theme.v1')||'null');if(t==='light'||t==='dark')d.dataset.theme=t;var p=JSON.parse(localStorage.getItem('mylo.system.prefs.v1')||'null'),L={'English (US)':'en-US','Français':'fr','Español':'es','Português':'pt','Deutsch':'de','Italiano':'it','Türkçe':'tr','Kiswahili':'sw','Yorùbá':'yo'};if(p&&L[p.language])d.lang=L[p.language]}catch(e){}" }} />
         <AppShell>{children}</AppShell>
       </body>
     </html>

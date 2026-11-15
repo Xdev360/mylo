@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useSyncExternalStore } from 'react';
 import Icon from './Icon';
 import { useSession } from '@/lib/session';
+import { SlidePill, useSlidePill } from './SlidePill';
 
 /* DT2's sidebar, Figma 943:27302: the wordmark, then Today, Goals, Rooms,
    Mylo AI, Apps, Rewards, with you at the foot. Desktop only; the phone has
@@ -26,6 +27,9 @@ export default function Sidebar() {
   const path = usePathname();
   const { session, loading, name, profile } = useSession();
   const folded = useSyncExternalStore(subscribe, read, () => false);
+  const current = NAV.find(n => n.match.some(m => path === m || path.startsWith(m + '/')))?.href ?? null;
+  // The highlight slides between items as you move; it follows the fold too.
+  const track = useSlidePill<HTMLElement>(`${current}|${folded}`);
   function toggle() {
     const next = !folded;
     if (next) document.documentElement.dataset.side = 'rail'; else delete document.documentElement.dataset.side;
@@ -43,9 +47,10 @@ export default function Sidebar() {
           <Icon name="chevron-right" size={16} />
         </button>
       </div>
-      <nav className="side-nav">
+      <nav ref={track} className="side-nav slide-track">
+        <SlidePill />
         {NAV.map(n => {
-          const on = n.match.some(m => path === m || path.startsWith(m + '/'));
+          const on = current === n.href;
           return (
             <Link key={n.href} href={n.href} className="side-item" aria-current={on ? 'page' : undefined} title={n.label}>
               <Icon name={n.icon} size={20} /><span className="side-label">{n.label}</span>

@@ -6,7 +6,7 @@ import Icon from '@/components/Icon';
 import Mylo from './Mylo';
 import { useHydrated } from '@/lib/local';
 import { useStampedTheme, type Look } from '@/lib/world';
-import { goBack } from '@/components/NavMotion';
+import { canGoBack, goBack } from '@/components/NavMotion';
 
 /* Pieces the world screens share: the pushed-screen header with a back or
    close button, a room scene with the person's own Mylo standing in it,
@@ -25,7 +25,7 @@ export function WorldPage({ className = '', children, label, tabs = false }: { c
 
 export function useBack(fallback: string) {
   const router = useRouter();
-  return () => (window.history.length > 1 ? goBack(router) : router.push(fallback));
+  return () => (canGoBack() ? goBack(router) : router.push(fallback));
 }
 
 export function NavButton({ kind = 'back', onClick, href, label, className = '' }: { kind?: 'back' | 'close'; onClick?: () => void; href?: string; label?: string; className?: string }) {

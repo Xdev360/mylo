@@ -1,14 +1,15 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import { useStore } from '@/lib/store';
 import { useHydrated } from '@/lib/local';
 import { todayIso } from '@/lib/dates';
 import { TONE, TYPES, goalsOf, merge, useMeta, type Meta, type Repeat, type Tag } from '@/lib/goals';
-import { goBack } from '@/components/NavMotion';
+import { canGoBack, goBack, stampNav } from '@/components/NavMotion';
+import { SlidePill, useSlidePill } from '../SlidePill';
 
 /* D3 · New goal, repeat built in (878:114556). One form for a one-off goal,
    a routine on some days or every day; ?edit=<id> opens it filled in. */
@@ -38,21 +39,13 @@ function Form() {
   const [room, setRoom] = useState(!!start?.room);
   const [parent, setParent] = useState(start?.parent);
   const [picking, setPicking] = useState(false);
-  const [pending, setPending] = useState<{ before: Set<string>; meta: Meta; title: string } | null>(null);
+  const [saving, setSaving] = useState(false);
   const input = useRef<HTMLInputElement>(null);
   const timeRef = useRef<HTMLInputElement>(null);
+  const seg = useSlidePill<HTMLDivElement>(repeat);
 
   const parents = goalsOf(items, all).filter(g => g.id !== editId && !g.done);
   const parentGoal = parents.find(g => g.id === parent);
-
-  // The store names a new item itself; once it lands, give it its details.
-  useEffect(() => {
-    if (!pending) return;
-    const made = items.find(i => !pending.before.has(i.id) && i.title === pending.title);
-    if (!made) return;
-    patch(made.id, pending.meta);
-    router.replace(`/goals/${made.id}`);
-  }, [items, pending, patch, router]);
 
   function save() {
     const t = title.trim();
@@ -61,14 +54,18 @@ function Form() {
     const meta: Meta = { repeat: rep, days: rep === 'days' ? days : [], room, parent, time: time || undefined, tag };
     if (editing) {
       patch(editing.id, { ...meta, title: t });
-      router.replace(`/goals/${editing.id}`);
+      if (canGoBack()) goBack(router); else router.replace(`/goals/${editing.id}`);
       return;
     }
-    setPending({ before: new Set(items.map(i => i.id)), meta, title: t });
-    add({ kind: rep === 'once' ? 'goal' : 'system', title: t, date: q.get('date') ?? todayIso(), time: time || undefined, tag });
+    setSaving(true);
+    const id = add({ kind: rep === 'once' ? 'goal' : 'system', title: t, date: q.get('date') ?? todayIso(), time: time || undefined, tag });
+    patch(id, meta);
+    // The form gives way to the goal it made: back from there skips the form.
+    stampNav('push');
+    router.replace(`/goals/${id}`);
   }
 
-  const close = () => (window.history.length > 1 ? goBack(router) : router.push('/goals'));
+  const close = () => (canGoBack() ? goBack(router) : router.push('/goals'));
 
   return (
     <main className="screen on-desk g-form">
@@ -100,7 +97,8 @@ function Form() {
 
       <div className="g-field">
         <span className="t-body-s c-2" id="g-repeat">Repeat</span>
-        <div className="g-seg g-seg-40" role="radiogroup" aria-labelledby="g-repeat">
+        <div ref={seg} className="g-seg g-seg-40 slide-track" role="radiogroup" aria-labelledby="g-repeat">
+          <SlidePill />
           {REPEATS.map(r => (
             <button key={r.id} type="button" role="radio" aria-checked={repeat === r.id} className="g-seg-btn" onClick={() => setRepeat(r.id)}>{r.label}</button>
           ))}
@@ -137,7 +135,7 @@ function Form() {
       <p className="g-help">Habits, systems and to-dos are all just goals with a repeat. One place, one list.</p>
 
       <div className="g-form-foot">
-        <button type="button" className="g-btn-ink" onClick={save} disabled={!!pending}>Save goal</button>
+        <button type="button" className="g-btn-ink" onClick={save} disabled={saving}>Save goal</button>
       </div>
 
       <Sheet open={picking} onClose={() => setPicking(false)} title="Part of a bigger goal">

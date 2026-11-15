@@ -2,32 +2,35 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Chat from './Chat';
-import { Avatar, RIcon, RoomTile, useDesk } from './ui';
+import { Avatar, Gate, RIcon, RoomTile, morphOpen, roomFx, useDesk } from './ui';
+import { NewRoomSheet } from './YourRooms';
 import { useStore } from '@/lib/store';
 import { todayIso } from '@/lib/dates';
 import { ME, lastMessage, listTime, preview, useRooms, type Message, type Room } from '@/lib/rooms';
 
 /* CT0 · Chats on a phone; DT5 · Rooms from 1024 up, where the list, the
    chat and the room's side panel sit side by side. Mylo's own chat is always
-   first. Everything else is a room you made or joined on this device. */
+   first. Everything else is a room you made or joined, from your account. */
 
 function useList() {
-  const { ready, rooms, messages } = useRooms();
-  return useMemo(() => {
-    const list = rooms.filter(r => r.members.some(m => m.id === ME)).map(r => ({ room: r, last: lastMessage(messages[r.id] ?? []) as Message | undefined }));
-    list.sort((a, b) => Date.parse(b.last?.at ?? b.room.createdAt) - Date.parse(a.last?.at ?? a.room.createdAt));
-    return { ready, list };
-  }, [ready, rooms, messages]);
+  const { ready, signedOut, error, retry, rooms, messages, snap } = useRooms();
+  const list = useMemo(() => {
+    const out = rooms.filter(r => r.members.some(m => m.id === ME)).map(r => ({ room: r, last: lastMessage(messages[r.id] ?? []) as Message | undefined }));
+    out.sort((a, b) => Date.parse(b.last?.at ?? b.room.createdAt) - Date.parse(a.last?.at ?? a.room.createdAt));
+    return out;
+  }, [rooms, messages]);
+  return { ready, signedOut, error, retry, list, spaceOf: snap.spaceOf };
 }
 
 export default function Chats({ id }: { id?: string }) {
   const desk = useDesk();
-  const { ready, list } = useList();
-  if (!ready) return <main className="screen" aria-busy="true" />;
-  if (desk) return <Desk id={id ?? list[0]?.room.id} list={list} />;
-  if (id) return <Chat id={id} />;
+  const { ready, signedOut, error, retry, list, spaceOf } = useList();
+  if (!ready) return <Gate signedOut={signedOut} error={error} retry={retry} className="screen" />;
+  const open = id ? spaceOf[id] ?? id : undefined;
+  if (desk) return <Desk id={open ?? list[0]?.room.id} list={list} />;
+  if (open) return <Chat id={open} />;
   return <Phone list={list} />;
 }
 
@@ -35,6 +38,10 @@ function Phone({ list }: { list: { room: Room; last?: Message }[] }) {
   const [tab, setTab] = useState<'All' | 'Groups' | 'People'>('All');
   const [q, setQ] = useState('');
   const [search, setSearch] = useState(false);
+  const [creating, setCreating] = useState(false);
+  // Back from a room: that row is where the room folds back into.
+  const [backTo, setBackTo] = useState(() => roomFx.back);
+  useEffect(() => { if (!backTo) return; const t = setTimeout(() => setBackTo(null), 800); return () => clearTimeout(t); }, [backTo]);
   const shown = list.filter(({ room }) =>
     (tab === 'All' || (tab === 'Groups' ? room.members.length !== 2 : room.members.length === 2)) &&
     (!q || room.name.toLowerCase().includes(q.toLowerCase())));
@@ -45,7 +52,7 @@ function Phone({ list }: { list: { room: Room; last?: Message }[] }) {
         <h1 className="r-h1">Chats</h1>
         <div className="r-chats-actions">
           <button type="button" className="round-btn" aria-label="Search" aria-expanded={search} onClick={() => { setSearch(s => !s); setQ(''); }}><RIcon name="search" size={22} /></button>
-          <Link href="/rooms/new" className="round-btn" aria-label="New room"><RIcon name="compose" size={22} /></Link>
+          <button type="button" className="round-btn" aria-label="New room" onClick={() => setCreating(true)}><RIcon name="compose" size={22} /></button>
         </div>
       </header>
       {search && (
@@ -61,7 +68,7 @@ function Phone({ list }: { list: { room: Room; last?: Message }[] }) {
           <span className="t-caption">Your story</span>
         </Link>
       </nav>
-      <div className="r-seg" role="tablist" aria-label="Show">
+      <div className="r-seg" role="tablist" aria-label="Show" style={{ '--i': ['All', 'Groups', 'People'].indexOf(tab), '--n': 3 } as React.CSSProperties}>
         {(['All', 'Groups', 'People'] as const).map(t => (
           <button key={t} type="button" role="tab" aria-selected={tab === t} className={tab === t ? 'is-on' : ''} onClick={() => setTab(t)}>{t}</button>
         ))}
@@ -79,7 +86,8 @@ function Phone({ list }: { list: { room: Room; last?: Message }[] }) {
             </Link>
           )}
           {shown.map(({ room, last }) => (
-            <Link key={room.id} href={`/chats/${room.id}`} className="r-chatrow">
+            <Link key={room.id} href={`/chats/${room.id}`} className="r-chatrow" onClick={e => morphOpen(e.currentTarget)}
+                  style={backTo === room.id ? { viewTransitionName: 'r-open', animation: 'none' } : undefined}>
               <RoomTile room={room} className="r-chatrow-cover" />
               <span className="r-chatrow-text">
                 <span className="r-chatrow-name">{room.name}{room.muted && <RIcon name="bell" size={14} className="c-3 r-muted" />}</span>
@@ -90,7 +98,19 @@ function Phone({ list }: { list: { room: Room; last?: Message }[] }) {
           ))}
         </div>
       )}
-      {list.length === 0 && <Link href="/rooms/join" className="chip chip-plain r-gotcode">Got a code? Join a room</Link>}
+      {list.length === 0 && !q && (
+        <section className="r-firstroom" aria-label="No rooms yet">
+          <h2 className="r-h3">No rooms yet</h2>
+          <p className="t-body-s c-2">A room is a small group that keeps each other going. Make one and invite a few friends, or join one with a code.</p>
+          <div className="r-two">
+            <button type="button" className="btn-primary" onClick={() => setCreating(true)}>New room</button>
+            <Link href="/rooms/join" className="r-btn-soft is-small">Join with a code</Link>
+          </div>
+          <Link href="/rooms/find" className="r-btn-text">Find a room to join</Link>
+        </section>
+      )}
+      {list.length > 0 && shown.length === 0 && !mylo && <p className="t-body c-2 r-empty-note">{q ? <>No rooms match &ldquo;{q}&rdquo;.</> : tab === 'People' ? 'Chats with one other person show up here.' : 'Your group rooms show up here.'}</p>}
+      <NewRoomSheet open={creating} onClose={() => setCreating(false)} />
     </main>
   );
 }
@@ -142,9 +162,19 @@ function Rail({ room }: { room: Room }) {
   const { items } = useStore();
   const mine = items.filter(i => i.date === todayIso() && i.kind !== 'goal');
   const done = mine.filter(i => i.done).length;
+  // What I do today with someone in this room, as DT5's cards.
+  const names = new Set(room.members.filter(m => m.id !== ME).map(m => m.name.toLowerCase()));
+  const shared = mine.filter(i => i.with && names.has(i.with.toLowerCase()));
   return (
     <aside className="r-rail" aria-label="Room">
       <h2 className="r-rail-h">Shared today</h2>
+      {shared.length > 0 ? shared.map(i => (
+        <div key={i.id} className="r-rail-card">
+          <span className="r-rail-card-title">{i.title}</span>
+          <span className="t-caption c-2">{i.done ? 'Done' : `With ${i.with}`}</span>
+          <span className="r-rail-bar"><span style={{ width: i.done ? '100%' : '0%' }} /></span>
+        </div>
+      )) : <p className="t-caption c-3">Things you do today with someone in {room.name} show here.</p>}
       <h2 className="r-rail-h">Members</h2>
       <ul className="r-rail-members">
         {room.members.map(m => (

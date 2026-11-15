@@ -1,7 +1,6 @@
-import Age from '@/components/signin/Age';
+import { redirect } from 'next/navigation';
 
-export const metadata = { title: 'Your birthday · Mylo' };
-
+/* The age check (S1, S2) is a step of onboarding now; old links still land on it. */
 export default function AgePage() {
-  return <Age />;
+  redirect('/onboarding/age');
 }

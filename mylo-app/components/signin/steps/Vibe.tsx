@@ -1,9 +1,9 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { DEFAULT_MYLO_NAME, nextStep, type Vibe } from '@/lib/signin';
-import type { StepProps } from '../OnboardingStep';
-import { Art, Cta, Foot, OnboardHeader, Screen } from '../ui';
+import { DEFAULT_MYLO_NAME, type Vibe } from '@/lib/signin';
+import { useFoot, type StepProps } from '../OnboardingFlow';
+import { Art } from '../ui';
 
 /* ── O6 Meet your Mylo (877:107943), XT1a Gentle (797:90783), XT1b Coach
    (797:90898): one card in the middle, its neighbours smaller and faded on
@@ -15,20 +15,28 @@ export const VIBES: { id: Vibe; label: string; tag: string; line: string; tone: 
 ];
 const GAP = 246;
 
-export function VibePick({ ob, update, go }: StepProps) {
-  const [at, setAt] = useState(() => Math.max(0, VIBES.findIndex(v => v.id === ob.vibe)));
+export function VibePick({ ob, update, next }: StepProps) {
+  const at = Math.max(0, VIBES.findIndex(v => v.id === ob.vibe));
   const [drag, setDrag] = useState(0);
   const start = useRef<number | null>(null);
   const moved = useRef(false);
   const v = VIBES[at];
-  const to = (i: number) => setAt(Math.max(0, Math.min(VIBES.length - 1, i)));
+  // The pick is saved as it moves, so Back and a reload keep it.
+  const to = (i: number) => update({ vibe: VIBES[Math.max(0, Math.min(VIBES.length - 1, i))].id });
+  useFoot({ label: "That's my Mylo", note: 'Swap anytime', onClick: () => next() });
 
   return (
-    <Screen>
-      <OnboardHeader progress={4} />
+    <>
       <h1 className="si-title si-title-top">Who matches your vibe?</h1>
       <div className="si-vibes" role="radiogroup" aria-label="Who matches your vibe?"
-           onKeyDown={e => { if (e.key === 'ArrowRight') to(at + 1); if (e.key === 'ArrowLeft') to(at - 1); }}
+           onKeyDown={e => {
+             const d = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0;
+             if (!d) return;
+             e.preventDefault();
+             const i = Math.max(0, Math.min(VIBES.length - 1, at + d));
+             to(i);
+             e.currentTarget.querySelectorAll<HTMLElement>('[role="radio"]')[i]?.focus();
+           }}
            onPointerDown={e => { start.current = e.clientX; moved.current = false; }}
            onPointerMove={e => { if (start.current === null) return; const dx = e.clientX - start.current; if (Math.abs(dx) > 6) moved.current = true; setDrag(dx); }}
            onPointerUp={() => { if (drag < -50) to(at + 1); else if (drag > 50) to(at - 1); start.current = null; setDrag(0); }}
@@ -53,10 +61,7 @@ export function VibePick({ ob, update, go }: StepProps) {
         <p className="t-body-s c-2">{v.label} Mylo</p>
         <div className="si-dots-row" aria-hidden>{VIBES.map((c, i) => <span key={c.id} className={i === at ? 'is-on' : ''} />)}</div>
       </div>
-      <Foot note="Swap anytime">
-        <Cta onClick={() => { update({ vibe: v.id }); go(nextStep('vibe')); }}>That&apos;s my Mylo</Cta>
-      </Foot>
-    </Screen>
+    </>
   );
 }
 
@@ -64,13 +69,16 @@ export function VibePick({ ob, update, go }: StepProps) {
 const NAMES = ['Biscuit', 'Pip', 'Nova', 'Toast'];
 const MAX_NAME = 12;
 
-export function Name({ ob, update, go }: StepProps) {
-  const [name, setName] = useState(ob.myloName);
+export function Name({ ob, update, next }: StepProps) {
+  // Kept as typed (a draft is an answer too: Back and forward keep it), and
+  // trimmed when the person moves on.
+  const name = ob.myloName;
+  const setName = (v: string) => update({ myloName: v.slice(0, MAX_NAME) });
   const clean = name.trim();
-  const save = () => { if (!clean) return; update({ myloName: clean }); go(nextStep('name')); };
+  const save = () => { if (!clean) return; update({ myloName: clean }); next(); };
+  useFoot({ label: 'Continue', disabled: !clean, onClick: save });
   return (
-    <Screen>
-      <OnboardHeader progress={5} />
+    <>
       <h1 className="si-title si-title-top">Give your Mylo a name</h1>
       <span className="si-ring si-name-ring"><Art name="mylo-love" w={141} h={169} /></span>
       <form className="si-name-form" onSubmit={e => { e.preventDefault(); save(); }}>
@@ -83,9 +91,6 @@ export function Name({ ob, update, go }: StepProps) {
           {NAMES.map(n => <button key={n} type="button" className="si-chip" aria-pressed={clean === n} onClick={() => setName(n)}>{n}</button>)}
         </div>
       </form>
-      <Foot>
-        <Cta disabled={!clean} onClick={save}>Continue</Cta>
-      </Foot>
-    </Screen>
+    </>
   );
 }

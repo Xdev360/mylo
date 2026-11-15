@@ -4,11 +4,13 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Icon from '@/components/Icon';
+import { morph } from '@/components/apps/motion';
 import QuickTodo from '@/components/QuickTodo';
 import Mylo from './Mylo';
 import { Switch, WorldHeader, WorldPage, wi } from './ui';
 import { useLocal } from '@/lib/local';
-import { onDay, streak, useStore } from '@/lib/store';
+import { onDay, useStore } from '@/lib/store';
+import { useStreak } from '@/lib/goals';
 import { dayLetter, greeting, iso, longDate, thisWeek, todayIso } from '@/lib/dates';
 import { KEYS, useLook, usePhoneIsDark, useTheme } from '@/lib/world';
 
@@ -39,7 +41,8 @@ function AppThemeBody() {
   const inUse = !locked && theme !== 'system' && theme === t.id;
   const act = () => {
     if (locked) { if ('preview' in t) router.push(t.preview); return; }
-    setTheme(t.id as 'light' | 'dark');
+    // The whole app changes colour as one fade rather than a snap.
+    morph(() => setTheme(t.id as 'light' | 'dark'));
   };
   return (
     <>
@@ -50,7 +53,7 @@ function AppThemeBody() {
       </div>
       <div className="w-follow">
         <span className="t-body c-ink w-grow">Follow the phone</span>
-        <Switch on={theme === 'system'} label="Follow the phone" onChange={v => { setTheme(v ? 'system' : (shown as 'light' | 'dark')); setPick(shown); }} />
+        <Switch on={theme === 'system'} label="Follow the phone" onChange={v => morph(() => { setTheme(v ? 'system' : (shown as 'light' | 'dark')); setPick(shown); })} />
       </div>
       <div className="w-theme-grid" role="radiogroup" aria-label="App theme">
         {APP_THEMES.map(x => (
@@ -107,13 +110,14 @@ export function SkinPreview({ skin }: { skin: 'blush' | 'gym' }) {
 }
 function SkinBody() {
   const { items } = useStore();
+  const streakNow = useStreak();
   const [look] = useLook();
   const now = useMemo(() => new Date(), []);
   const today = todayIso();
   const mine = onDay(items, today);
   const left = mine.filter(i => !i.done).length, done = mine.length - left;
   const pct = mine.length ? Math.round((done / mine.length) * 100) : 0;
-  const n = streak(items);
+  const n = streakNow;
   return (
     <>
       <span className="w-skin-pattern" aria-hidden />

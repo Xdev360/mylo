@@ -43,6 +43,13 @@ export default function Vibes() {
   return (
     <main className="screen on-desk ax-vibes">
       <Head title="Saved" fallback="/apps" />
+      {!cards.length && (
+        <div className="ax-empty">
+          <img src="/figma/apps/mylo-later.svg" alt="" width={74} height={88} />
+          <p className="t-body c-2">Quotes you save from the feed land here.</p>
+          <Link href="/feed" className="ax-small-btn">Feed</Link>
+        </div>
+      )}
       <div className="ax-vibe-grid">
         {cards.map(c => (
           <button key={c.id} type="button" className={`ax-vibe is-${c.style}`} style={{ background: BG[c.style] }} onClick={() => setOpen(c)}>

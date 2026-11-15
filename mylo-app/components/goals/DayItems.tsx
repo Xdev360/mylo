@@ -4,24 +4,14 @@ import { useState } from 'react';
 import Icon from '../Icon';
 import TaskSheet from './TaskSheet';
 import { Check, TICK_XP, XpPill, useBurst, useCelebrate } from './Tick';
-import { useStore, type Item } from '@/lib/store';
-import { fromIso } from '@/lib/dates';
-import { goalsOf, isPlanned, merge, useMeta, type Meta } from '@/lib/goals';
+import { useStore } from '@/lib/store';
+import { dayThings, useMeta, type DayThing } from '@/lib/goals';
 
-/* What is on a day: the store's tasks, to-dos and goals dated that day, and
-   every repeating goal planned for it. One row each, as the TaskRow
-   component draws them (E3 and N7). */
-export type DayThing = { id: string; title: string; time?: string; minutes?: number; with?: string; tag?: Item['tag']; done: boolean; repeat: boolean; room?: boolean };
-
-export function thingsOn(items: Item[], all: Record<string, Meta>, day: string): DayThing[] {
-  const dated = items.filter(i => !all[i.id]?.hidden && merge(i, all[i.id]).date === day)
-    .map(i => merge(i, all[i.id]))
-    .filter(g => g.repeat === 'once')
-    .map(g => ({ id: g.id, title: g.title, time: g.time, minutes: g.minutes, with: g.with, tag: g.tag, done: g.done, repeat: false, room: g.room }));
-  const repeating = goalsOf(items, all).filter(g => g.repeat !== 'once' && g.date <= day && isPlanned(g, fromIso(day)))
-    .map(g => ({ id: g.id, title: g.title, time: g.time, minutes: g.minutes, with: g.with, tag: g.tag, done: g.log.includes(day), repeat: true, room: g.room }));
-  return [...dated, ...repeating].sort((a, b) => (a.time ?? '99').localeCompare(b.time ?? '99'));
-}
+/* What is on a day lives in lib/goals (dayThings), so Today, the calendar,
+   the moments and N7 all count the same things. One row each, as the
+   TaskRow component draws them (E3 and N7). */
+export type { DayThing };
+export const thingsOn = dayThings;
 
 export function useToggleThing(day: string) {
   const { toggle } = useStore();

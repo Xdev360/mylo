@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useSyncExternalStore } from 'react';
-import type { Item } from './store';
+import { streak, useStore, type Item } from './store';
 import type { Tone } from './parse';
 import { addDays, fromIso, iso, todayIso } from './dates';
 
@@ -82,6 +82,42 @@ export function merge(item: Item, m: Meta = {}): Goal {
 /* Goals and systems a person has, merged with their details, minus hidden. */
 export function goalsOf(items: Item[], all: Record<string, Meta>) {
   return items.filter(i => (i.kind === 'goal' || i.kind === 'system') && !all[i.id]?.hidden).map(i => merge(i, all[i.id]));
+}
+
+/* ── What is on a day ───────────────────────────────────────────────────────
+   The one answer every screen gives: Today (C2, DT2), the tick toast, the
+   moments (C1, C6, C10), the calendar (E3) and plan another day (N7). The
+   store's tasks, to-dos and one-off goals dated that day, plus every system
+   planned for it from the day it started. */
+export type DayThing = { id: string; kind: Item['kind']; title: string; time?: string; minutes?: number; with?: string; tag?: Item['tag']; done: boolean; repeat: boolean; room?: boolean };
+
+export function dayThings(items: Item[], all: Record<string, Meta>, day: string): DayThing[] {
+  const out: DayThing[] = [];
+  for (const i of items) {
+    const m = all[i.id];
+    if (m?.hidden) continue;
+    const g = merge(i, m);
+    if (g.repeat === 'once') {
+      if (g.date === day) out.push({ id: g.id, kind: g.kind, title: g.title, time: g.time, minutes: g.minutes, with: g.with, tag: g.tag, done: g.done, repeat: false, room: g.room });
+    } else if (!g.done && g.date <= day && isPlanned(g, fromIso(day))) {
+      out.push({ id: g.id, kind: g.kind, title: g.title, time: g.time, minutes: g.minutes, with: g.with, tag: g.tag, done: g.log.includes(day), repeat: true, room: g.room });
+    }
+  }
+  return out.sort((a, b) => (a.time ?? '99').localeCompare(b.time ?? '99'));
+}
+
+/* Days a system was checked in on: they count toward the streak like ticks. */
+export function checkinDays(all: Record<string, Meta>) {
+  const days: string[] = [];
+  for (const id in all) if (!all[id].hidden) days.push(...(all[id].log ?? []));
+  return days;
+}
+
+/* The streak every screen shows: ticked days plus system check-ins. */
+export function useStreak() {
+  const { items } = useStore();
+  const { all } = useMeta();
+  return streak(items, checkinDays(all));
 }
 
 /* ── Weeks, repeats and progress ────────────────────────────────────────── */
@@ -199,6 +235,10 @@ export const useLock = shared<Lock>('mylo.goals.lock.v1', { on: false });
 /* ── Daily moments ──────────────────────────────────────────────────────── */
 export type Moments = { lastOpen?: string; morning?: string; evening?: string; perfect?: string; back?: string };
 export const useMoments = shared<Moments>('mylo.goals.moments.v1', {});
+/* Set when a moment was opened over the screen you were on, so leaving it
+   goes back there instead of stacking another Today on the history. */
+const momentNav = { over: false };
+export const momentOver = (over?: boolean) => { if (over !== undefined) momentNav.over = over; return momentNav.over; };
 
 /* Quick to-dos added through N4 today, for its "2 of 5" line. */
 export const QUICK_LIMIT = 5;

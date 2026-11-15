@@ -69,9 +69,12 @@ export function useStore() {
 /* The day's things: tasks and to-dos dated today. */
 export const onDay = (items: Item[], day: string) => items.filter(i => (i.kind === 'task' || i.kind === 'todo') && i.date === day);
 
-/* Days in a row with at least one thing done, up to today or yesterday. */
-export function streak(items: Item[]) {
+/* Days in a row with at least one thing done, up to today or yesterday.
+   `checkins` adds the days a system was checked in (lib/goals checkinDays),
+   so a day where only a routine was ticked still counts. */
+export function streak(items: Item[], checkins: Iterable<string> = []) {
   const doneDays = new Set(items.filter(i => i.done && i.doneAt).map(i => iso(new Date(i.doneAt!))));
+  for (const d of checkins) doneDays.add(d);
   let d = new Date(); if (!doneDays.has(iso(d))) d = addDays(d, -1);
   let n = 0; while (doneDays.has(iso(d))) { n++; d = addDays(d, -1); }
   return n;

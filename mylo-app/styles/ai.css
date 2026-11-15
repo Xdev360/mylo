@@ -442,3 +442,16 @@ fieldset.ai-field > legend{ margin-bottom:8px; padding:0; }
 }
 .ai-rail-name{ display:block; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:14px; font-weight:500; line-height:18px; }
 .ai-rail-when{ font-size:12px; font-weight:500; line-height:15.6px; color:var(--text-2); }
+
+/* The newest exchange arrives: your bubble rises from the composer, Mylo's
+   answer and its plan follow. Older messages are already in place. */
+.ai-msgs > :nth-last-child(-n+2){ animation:aiIn .36s cubic-bezier(.22,1,.36,1) both; }
+.ai-msgs > .ai-me:nth-last-child(-n+2){ transform-origin:100% 100%; }
+@keyframes aiIn{ from{ opacity:0; translate:0 10px; scale:.98; } }
+.ai-plan-card, .ai-plan-row{ animation:aiIn .4s cubic-bezier(.22,1,.36,1) both; }
+.ai-plan-card:nth-child(2), .ai-plan-row:nth-child(2){ animation-delay:.05s; }
+.ai-plan-card:nth-child(3), .ai-plan-row:nth-child(3){ animation-delay:.1s; }
+.ai-plan-card:nth-child(n+4), .ai-plan-row:nth-child(n+4){ animation-delay:.15s; }
+.ai-intro .ai-chip{ animation:aiIn .36s cubic-bezier(.22,1,.36,1) .12s both; }
+@media (min-width:1024px){ .ai-intro .ai-chips-inline{ display:flex; padding:0 0 0 49px; } }
+@media (prefers-reduced-motion: reduce){ .ai-msgs > *, .ai-plan-card, .ai-plan-row, .ai-intro .ai-chip{ animation:none !important; } }

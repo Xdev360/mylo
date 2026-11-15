@@ -2,22 +2,35 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import Icon from '../Icon';
 import { RoomCard } from './YourRooms';
-import { Avatars, CoverArt } from './ui';
+import { Avatars, CoverArt, Gate, useToast } from './ui';
 import { useGone } from './ChatSettings';
-import { adminName, inToday, isMember, roomStreak, rooms, useRoom } from '@/lib/rooms';
-import { goBack } from '@/components/NavMotion';
+import { adminName, caps, errText, inToday, isMember, roomStreak, rooms, useRoom } from '@/lib/rooms';
+import { canGoBack, goBack } from '@/components/NavMotion';
 
-/* LB7 · Room preview, and LB8 · Request sent once you ask. */
+/* LB7 · Room preview, and LB8 · Request sent once you ask. A room you are
+   not in shows only its public face: name, picture, category, head count. */
 export default function RoomPreview({ id }: { id: string }) {
   const router = useRouter();
-  const { ready, room, all } = useRoom(id);
+  const { ready, signedOut, error, retry, room, all } = useRoom(id);
+  const [busy, setBusy] = useState(false);
+  const [toast, say] = useToast();
   useGone(ready, room, '/rooms/find');
-  if (!ready || !room) return <main className="screen on-desk" aria-busy="true" />;
+  if (!ready || !room) return <Gate signedOut={signedOut} error={error} retry={retry} />;
   const mine = isMember(room);
   const admin = adminName(room);
-  const back = () => (window.history.length > 1 ? goBack(router) : router.push('/rooms/find'));
+  const back = () => (canGoBack() ? goBack(router) : router.push('/rooms/find'));
+  // Found by its code: ask with the code. Found in Find a room: ask by id.
+  async function ask() {
+    if (!room || busy) return;
+    setBusy(true);
+    try {
+      if (room.code) { const r = await rooms.joinByCode(room.code); if (r.status === 'joined') router.push(`/chats/${r.id || room.id}`); }
+      else await rooms.ask(room.id);
+    } catch (e) { say(errText(e)); } finally { setBusy(false); }
+  }
 
   if (room.asked && !mine) {
     return (
@@ -25,17 +38,17 @@ export default function RoomPreview({ id }: { id: string }) {
         <header className="screen-header"><button type="button" className="back-btn" aria-label="Back" onClick={back}><Icon name="chevron-right" size={20} className="flip" /></button></header>
         <span className="r-sent-disc"><img src="/figma/rooms/mylo-sent.svg" alt="" /></span>
         <h1 className="r-sent-title">Request sent</h1>
-        <p className="t-body c-2 r-center">{admin} will see it. We will tell you when you are in.</p>
+        <p className="t-body c-2 r-center">{room.peek ? 'An admin' : admin} will see it. We will tell you when you are in.</p>
         <RoomCard room={room} list={all} href={`/rooms/${room.id}/preview`} action={null} />
         <span className="spacer" />
         <Link href="/rooms" className="btn-primary r-bottom-btn">Back to rooms</Link>
-        <button type="button" className="r-btn-text" onClick={() => rooms.update(room.id, { asked: false })}>Cancel request</button>
+        {caps.cancelRequest && <button type="button" className="r-btn-text">Cancel request</button>}
       </main>
     );
   }
 
   const others = room.members.filter(m => m.id !== 'me').map(m => m.name);
-  const names = room.members.length === 1 && mine ? 'Only you' : others.length > 3 ? `${others.slice(0, 3).join(', ')} and ${others.length - 3} others` : others.join(', ');
+  const names = room.peek ? `${room.members.length} ${room.members.length === 1 ? 'person' : 'people'}` : room.members.length === 1 && mine ? 'Only you' : others.length > 3 ? `${others.slice(0, 3).join(', ')} and ${others.length - 3} others` : others.join(', ');
   return (
     <main className="r-preview">
       <div className="r-preview-hero">
@@ -57,9 +70,10 @@ export default function RoomPreview({ id }: { id: string }) {
         <div className="r-preview-people"><Avatars members={room.members} size={28} /><span className="t-body-s c-2">{names}</span></div>
         {mine
           ? <Link href={`/chats/${room.id}`} className="btn-primary">Open</Link>
-          : <button type="button" className="btn-primary" onClick={() => rooms.update(room.id, { asked: true })}>Ask to join</button>}
-        <p className="t-caption c-3 r-center">{admin === 'You' ? 'You are the admin and approve new members.' : `${admin} is the admin and approves new members.`}</p>
+          : <button type="button" className="btn-primary" onClick={ask} aria-busy={busy} aria-disabled={busy}>Ask to join</button>}
+        <p className="t-caption c-3 r-center">{room.peek ? 'An admin approves new members.' : admin === 'You' ? 'You are the admin and approve new members.' : `${admin} is the admin and approves new members.`}</p>
       </section>
+      {toast}
     </main>
   );
 }

@@ -93,7 +93,8 @@ export function Segment<T extends string>({ value, options, onChange, label, cla
   value: T; options: readonly T[]; onChange: (v: T) => void; label: string; className?: string;
 }) {
   return (
-    <div className={`sx-seg ${className}`} role="tablist" aria-label={label}>
+    <div className={`sx-seg is-slide ${className}`} role="tablist" aria-label={label}
+         style={{ '--i': Math.max(0, options.indexOf(value)), '--n': options.length } as React.CSSProperties}>
       {options.map(o => (
         <button key={o} type="button" role="tab" aria-selected={o === value} className="sx-seg-btn" onClick={() => onChange(o)}>{o}</button>
       ))}

@@ -5,37 +5,47 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import Icon from '@/components/Icon';
 import Sheet from '@/components/Sheet';
+import Confirm from '@/components/system/Confirm';
 import { useHydrated, useLocal } from '@/lib/local';
 import { badgeHex, profileUrl, useFriend, useProfile } from '@/lib/profile';
+import { leave, usePeople } from '@/lib/system';
 import Room from './Room';
-import { Avatar, BareSheet, Seal, SheetRow, copyText, useToast } from './bits';
+import { Avatar, BareSheet, Seal, SheetRow, Tabs, copyText, useTabMotion, useToast } from './bits';
+import { ProfileLoading } from './ProfileView';
 import { DEFAULT_ROOM } from './room-data';
-import { goBack } from '@/components/NavMotion';
 
 /* A friend's profile: P4 (877:117049) and its Goals tab P5 (877:117845),
    the menu P6 (877:118162), Dare P7 (877:118995) and P27 · What verified
    means (877:119860). Only what their profiles row holds is shown; their
    room, cards and goals arrive with the social tables. */
-type People = { muted: string[]; removed: string[]; blocked: string[]; dares: { to: string; text: string; proof: boolean; at: string }[] };
+/* Blocked and muted people live in the same lists Settings shows (ST3 and
+   Muted people, lib/system), so unblocking there unblocks here. Removed
+   friends and sent dares stay on this device until the social tables. */
+type People = { removed: string[]; dares: { to: string; text: string; proof: boolean; at: string }[] };
 const DARES = ['Cold shower tomorrow morning', '30 push-ups before bed', 'No phone for the first hour'];
+const TABS = [{ id: 'overview', label: 'Overview' }, { id: 'goals', label: 'Goals' }] as const;
+const ORDER = TABS.map(t => t.id);
 
 export default function FriendView({ username }: { username: string }) {
   const hydrated = useHydrated();
   const router = useRouter();
   const state = useFriend(username);
   const { profile: me } = useProfile();
-  const [people, setPeople] = useLocal<People>('mylo.profile.people.v1', { muted: [], removed: [], blocked: [], dares: [] });
-  const [tab, setTab] = useState<'overview' | 'goals'>('overview');
+  const [, setPeople] = useLocal<People>('mylo.profile.people.v1', { removed: [], dares: [] });
+  const [blockedList, setBlocked] = usePeople('blocked');
+  const [mutedList, setMuted] = usePeople('muted');
+  const [tab, setTab, pane] = useTabMotion(ORDER, 'overview');
   const [menu, setMenu] = useState(false);
+  const [askBlock, setAskBlock] = useState(false);
   const [dare, setDare] = useState(false);
   const [verified, setVerified] = useState(false);
   const [pick, setPick] = useState(DARES[0]);
   const [own, setOwn] = useState('');
   const [proof, setProof] = useState(true);
   const toast = useToast();
-  const back = () => (window.history.length > 1 ? goBack(router) : router.push('/today'));
+  const back = () => leave(router, '/today');
 
-  if (!hydrated || state.status === 'loading') return <main className="screen" aria-busy="true" />;
+  if (!hydrated || state.status === 'loading') return <ProfileLoading />;
   if (state.status === 'missing' || !state.profile) {
     return (
       <main className="screen on-desk pf-missing">
@@ -53,19 +63,27 @@ export default function FriendView({ username }: { username: string }) {
   const name = f.name || `@${f.username}`;
   const first = (f.name || f.username).split(' ')[0];
   const isMe = me.username && me.username === f.username;
-  const muted = people.muted.includes(f.id);
+  const muted = mutedList.some(x => x.id === f.id);
+  const blocked = blockedList.some(x => x.id === f.id);
+  const entry = { id: f.id, name, at: new Date().toISOString() };
 
   async function share() {
     const url = profileUrl(f.username);
     try { if (navigator.share) { await navigator.share({ title: name, url }); return; } } catch { return; }
     toast.show((await copyText(url)) ? 'Link copied' : url);
   }
-  function list(key: 'muted' | 'removed' | 'blocked', on: boolean) {
-    setPeople(p => ({ ...p, [key]: on ? [...new Set([...p[key], f.id])] : p[key].filter(x => x !== f.id) }));
+  function mute(on: boolean) {
+    setMuted(all => on ? [...all.filter(x => x.id !== f.id), entry] : all.filter(x => x.id !== f.id));
+  }
+  function block(on: boolean) {
+    setBlocked(all => on ? [...all.filter(x => x.id !== f.id), entry] : all.filter(x => x.id !== f.id));
+  }
+  function removeFriend() {
+    setPeople(p => ({ ...p, removed: [...new Set([...(p.removed ?? []), f.id])] }));
   }
   function sendDare() {
     const text = own.trim() || pick;
-    setPeople(p => ({ ...p, dares: [...p.dares, { to: f.id, text, proof, at: new Date().toISOString() }] }));
+    setPeople(p => ({ ...p, dares: [...(p.dares ?? []), { to: f.id, text, proof, at: new Date().toISOString() }] }));
     setDare(false); setOwn('');
     toast.show(`Dare sent to ${first}`);
   }
@@ -93,6 +111,8 @@ export default function FriendView({ username }: { username: string }) {
 
       {isMe ? (
         <div className="pf-actions"><Link href="/profile" className="pf-btn is-dark">Your profile</Link></div>
+      ) : blocked ? (
+        <div className="pf-actions"><button type="button" className="pf-btn" onClick={() => { block(false); toast.show(`${first} unblocked`); }}>Unblock</button></div>
       ) : (
         <div className="pf-actions is-friend">
           <Link href="/chats" className="pf-btn is-dark"><Icon name="profile/chat" size={22} />Message</Link>
@@ -100,11 +120,9 @@ export default function FriendView({ username }: { username: string }) {
         </div>
       )}
 
-      <div className="pf-tabs" role="tablist" aria-label={`${first}'s profile`}>
-        <button type="button" role="tab" aria-selected={tab === 'overview'} className="pf-tab" onClick={() => setTab('overview')}>Overview</button>
-        <button type="button" role="tab" aria-selected={tab === 'goals'} className="pf-tab" onClick={() => setTab('goals')}>Goals</button>
-      </div>
+      <Tabs tabs={TABS} value={tab} onChange={setTab} label={`${first}'s profile`} />
 
+      <div className={pane} key={tab} role="tabpanel">
       {tab === 'overview' ? <>
         <section className="pf-sec"><h2 className="pf-sec-title">Showcase</h2><p className="t-body-s c-2">Nothing to show yet.</p></section>
         <section className="pf-sec"><h2 className="pf-sec-title">Badges</h2><p className="t-body-s c-2">Nothing to show yet.</p></section>
@@ -112,17 +130,19 @@ export default function FriendView({ username }: { username: string }) {
       </> : (
         <p className="t-body-s c-2">Goals {first} shares with you.</p>
       )}
+      </div>
 
       {/* P6 */}
       <Sheet open={menu} onClose={() => setMenu(false)} title={name} labelId="pf-friend-menu">
         <div className="pf-rows">
           <SheetRow icon="profile/share" label="Share profile" chevron={false} onClick={() => { setMenu(false); share(); }} />
           <SheetRow icon="profile/bell" label={muted ? 'Unmute updates' : 'Mute updates'} sub={`${first} will not know`} chevron={false}
-                    onClick={() => { list('muted', !muted); setMenu(false); toast.show(muted ? 'Updates on' : 'Updates muted'); }} />
+                    onClick={() => { mute(!muted); setMenu(false); toast.show(muted ? 'Updates on' : 'Updates muted'); }} />
           <SheetRow icon="profile/user-plus" label="Invite to a room" chevron={false} href="/rooms" />
-          <SheetRow icon="profile/minus" label="Remove friend" chevron={false} onClick={() => { list('removed', true); setMenu(false); toast.show(`${first} removed`); }} />
+          <SheetRow icon="profile/minus" label="Remove friend" chevron={false} onClick={() => { removeFriend(); setMenu(false); toast.show(`${first} removed`); }} />
           <SheetRow icon="profile/flag" label="Report" danger chevron={false} href="/report-a-bug" />
-          <SheetRow icon="profile/ban" label="Block" danger chevron={false} onClick={() => { list('blocked', true); setMenu(false); toast.show(`${first} blocked`); }} />
+          <SheetRow icon="profile/ban" label={blocked ? 'Unblock' : 'Block'} danger={!blocked} chevron={false}
+                    onClick={() => { setMenu(false); if (blocked) { block(false); toast.show(`${first} unblocked`); } else setTimeout(() => setAskBlock(true), 180); }} />
         </div>
       </Sheet>
 
@@ -157,6 +177,9 @@ export default function FriendView({ username }: { username: string }) {
           <button type="button" className="pf-btn pf-wide" onClick={() => setVerified(false)}>Close</button>
         </div>
       </BareSheet>
+      <Confirm open={askBlock} title={`Block ${first}?`} body="They cannot see your profile, posts or message you. They are not told."
+               confirmLabel="Block" cancelLabel="Cancel" onCancel={() => setAskBlock(false)}
+               onConfirm={() => { block(true); setAskBlock(false); toast.show(`${first} blocked`); }} />
       {toast.node}
     </main>
   );

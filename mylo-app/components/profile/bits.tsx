@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Icon from '@/components/Icon';
+import { useFlash } from '@/lib/system';
 
 /* Small pieces the profile screens share. */
 
@@ -34,22 +35,59 @@ export function Seal({ size = 22, colour = '#3E7BFA', label }: { size?: number; 
   );
 }
 
-/* The dark pill that says something happened (P19). */
+/* The dark pill that says something happened (P19). The words stay while
+   it slides away. It also says what a screen that sent the person here left
+   with flash() ("Profile saved" after Edit profile). */
 export function useToast() {
   const [msg, setMsg] = useState<string | null>(null);
+  const [on, setOn] = useState(false);
   const t = useRef<ReturnType<typeof setTimeout> | null>(null);
   const show = useCallback((m: string) => {
-    setMsg(m);
+    setMsg(m); setOn(true);
     if (t.current) clearTimeout(t.current);
-    t.current = setTimeout(() => setMsg(null), 2600);
+    t.current = setTimeout(() => setOn(false), 2600);
   }, []);
   useEffect(() => () => { if (t.current) clearTimeout(t.current); }, []);
+  useFlash(show);
   const node = (
-    <div className={`pf-toast${msg ? ' is-on' : ''}`} role="status" aria-live="polite">
+    <div className={`pf-toast${on ? ' is-on' : ''}`} role="status" aria-live="polite">
       {msg && <><Icon name="check" size={20} />{msg}</>}
     </div>
   );
   return { show, node };
+}
+
+/* Tabs whose highlight slides to the picked one (P1, P4, P22), and the
+   panel under them that slides in from the side of the tab picked. */
+export function Tabs<T extends string>({ tabs, value, onChange, label, className = '' }: {
+  tabs: readonly { id: T; label: string }[]; value: T; onChange: (v: T) => void; label: string; className?: string;
+}) {
+  const i = Math.max(0, tabs.findIndex(t => t.id === value));
+  const onKey = (e: React.KeyboardEvent) => {
+    const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+    if (!d) return;
+    e.preventDefault();
+    const n = (i + d + tabs.length) % tabs.length;
+    onChange(tabs[n].id);
+    ((e.currentTarget as HTMLElement).children[n + 1] as HTMLElement | undefined)?.focus();
+  };
+  return (
+    <div className={`pf-tabs ${className}`} role="tablist" aria-label={label} onKeyDown={onKey}
+         style={{ '--i': i, '--n': tabs.length } as React.CSSProperties}>
+      <span className="pf-tabs-pill" aria-hidden />
+      {tabs.map(t => (
+        <button key={t.id} type="button" role="tab" aria-selected={t.id === value} tabIndex={t.id === value ? 0 : -1} className="pf-tab"
+                onClick={() => onChange(t.id)}>{t.label}</button>
+      ))}
+    </div>
+  );
+}
+/* Which way the panel should come in: from the right going to a later tab. */
+export function useTabMotion<T extends string>(order: readonly T[], initial: T) {
+  const [state, setState] = useState<{ tab: T; dir: 'fwd' | 'back' | null }>({ tab: initial, dir: null });
+  const set = useCallback((next: T) => setState(s => (s.tab === next ? s
+    : { tab: next, dir: order.indexOf(next) > order.indexOf(s.tab) ? 'fwd' : 'back' })), [order]);
+  return [state.tab, set, state.dir ? `pf-pane is-${state.dir}` : 'pf-pane'] as const;
 }
 
 /* A bottom sheet without the title row, for P27's centred layout. Same

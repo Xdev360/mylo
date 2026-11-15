@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Icon from '@/components/Icon';
 import { BackBtn, Chest, DAY_LETTERS, KeyPill, LockDot } from './bits';
 import BadgeWatcher from './BadgeWatcher';
-import { CARDS, CARD_TOTAL, CHEST_HOLDS, LEGENDARY_WITHIN, RARITY, TIERS, cardArt, useRewards, type Tier, type Week } from '@/lib/rewards';
+import { CARDS, COLLECTABLE, CHEST_HOLDS, LEGENDARY_WITHIN, RARITY, TIERS, cardArt, useRewards, type Tier, type Week } from '@/lib/rewards';
 
 /* U1 · Rewards hub (877:123316), and XT9 · week 1 (877:123108) before the
    first chest. Desktop: DT10 (948:28133). Keys, the week and the chest come
@@ -24,7 +24,8 @@ export const keyLine = (toKey: number) => toKey === 0 ? 'Key earned this week' :
 export default function Hub() {
   const r = useRewards();
   if (!r.ready) return <main className="screen" aria-busy="true" />;
-  const { week, keys, canOpen, owned, state, level } = r;
+  const { week, keys, canOpen, owned, state, level, openedThisWeek } = r;
+  const chestBtn = canOpen ? 'Open chest' : openedThisWeek ? 'Opened this week' : 'Opens Sunday';
   const everEarned = week.keysEarned > 0 || state.opened.length > 0;
   const eggs = state.eggs.length + (state.nest ? 1 : 0);
   const tierName = TIERS[week.tier].name;
@@ -58,7 +59,7 @@ export default function Hub() {
             <p className="rw-sunday-kicker">Sunday chest</p>
             <h2 className="rw-sunday-title">{tierName} chest</h2>
             <p className="rw-sunday-line">{chestLine(week, everEarned)}</p>
-            <Link href="/chest" className="rw-sunday-btn">{canOpen ? 'Open chest' : 'Opens Sunday'}</Link>
+            <Link href="/chest" className="rw-sunday-btn">{chestBtn}</Link>
           </div>
         </section>
 
@@ -76,7 +77,7 @@ export default function Hub() {
 
         <h2 className="rw-h">{state.opened.length ? 'Your stuff' : 'Your stuff · starts this Sunday'}</h2>
         <div className="rw-tiles">
-          <Link href="/rewards/collection" className="rw-tile rw-stat"><span className="rw-stat-n">{owned.length}/{CARD_TOTAL}</span><span className="rw-stat-l">Cards</span></Link>
+          <Link href="/rewards/collection" className="rw-tile rw-stat"><span className="rw-stat-n">{owned.length}/{COLLECTABLE}</span><span className="rw-stat-l">Cards</span></Link>
           <Link href="/rewards/pets" className="rw-tile rw-stat"><span className="rw-stat-n">{state.pets.length}</span><span className="rw-stat-l">Pets</span></Link>
           <Link href="/rewards/nest" className="rw-tile rw-stat"><span className="rw-stat-n">{eggs}</span><span className="rw-stat-l">Eggs</span></Link>
         </div>
@@ -102,7 +103,7 @@ export default function Hub() {
             </div>
             <div className="rw-big-chips">{CHEST_HOLDS[week.tier].map(x => <span key={x} className="rw-big-chip">{RARITY[x].label}</span>)}</div>
             <Link href="/chest" className={`rw-big-btn${canOpen ? '' : ' is-wait'}`}>
-              <Icon name="rewards/i-key" size={18} />{canOpen ? 'Open with 1 key' : 'Opens Sunday'}
+              <Icon name="rewards/i-key" size={18} />{canOpen ? 'Open with 1 key' : chestBtn}
             </Link>
           </section>
           <div className="rw-rail">

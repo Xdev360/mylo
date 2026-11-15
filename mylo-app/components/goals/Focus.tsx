@@ -7,7 +7,7 @@ import { useMarkDone } from './TaskSheet';
 import { useStore } from '@/lib/store';
 import { useLocal, useHydrated } from '@/lib/local';
 import { merge, useMeta } from '@/lib/goals';
-import { goBack } from '@/components/NavMotion';
+import { canGoBack, goBack } from '@/components/NavMotion';
 
 /* C5 · Focus timer (877:109567). Counts down the task's length (25 minutes
    when it has none), keeps going if you leave and come back, plays a quiet
@@ -98,7 +98,7 @@ function Timer() {
   return (
     <main className="screen on-desk g-focus g-no-tabs">
       <header className="g-focus-top">
-        <button type="button" className="icon-btn" aria-label="Close" onClick={() => (window.history.length > 1 ? goBack(router) : router.push('/goals'))}><Icon name="goals/chevron-down" size={19} /></button>
+        <button type="button" className="icon-btn" aria-label="Close" onClick={() => (canGoBack() ? goBack(router) : router.push('/goals'))}><Icon name="goals/chevron-down" size={19} /></button>
         <h1 className="g-h17">Focus</h1>
         <button type="button" className="icon-btn" aria-label={muted ? 'Sound on' : 'Sound off'} aria-pressed={!muted} onClick={() => setMuted(m => !m)}><Icon name="goals/music" size={19} /></button>
       </header>

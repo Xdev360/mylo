@@ -12,8 +12,10 @@ import { ME, NAME_TONES, REACTIONS, cheer, stamp, sticker, tone, voiceClips, typ
 export type Player = { id: string | null; t: number; speed: number; playing: boolean };
 type Props = {
   m: Message; room: Room; quoted?: Message; desk?: boolean; still?: boolean; flash?: boolean;
+  /* Just arrived: mine rises out of the composer, theirs slides in from the side. */
+  enter?: 'mine' | 'theirs'; seen?: boolean;
   player?: Player; onPlay?: (m: Message) => void; onSpeed?: () => void;
-  onHold?: (m: Message, el: HTMLElement) => void; onPhoto?: (m: Message) => void;
+  onHold?: (m: Message, el: HTMLElement, at?: { x: number; y: number }) => void; onPhoto?: (m: Message, img?: HTMLImageElement | null) => void;
   onVote?: (m: Message, i: number) => void; onReact?: (m: Message, k: ReactionKey) => void; onQuote?: (id: string) => void;
 };
 
@@ -29,32 +31,35 @@ export function Waveform({ bars, done = 0, count = 24, className = '' }: { bars:
   );
 }
 
-export default function Bubble({ m, room, quoted, desk, still, flash, player, onPlay, onSpeed, onHold, onPhoto, onVote, onReact, onQuote }: Props) {
+export default function Bubble({ m, room, quoted, desk, still, flash, enter, seen, player, onPlay, onSpeed, onHold, onPhoto, onVote, onReact, onQuote }: Props) {
   const mine = m.authorId === ME;
   const el = useRef<HTMLDivElement>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const at = useRef<{ x: number; y: number } | null>(null);
   const pinned = room.pinned.includes(m.id);
   const [now] = useState(() => Date.now());
+  // Decided once, when the bubble first draws: later renders never replay it.
+  const [born] = useState(enter);
 
   const hold = still || m.deleted ? {} : {
     onPointerDown: (e: React.PointerEvent) => {
       if (e.button !== 0) return;
       at.current = { x: e.clientX, y: e.clientY };
-      timer.current = setTimeout(() => { if (el.current) { navigator.vibrate?.(10); onHold?.(m, el.current); } }, 450);
+      timer.current = setTimeout(() => { if (el.current) { navigator.vibrate?.(10); onHold?.(m, el.current, at.current ?? undefined); } }, 450);
     },
     onPointerMove: (e: React.PointerEvent) => {
       if (at.current && Math.hypot(e.clientX - at.current.x, e.clientY - at.current.y) > 8 && timer.current) clearTimeout(timer.current);
     },
     onPointerUp: () => { if (timer.current) clearTimeout(timer.current); at.current = null; },
     onPointerCancel: () => { if (timer.current) clearTimeout(timer.current); },
-    onContextMenu: (e: React.MouseEvent) => { e.preventDefault(); if (el.current) onHold?.(m, el.current); }
+    onContextMenu: (e: React.MouseEvent) => { e.preventDefault(); if (timer.current) clearTimeout(timer.current); if (el.current) onHold?.(m, el.current, { x: e.clientX, y: e.clientY }); }
   };
 
   const meta = (
     <span className="r-meta">
       {pinned && <RIcon name="pin" size={12} />}
       {m.editedAt ? `Edited  ·  ${stamp(m.at)}` : stamp(m.at)}
+      {m.pending ? <span className="r-clock" role="img" aria-label="Sending" /> : seen ? '  ·  Seen' : null}
     </span>
   );
   const quote = quoted && (
@@ -97,7 +102,9 @@ export default function Bubble({ m, room, quoted, desk, still, flash, player, on
   } else if (m.kind === 'poll') {
     const p = m.poll!;
     const total = p.options.reduce((n, o) => n + o.votes.length, 0);
-    const closed = Date.parse(p.closesAt) < now;
+    // Polls from the current app have no closing time: they stay open.
+    const timed = Number.isFinite(Date.parse(p.closesAt));
+    const closed = timed && Date.parse(p.closesAt) < now;
     const close = new Date(p.closesAt);
     const tonight = close.toDateString() === new Date().toDateString();
     body = (
@@ -108,7 +115,7 @@ export default function Bubble({ m, room, quoted, desk, still, flash, player, on
           const pct = total ? Math.round(o.votes.length * 100 / total) : 0;
           const me = o.votes.includes(ME);
           return (
-            <button key={i} type="button" className={`r-poll-opt${me ? ' is-mine' : ''}`} disabled={closed || still}
+            <button key={i} type="button" className={`r-poll-opt${me ? ' is-mine' : ''}`} disabled={closed || still || m.pending}
                     aria-pressed={me} onClick={() => onVote?.(m, i)}>
               <span className="r-poll-fill" style={{ width: `${pct}%` }} />
               <span className="r-poll-label">{o.label}</span>
@@ -116,7 +123,7 @@ export default function Bubble({ m, room, quoted, desk, still, flash, player, on
             </button>
           );
         })}
-        <span className="r-poll-foot">{total} {total === 1 ? 'vote' : 'votes'}  ·  {closed ? 'closed' : tonight ? 'closes tonight' : `closes ${close.toLocaleDateString('en-GB', { weekday: 'long' })}`}</span>
+        <span className="r-poll-foot">{total} {total === 1 ? 'vote' : 'votes'}{timed && `  ·  ${closed ? 'closed' : tonight ? 'closes tonight' : `closes ${close.toLocaleDateString('en-GB', { weekday: 'long' })}`}`}</span>
       </div>
     );
   } else if (m.kind === 'voice') {
@@ -138,21 +145,22 @@ export default function Bubble({ m, room, quoted, desk, still, flash, player, on
   } else {
     const ph = m.photo!;
     if (ph.once) {
-      const opened = ph.openedBy.length > 0;
+      // Mine: opened once anyone has. Theirs: once I have.
+      const opened = mine ? ph.openedBy.length > 0 : ph.openedBy.includes(ME);
       body = mine ? (
         <div className={`r-once is-mine${opened ? ' is-opened' : ''}`}>
           <span className="r-once-ring">1</span>
           <span className="r-once-text"><span>{opened ? 'Opened' : 'Delivered'}</span><span className="r-once-sub">View once</span></span>
         </div>
       ) : (
-        <button type="button" className={`r-once${opened ? ' is-opened' : ' is-new'}`} disabled={opened || still} onClick={() => onPhoto?.(m)}>
+        <button type="button" className={`r-once${opened ? ' is-opened' : ' is-new'}`} disabled={opened || still} onClick={() => onPhoto?.(m, null)}>
           <span className="r-once-ring">1</span>
           <span className="r-once-text"><span>{opened ? 'Opened' : 'Photo'}</span><span className="r-once-sub">{opened ? 'View once' : 'Tap to view once'}</span></span>
         </button>
       );
     } else {
       body = (
-        <button type="button" className="r-photo" onClick={() => onPhoto?.(m)} disabled={still}>
+        <button type="button" className="r-photo" onClick={e => onPhoto?.(m, e.currentTarget.querySelector('img'))} disabled={still || m.pending}>
           {quote}
           <img src={ph.src} alt={ph.caption || 'Photo'} />
           {ph.caption && <span className="r-photo-cap">{ph.caption}</span>}
@@ -165,7 +173,7 @@ export default function Bubble({ m, room, quoted, desk, still, flash, player, on
   const reactions = Object.entries(m.reactions ?? {}).filter(([, who]) => who && who.length) as [ReactionKey, string[]][];
   const bare = m.kind !== 'text' && !m.deleted;
   return (
-    <div id={still ? undefined : `m-${m.id}`} className={`r-msg${mine ? ' is-mine' : ''}${desk ? ' is-desk' : ''}${flash ? ' is-flash' : ''}`}
+    <div id={still ? undefined : `m-${m.id}`} className={`r-msg${mine ? ' is-mine' : ''}${desk ? ' is-desk' : ''}${flash ? ' is-flash' : ''}${born ? ` is-in-${born}` : ''}${m.pending ? ' is-pending' : ''}`}
          style={{ '--mine': room.colour, '--mine-ink': room.colour === 'var(--primary)' ? 'var(--on-primary)' : '#fff' } as React.CSSProperties}>
       {desk && !mine && <Avatar name={m.authorName} size={28} />}
       <div className="r-msg-col">

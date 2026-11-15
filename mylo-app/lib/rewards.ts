@@ -4,6 +4,7 @@ import { useCallback, useMemo } from 'react';
 import { addDays, fromIso, iso, thisWeek } from './dates';
 import { useLocal, useHydrated } from './local';
 import { streak, useStore, type Item } from './store';
+import { checkinDays, useMeta } from './goals';
 
 /* Rewards: levels, cards, the Sunday chest, keys, shards, eggs and pets,
    badges and the streak, from the Figma "Rewards" frames (U, L, XT, SH).
@@ -18,7 +19,12 @@ import { streak, useStore, type Item } from './store';
    opens on Sunday with a key. Weeks of showing up in a row raise the chest:
    Wood in weeks 1 and 2, Silver in week 3, Gold from week 4. A missed week
    drops it one level; nothing owned is lost. What the chest gives is kept on
-   the device under mylo.rewards.state.v1 until the server takes it over. */
+   the device under mylo.rewards.state.v1 until the server takes it over.
+
+   This is the one ledger for keys, eggs and pets. Mylo's world reads it too:
+   a key spent on a room style (H7) is a key the chest can no longer use,
+   the first egg (EG1, "New at Blaze") sits in the same nest the chest's
+   eggs do, and what hatches is the same pet the pet house and PT2 show. */
 
 /* ── Levels (L7) ─────────────────────────────────────────────────────────── */
 export type Level = { id: string; name: string; xp: number; perk: string; glow: string };
@@ -78,7 +84,11 @@ export const CARDS: Card[] = [
   { id: 'gala-night', no: 19, name: 'Gala Night', desc: 'Sequin evening gown, pearl earrings, sleek bun', rarity: 'epic', source: 'Gold chest, from week 4' },
   { id: 'mylo-queen', no: 25, name: 'Mylo Queen', desc: 'Sequin dress, fur collar, tiara', rarity: 'legendary', source: 'Gold chest, from week 4. Very rare' }
 ];
+/* The set is numbered out of 30 (printed on each card), but these are the
+   cards a chest can actually give; counts of "how many of how many" use
+   this so the hub, a result and the collection grid agree. */
 export const CARD_TOTAL = 30;
+export const COLLECTABLE = CARDS.length;
 export const cardById = (id: string) => CARDS.find(c => c.id === id) ?? null;
 export const cardArt = (id: string) => `/figma/rewards/card-${id}.svg`;
 export const cardNo = (c: Card) => `${String(c.no).padStart(3, '0')} / ${String(CARD_TOTAL).padStart(3, '0')}`;
@@ -144,8 +154,10 @@ export const APP_ICONS = [
 /* ── Active days, streaks, weeks ─────────────────────────────────────────── */
 export const mondayOf = (d: Date) => iso(addDays(d, -((d.getDay() + 6) % 7)));
 
-export function activeDays(items: Item[]) {
-  return new Set(items.filter(i => i.done && i.doneAt).map(i => iso(new Date(i.doneAt!))));
+/* A day is active when something was ticked or a system was checked in on
+   (the same days the streak counts). */
+export function activeDays(items: Item[], checkins: string[] = []) {
+  return new Set([...items.filter(i => i.done && i.doneAt).map(i => iso(new Date(i.doneAt!))), ...checkins]);
 }
 
 /* Longest run of active days in a row, and the day each run length was first
@@ -200,7 +212,7 @@ export function weekOf(days: Set<string>, now = new Date()): Week {
 /* ── What the chest has given, kept on the device ────────────────────────── */
 export type Opened = { week: string; tier: Tier; card: string; dup: boolean; egg?: EggKind; at: string; seen: boolean };
 export type Pet = { id: string; kind: PetKind; name?: string; at: string };
-export type Egg = { id: string; kind: EggKind; at: string };
+export type Egg = { id: string; kind: EggKind; at: string; first?: boolean };
 export type Gift = { card: string; to: string; note: string; at: string };
 export type RewardsState = {
   opened: Opened[];
@@ -219,10 +231,13 @@ export type RewardsState = {
   seenBadges: string[];
   appIcon: string;
   lastLevel: number;
+  keysSpent: number;                // keys used on room styles (H7)
+  firstEgg: boolean;                // the first egg (EG1) has been given
 };
 export const EMPTY_REWARDS: RewardsState = {
   opened: [], cards: {}, shards: 0, goldSinceLegendary: 0, goldOpened: 0, eggs: [], nest: null, hatched: null,
-  pets: [], out: null, wearing: null, gifts: [], pinned: null, seenBadges: [], appIcon: 'violet', lastLevel: 1
+  pets: [], out: null, wearing: null, gifts: [], pinned: null, seenBadges: [], appIcon: 'violet', lastLevel: 1,
+  keysSpent: 0, firstEgg: false
 };
 const KEY = 'mylo.rewards.state.v1';
 const uid = () => (typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : String(Math.random()).slice(2));
@@ -245,18 +260,20 @@ export function useRewards() {
   const [state, setState] = useLocal<RewardsState>(KEY, EMPTY_REWARDS);
   const s: RewardsState = useMemo(() => ({ ...EMPTY_REWARDS, ...state }), [state]);
   const xp = useXp();
+  const { all } = useMeta();
+  const checkins = useMemo(() => checkinDays(all), [all]);
 
   const derived = useMemo(() => {
     const now = new Date();
-    const days = activeDays(items);
+    const days = activeDays(items, checkins);
     const week = weekOf(days, now);
-    const keys = Math.max(0, week.keysEarned - s.opened.length);
+    const keys = Math.max(0, week.keysEarned - s.opened.length - s.keysSpent);
     const openedThisWeek = s.opened.find(o => o.week === week.monday) ?? null;
     const canOpen = week.isSunday && keys >= 1 && !openedThisWeek;
     const owned = CARDS.filter(c => (s.cards[c.id] ?? 0) > 0);
     const { best, reached } = runs(days);
     const doneGoals = items.filter(i => i.kind === 'goal' && i.done && i.doneAt).sort((a, b) => a.doneAt!.localeCompare(b.doneAt!));
-    const current = streak(items);
+    const current = streak(items, checkins);
     const badges: BadgeState[] = BADGES.map(b => {
       if (b.days) return { ...b, earned: best >= b.days, at: reached[b.days], left: Math.max(0, b.days - current) };
       if (b.goals) { const g = doneGoals[b.goals - 1]; return { ...b, earned: !!g, at: g ? iso(new Date(g.doneAt!)) : undefined, left: Math.max(0, b.goals - doneGoals.length) }; }
@@ -264,7 +281,7 @@ export function useRewards() {
     });
     const nestDays = s.nest ? [...days].filter(d => d >= s.nest!.since).length : 0;
     return { now, days, week, keys, openedThisWeek, canOpen, owned, best, current, badges, nestDays, level: levelOf(xp) };
-  }, [items, s, xp]);
+  }, [items, s, xp, checkins]);
 
   const set = setState;
 
@@ -314,7 +331,8 @@ export function useRewards() {
   const hatch = useCallback(() => set(p => {
     const q = { ...EMPTY_REWARDS, ...p };
     if (!q.nest) return q;
-    const pet: Pet = { id: uid(), kind: pick(EGGS[q.nest.kind].hatches), at: new Date().toISOString() };
+    // The first egg is Momo's (PT2); a chest's egg hatches one of its two buddies.
+    const pet: Pet = { id: uid(), kind: q.nest.first ? 'momo-galaxy' : pick(EGGS[q.nest.kind].hatches), at: new Date().toISOString() };
     return { ...q, nest: null, hatched: pet.id, pets: [...q.pets, pet], out: q.out ?? pet.id };
   }), [set]);
   const greet = useCallback(() => set(p => ({ ...EMPTY_REWARDS, ...p, hatched: null })), [set]);
@@ -324,10 +342,26 @@ export function useRewards() {
   const seeBadges = useCallback((ids: string[]) => set(p => ({ ...EMPTY_REWARDS, ...p, seenBadges: [...new Set([...(p.seenBadges ?? []), ...ids])] })), [set]);
   const setAppIcon = useCallback((id: string) => set(p => ({ ...EMPTY_REWARDS, ...p, appIcon: id })), [set]);
   const seeLevel = useCallback((n: number) => set(p => ({ ...EMPTY_REWARDS, ...p, lastLevel: n })), [set]);
+  /* Spend keys on something other than the chest (H7). False when there are not enough. */
+  const spendKeys = useCallback((n: number) => {
+    if (derived.keys < n) return false;
+    set(p => ({ ...EMPTY_REWARDS, ...p, keysSpent: (p.keysSpent ?? 0) + n }));
+    return true;
+  }, [derived.keys, set]);
+  /* EG1 "Keep it warm": the first egg goes in the nest (or the basket if the
+     nest is taken), counting active days from `since`. Given once. */
+  const warmFirstEgg = useCallback((since = iso(new Date())) => set(p => {
+    const q = { ...EMPTY_REWARDS, ...p };
+    if (q.firstEgg) return q;
+    const egg: Egg = { id: uid(), kind: 'purple-galaxy', at: new Date().toISOString(), first: true };
+    if (!q.nest) return { ...q, firstEgg: true, nest: { ...egg, since } };
+    return { ...q, firstEgg: true, eggs: q.eggs.length < BASKET ? [...q.eggs, egg] : q.eggs };
+  }), [set]);
 
   return {
     ready: ready && hydrated, state: s, ...derived,
-    openChest, seeResult, wear, spendShards, sendGift, placeEgg, hatch, greet, namePet, setOut, pin, seeBadges, setAppIcon, seeLevel
+    openChest, seeResult, wear, spendShards, sendGift, placeEgg, hatch, greet, namePet, setOut, pin, seeBadges, setAppIcon, seeLevel,
+    spendKeys, warmFirstEgg
   };
 }
 

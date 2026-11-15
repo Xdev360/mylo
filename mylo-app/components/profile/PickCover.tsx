@@ -5,6 +5,7 @@ import { useState } from 'react';
 import Icon from '@/components/Icon';
 import ScreenHeader from '@/components/ScreenHeader';
 import { useHydrated } from '@/lib/local';
+import { flash, go, leave } from '@/lib/system';
 import Room from './Room';
 import { useRoom } from './ProfileView';
 import { COVERS, sameRoom } from './room-data';
@@ -30,7 +31,7 @@ export default function PickCover() {
           return (
             <button key={c.id} type="button" role="radio" aria-checked={on} aria-disabled={Boolean(c.locked)}
                     className={`pf-cover-opt${on ? ' is-on' : ''}${c.locked ? ' is-locked' : ''}`}
-                    onClick={() => { if (c.locked) router.push('/chest'); else setPick(c.id); }}>
+                    onClick={() => { if (c.locked) go(router, '/chest'); else setPick(c.id); }}>
               <span className="pf-cover-thumb">
                 <Room room={c.room} H={298} F={198} />
                 {c.locked && <><span className="pf-veil" /><span className="pf-lock is-big"><Icon name="profile/lock" size={16} /></span></>}
@@ -41,11 +42,17 @@ export default function PickCover() {
           );
         })}
       </div>
+      {/* Back to where the cover was changed from (Edit profile), not a new
+          copy of the profile on top of it. Nothing picked, or the cover it
+          already is: the button just goes back. */}
       <button type="button" className="btn-primary pf-wide pf-bottom-btn" disabled={!chosen}
               onClick={() => {
                 const c = COVERS.find(x => x.id === chosen);
-                if (c) setRoom(prev => ({ ...c.room, decor: c.room.decor.map(d => prev.decor.find(p => p.kind === d.kind) ?? d) }));
-                router.push('/profile');
+                if (c && chosen !== current) {
+                  setRoom(prev => ({ ...c.room, decor: c.room.decor.map(d => prev.decor.find(p => p.kind === d.kind) ?? d) }));
+                  flash('Room saved. Your profile cover is updated.');
+                }
+                leave(router, '/profile/edit');
               }}>
         Use as cover
       </button>

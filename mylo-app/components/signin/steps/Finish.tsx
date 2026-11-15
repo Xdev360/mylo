@@ -4,10 +4,10 @@ import Link from 'next/link';
 import { useRef, useState } from 'react';
 import Icon from '@/components/Icon';
 import { useSession } from '@/lib/session';
-import { authMessage, blobToDataUrl, dataUrlToBlob, nextStep, setNext, signInWithProvider, squareJpeg, uploadAvatar } from '@/lib/signin';
+import { authMessage, blobToDataUrl, dataUrlToBlob, setNext, signInWithProvider, squareJpeg, stepPath, uploadAvatar } from '@/lib/signin';
 import { useStore } from '@/lib/store';
-import type { StepProps } from '../OnboardingStep';
-import { Art, BackButton, Cta, Foot, Notice, OnboardHeader, Screen } from '../ui';
+import { useFoot, type StepProps } from '../OnboardingFlow';
+import { Art, Notice } from '../ui';
 
 /* ── O11 Save your Mylo (877:108139) ───────────────────────────────────── */
 export function AuthChoices({ next, onError, onEmail }: { next: string; onError: (m: string) => void; onEmail: () => void }) {
@@ -31,30 +31,30 @@ export function AuthChoices({ next, onError, onEmail }: { next: string; onError:
   );
 }
 
-export function Save({ ob, go }: StepProps) {
+export function Save({ ob, leave }: StepProps) {
   const [error, setError] = useState('');
-  const next = '/onboarding/photo';
+  const next = stepPath('photo');
+  useFoot({ hidden: true });
   return (
-    <Screen className="si-save">
-      <header className="si-head"><BackButton fallback="/onboarding/badge" /></header>
+    <>
       <span className="si-ring si-save-ring"><Art name="mylo-beanie" w={111} h={133} /></span>
       <p className="si-pill"><span>{ob.myloName}</span><span className="c-2">· Spark</span></p>
       <h1 className="si-title">Save your Mylo</h1>
       <p className="t-body c-2 si-sub">Your goal and streak come with you</p>
       <div className="si-auths">
-        <AuthChoices next={next} onError={setError} onEmail={() => { setNext(next); go('/signin/email'); }} />
+        <AuthChoices next={next} onError={setError} onEmail={() => { setNext(next); leave('/signin/email'); }} />
         <Notice text={error} />
-        <p className="t-body-s c-2 si-have">Already have an account? <Link href="/signin" className="c-ink">Sign in</Link></p>
+        <p className="t-body-s c-2 si-have">Already have an account? <Link href="/signin" className="c-ink" onClick={() => setNext(next)}>Sign in</Link></p>
       </div>
       <p className="si-legal">
         By continuing you agree to the <a href="https://www.staymylo.com/terms" target="_blank" rel="noreferrer">Terms</a> and <a href="https://www.staymylo.com/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>.
       </p>
-    </Screen>
+    </>
   );
 }
 
 /* ── O12 Add a photo (877:108172) ──────────────────────────────────────── */
-export function Photo({ ob, update, go }: StepProps) {
+export function Photo({ ob, update, next }: StepProps) {
   const { user } = useSession();
   const camera = useRef<HTMLInputElement>(null);
   const library = useRef<HTMLInputElement>(null);
@@ -72,12 +72,15 @@ export function Photo({ ob, update, go }: StepProps) {
       setBusy(true); setError('');
       try { await uploadAvatar(user.id, await dataUrlToBlob(usePhoto)); } catch (e) { setBusy(false); setError(authMessage(e)); return; }
     }
-    go(nextStep('photo'));
+    next();
   };
+  useFoot({
+    label: 'Continue', busy, onClick: () => finish(photo),
+    note: `Or use ${ob.myloName} as your photo`, onNote: () => { update({ photo: 'mylo' }); finish(null); }
+  });
 
   return (
-    <Screen>
-      <OnboardHeader skip={nextStep('photo')} fallback="/onboarding/save" />
+    <>
       <h1 className="si-title si-title-top">Add a face</h1>
       <p className="t-body c-2 si-sub">So your room knows it is you</p>
       <div className="si-photo">
@@ -95,10 +98,7 @@ export function Photo({ ob, update, go }: StepProps) {
       <input ref={camera} type="file" accept="image/*" capture="user" hidden onChange={e => { pick(e.target.files?.[0]); e.target.value = ''; }} />
       <input ref={library} type="file" accept="image/*" hidden onChange={e => { pick(e.target.files?.[0]); e.target.value = ''; }} />
       <Notice text={error} />
-      <Foot note={`Or use ${ob.myloName} as your photo`} onNote={() => { update({ photo: 'mylo' }); finish(null); }}>
-        <Cta busy={busy} onClick={() => finish(photo)}>Continue</Cta>
-      </Foot>
-    </Screen>
+    </>
   );
 }
 
@@ -116,18 +116,23 @@ function NudgePreview({ name, small = false }: { name: string; small?: boolean }
   );
 }
 
-export function Nudges({ ob, update, go }: StepProps) {
+export function Nudges({ ob, update, next }: StepProps) {
   const [busy, setBusy] = useState(false);
   const turnOn = async () => {
+    if (busy) return;
     setBusy(true);
     let on = false;
     try { if ('Notification' in window) on = (await Notification.requestPermission()) === 'granted'; } catch { /* not supported */ }
     update({ nudges: on ? 'on' : 'off' });
-    go(nextStep('nudges'));
+    setBusy(false);
+    next();
   };
+  useFoot({
+    label: ob.nudges === 'on' ? 'Continue' : 'Turn on nudges', busy, onClick: () => (ob.nudges === 'on' ? next() : turnOn()),
+    note: 'Not now', onNote: () => { update({ nudges: 'off' }); next(); }
+  });
   return (
-    <Screen>
-      <header className="si-head"><BackButton fallback="/onboarding/photo" /></header>
+    <>
       <h1 className="si-title si-title-top">Let {ob.myloName} nudge you</h1>
       <p className="t-body c-2 si-sub">Only when it matters. Never spam.</p>
       <div className="si-nudge-art">
@@ -138,16 +143,13 @@ export function Nudges({ ob, update, go }: StepProps) {
         <NudgePreview name={ob.myloName} />
         <NudgePreview name={ob.myloName} small />
       </div>
-      <Foot note="Not now" onNote={() => { update({ nudges: 'off' }); go(nextStep('nudges')); }}>
-        <Cta busy={busy} onClick={turnOn}>Turn on nudges</Cta>
-      </Foot>
-    </Screen>
+    </>
   );
 }
 
 /* ── O14 Bring your people (877:108309). The link is the person's own page
    (/u/username) once they have an account, so a friend can find them. ── */
-export function People({ go }: StepProps) {
+export function People({ next, leave }: StepProps) {
   const { profile } = useSession();
   const [copied, setCopied] = useState(false);
   // Only drawn after hydration (OnboardingStep waits), so window is here.
@@ -161,9 +163,9 @@ export function People({ go }: StepProps) {
   const share = async () => {
     if (navigator.share) { try { await navigator.share({ title: 'Mylo', url }); } catch { /* closed */ } } else copy();
   };
+  useFoot({ label: 'Continue', note: 'You can do this later', onClick: () => next() });
   return (
-    <Screen>
-      <OnboardHeader skip={nextStep('people')} fallback="/onboarding/nudges" />
+    <>
       <h1 className="si-title si-title-top">Bring your people</h1>
       <p className="t-body c-2 si-sub">Rooms work best with 2 to 5</p>
       <div className="si-people-art" aria-hidden>
@@ -181,21 +183,19 @@ export function People({ go }: StepProps) {
         <a className="si-tile-btn is-short" href={`https://wa.me/?text=${encodeURIComponent(url)}`} target="_blank" rel="noreferrer"><Icon name="signin/i-chat" size={20} />WhatsApp</a>
         <button type="button" className="si-tile-btn is-short" onClick={share}><Icon name="signin/i-share" size={20} />More</button>
       </div>
-      <p className="t-body-s c-2 si-join">Got a code? <Link href="/rooms/join" className="c-ink">Join a room</Link></p>
-      <Foot note="You can do this later">
-        <Cta onClick={() => go(nextStep('people'))}>Continue</Cta>
-      </Foot>
-    </Screen>
+      <p className="t-body-s c-2 si-join">Got a code? <button type="button" className="c-ink si-join-link" onClick={() => leave('/rooms/join')}>Join a room</button></p>
+    </>
   );
 }
 
 /* ── O15 All set (877:108345) → O17, the lead's empty Today. ───────────── */
-export function Done({ update, go }: StepProps) {
+export function Done({ update, leave }: StepProps) {
   const { name } = useSession();
   const { items } = useStore();
   const goals = items.filter(i => i.kind === 'goal').length;
+  useFoot({ label: 'Open Today', onClick: () => { update({ done: true, at: null }); leave('/today', 'tab'); } });
   return (
-    <Screen className="si-done">
+    <>
       <Art name="confetti" w={393} h={460} className="si-confetti" />
       <div className="si-done-art">
         <span className="si-disc si-done-disc" />
@@ -207,9 +207,6 @@ export function Done({ update, go }: StepProps) {
         <span className="si-chip is-ink"><Icon name="signin/i-streak" size={18} />Day 1</span>
         <span className="si-chip is-ink"><Icon name="signin/i-sparkle" size={18} />Spark</span>
       </div>
-      <Foot>
-        <Cta onClick={() => { update({ done: true }); go('/today'); }}>Open Today</Cta>
-      </Foot>
-    </Screen>
+    </>
   );
 }

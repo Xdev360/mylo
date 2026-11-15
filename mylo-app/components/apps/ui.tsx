@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Icon from '@/components/Icon';
 import { initial, tintFor } from '@/lib/apps';
-import { goBack } from '@/components/NavMotion';
+import { canGoBack, goBack } from '@/components/NavMotion';
 
 /* Small pieces the Apps screens share, drawn from the components page:
    avatars, the toggle, the pill tabs, the centred "moment" sheet (LX2, LX4,
@@ -26,15 +26,25 @@ export function Toggle({ on, onChange, label }: { on: boolean; onChange: (v: boo
   );
 }
 
+/* Pill tabs. One highlight slides under the picked tab (styles/apps.css). */
 export function Seg<T extends string>({ options, value, onChange, label }: { options: { id: T; label: string }[]; value: T; onChange: (v: T) => void; label: string }) {
+  const i = Math.max(0, options.findIndex(o => o.id === value));
   return (
-    <div className="ax-seg" role="tablist" aria-label={label}>
+    <div className="ax-seg" role="tablist" aria-label={label} style={{ '--i': i, '--n': options.length } as React.CSSProperties}>
       {options.map(o => (
         <button key={o.id} type="button" role="tab" aria-selected={value === o.id} className={value === o.id ? 'is-on' : ''}
                 onClick={() => onChange(o.id)}>{o.label}</button>
       ))}
     </div>
   );
+}
+
+/* Which way content should slide when a tab changes: towards the tab that
+   was picked. Keep the returned class on the panel, keyed by the tab. */
+export function useSlideDir<T>(order: readonly T[], value: T, prefix = 'ax') {
+  const [state, setState] = useState({ value, dir: 'r' as 'l' | 'r' });
+  if (state.value !== value) setState({ value, dir: order.indexOf(value) < order.indexOf(state.value) ? 'l' : 'r' });
+  return `${prefix}-slide-${state.dir}`;
 }
 
 /* A sheet whose content sits in the middle: grabber, art, title, words,
@@ -79,7 +89,7 @@ export function CloseBtn({ onClick, href, label = 'Close' }: { onClick?: () => v
   const router = useRouter();
   return (
     <button type="button" className="back-btn" aria-label={label}
-            onClick={onClick ?? (() => (window.history.length > 1 ? goBack(router) : router.push(href ?? '/apps')))}>
+            onClick={onClick ?? (() => (canGoBack() ? goBack(router) : router.push(href ?? '/apps')))}>
       <Icon name="close" size={18} />
     </button>
   );
@@ -89,7 +99,7 @@ export function BackBtn({ fallback = '/apps' }: { fallback?: string }) {
   const router = useRouter();
   return (
     <button type="button" className="back-btn" aria-label="Back"
-            onClick={() => (window.history.length > 1 ? goBack(router) : router.push(fallback))}>
+            onClick={() => (canGoBack() ? goBack(router) : router.push(fallback))}>
       <Icon name="chevron-right" size={20} className="flip" />
     </button>
   );

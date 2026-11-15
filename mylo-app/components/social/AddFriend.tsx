@@ -7,7 +7,7 @@ import { qr } from './qr';
 import { Avatar, SIcon, useToast } from './ui';
 import { cleanHandle, inviteUrl, shareLink, useBlocked, useFriends, useMe } from '@/lib/social';
 import { useHydrated } from '@/lib/local';
-import { goBack } from '@/components/NavMotion';
+import { canGoBack, goBack } from '@/components/NavMotion';
 
 /* FR2 · Add a friend: search by username, your own code to scan, share an
    invite link, or scan a friend's code. An invite link opens here with their
@@ -89,7 +89,7 @@ export default function AddFriend() {
   return (
     <main className="screen on-desk sx-full sx-add">
       <header className="screen-header">
-        <button type="button" className="back-btn" aria-label="Close" onClick={() => (window.history.length > 1 ? goBack(router) : router.push('/friends'))}><SIcon name="close" size={20} /></button>
+        <button type="button" className="back-btn" aria-label="Close" onClick={() => (canGoBack() ? goBack(router) : router.push('/friends'))}><SIcon name="close" size={20} /></button>
         <h1 className="screen-header-title">Add a friend</h1>
         <div className="screen-header-actions" />
       </header>

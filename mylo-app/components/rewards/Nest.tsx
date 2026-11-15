@@ -3,12 +3,16 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import Sheet from '@/components/Sheet';
+import { lessMotion, morph } from '@/components/apps/motion';
 import { BackBtn, CloseBtn, Sparkles } from './bits';
 import { BASKET, EGGS, HATCH_DAYS, PETS, eggArt, petArt, petName, useRewards, type EggKind, type PetKind } from '@/lib/rewards';
 
 /* U8 · Nest (879:178164): one egg at a time, hatching after 5 active days,
    with up to 3 more waiting in the basket. XT8 · Egg hatched (879:178257)
-   greets the buddy that came out. Eggs come from Gold chests. */
+   greets the buddy that came out. Eggs come from Gold chests (and the first
+   one from EG1). When the days are in, the hatch plays out: the egg shakes
+   harder and harder, the glow swells, and the buddy pops out of it. An egg
+   picked from the basket travels into the nest. */
 
 const eggFor = (k: PetKind) => (Object.keys(EGGS) as EggKind[]).find(e => EGGS[e].hatches.includes(k))!;
 
@@ -16,9 +20,16 @@ export default function Nest() {
   const r = useRewards();
   const [naming, setNaming] = useState(false);
   const [name, setName] = useState('');
+  const [cracking, setCracking] = useState(false);
   const { ready, nestDays, hatch } = r;
   const nest = r.state.nest;
-  useEffect(() => { if (ready && nest && nestDays >= HATCH_DAYS) hatch(); }, [ready, nest, nestDays, hatch]);
+  const due = ready && !!nest && nestDays >= HATCH_DAYS;
+  useEffect(() => {
+    if (!due) return;
+    const a = setTimeout(() => setCracking(true), lessMotion() ? 0 : 500);
+    const b = setTimeout(() => morph(() => { hatch(); setCracking(false); }), lessMotion() ? 0 : 2000);
+    return () => { clearTimeout(a); clearTimeout(b); };
+  }, [due, hatch]);
   if (!ready) return <main className="screen" aria-busy="true" />;
   const { eggs, hatched, pets } = r.state;
   const born = hatched ? pets.find(p => p.id === hatched) ?? null : null;
@@ -31,8 +42,8 @@ export default function Nest() {
           const e = eggs[i];
           if (!e) return <span key={i} className="rw-basket-slot" />;
           return (
-            <button key={e.id} type="button" className="rw-basket-egg" disabled={!!nest} onClick={() => r.placeEgg(e.id)} aria-label={EGGS[e.kind].name}>
-              <img src={eggArt(e.kind)} alt="" width={42} height={52} />
+            <button key={e.id} type="button" className="rw-basket-egg" disabled={!!nest} onClick={() => morph(() => r.placeEgg(e.id))} aria-label={EGGS[e.kind].name}>
+              <img src={e.first ? '/figma/world/egg-warm.svg' : eggArt(e.kind)} alt="" width={42} height={52} style={{ viewTransitionName: `rw-egg-${e.id}` }} />
             </button>
           );
         })}
@@ -41,7 +52,7 @@ export default function Nest() {
   );
 
   if (born) return (
-    <main className="rw-night">
+    <main className="rw-night is-born">
       <div className="rw-night-col">
         <header className="rw-night-head is-left">
           <div><h1 className="rw-hatched">It hatched!</h1><p className="rw-night-sub">Say hi to your new buddy</p></div>
@@ -74,9 +85,10 @@ export default function Nest() {
           <div className="rw-night-titles"><h1 className="rw-night-title">Your nest</h1><p className="rw-night-sub">One egg at a time</p></div>
           <span className="rw-top-gap" />
         </header>
-        <div className="rw-nest">
+        <div className={`rw-nest${cracking ? ' is-cracking' : ''}`}>
           <span className="rw-nest-glow" /><Sparkles /><span className="rw-nest-bed" />
-          {nest && <img className="rw-nest-egg" src={eggArt(nest.kind)} alt="" width={176} height={220} />}
+          {nest && <img className="rw-nest-egg" src={nest.first ? '/figma/world/egg-warm.svg' : eggArt(nest.kind)} alt="" width={176} height={220}
+                        style={{ viewTransitionName: `rw-egg-${nest.id}` }} />}
         </div>
         {nest ? <>
           <h2 className="rw-nest-title">{EGGS[nest.kind].name}</h2>
@@ -85,6 +97,7 @@ export default function Nest() {
         </> : <p className="rw-nest-days">1 in 2 chance of an egg</p>}
         {basket}
         <span className="spacer" />
+        {!nest && !eggs.length && !r.state.firstEgg && <Link href="/eggs" className="rw-btn-white rw-wide">You found an egg</Link>}
         <Link href="/today" className="rw-btn-ghost rw-wide">Keep showing up</Link>
       </div>
     </main>

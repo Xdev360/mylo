@@ -54,6 +54,7 @@ export default function Milestones() {
         </div>
       )}
       {!goals.length && <Link href="/goals/new" className="ax-btn ax-btn-soft">New goal</Link>}
+      {goal && !list.length && <button type="button" className="ax-btn ax-btn-soft" onClick={() => setEdit('new')}>Add a milestone</button>}
       {list.length > 0 && (
         <ol className="ax-line">
           {list.map(m => {

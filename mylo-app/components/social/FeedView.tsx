@@ -17,19 +17,28 @@ const TABS = ['For you', 'Thoughts', 'Quotes', 'Friends'] as const;
 type Tab = typeof TABS[number];
 const TAB_KEY: Record<string, Tab> = { foryou: 'For you', thoughts: 'Thoughts', quotes: 'Quotes', friends: 'Friends' };
 
-function EmptyFeed() {
+/* VF14, said for the tab you are on: an empty Quotes tab is not an empty feed. */
+function EmptyFeed({ tab, any }: { tab: Tab; any: boolean }) {
+  const quotes = tab === 'Quotes' && any;
+  const friends = tab === 'Friends';
   return (
     <section className="sx-empty" aria-label="Quiet in here">
       <img className="sx-empty-mylo" src="/figma/social/mylo-empty.svg" alt="" width={125} height={150} />
-      <h2 className="sx-empty-title">Quiet in here</h2>
-      <p className="sx-empty-text">Your friends have not posted yet. Add a few, or be the first one.</p>
-      <Link href="/friends/add" className="btn-primary sx-empty-btn"><SIcon name="user-plus" />Find friends</Link>
-      <Link href="/feed/new" className="sx-btn-soft sx-empty-btn"><SIcon name="pencil" />Write a thought</Link>
+      <h2 className="sx-empty-title">{quotes ? 'No quotes yet' : 'Quiet in here'}</h2>
+      <p className="sx-empty-text">
+        {quotes ? 'Share a line that stuck with you. It shows here as a card.'
+          : friends ? 'Posts from your friends show here. Add a few to get started.'
+          : 'Your friends have not posted yet. Add a few, or be the first one.'}
+      </p>
+      {!quotes && <Link href="/friends/add" className="btn-primary sx-empty-btn"><SIcon name="user-plus" />Find friends</Link>}
+      {quotes
+        ? <Link href="/feed/new?kind=quote" className="btn-primary sx-empty-btn"><SIcon name="quote" />Share a quote</Link>
+        : <Link href="/feed/new" className="sx-btn-soft sx-empty-btn"><SIcon name="pencil" />Write a thought</Link>}
     </section>
   );
 }
 
-function Posting({ post, onDone }: { post: Post; onDone: () => void }) {
+function Posting({ post, onDone, leaving }: { post: Post; onDone: () => void; leaving: boolean }) {
   const [p, setP] = useState(8);
   const done = useRef(onDone);
   useEffect(() => { done.current = onDone; }, [onDone]);
@@ -41,7 +50,7 @@ function Posting({ post, onDone }: { post: Post; onDone: () => void }) {
   }, [post.id]);
   const thumb = post.photos?.[0];
   return (
-    <div className="sx-posting" role="status" aria-label={`Posting to Friends, ${p}%`}>
+    <div className={`sx-posting${leaving ? ' is-leaving' : ''}`} role="status" aria-label={leaving ? 'Posted' : `Posting to Friends, ${p}%`}>
       <span className="sx-posting-thumb" style={!thumb ? { background: post.kind === 'quote' ? toneOf(post.tone).bg : 'var(--surface-2)' } : undefined}>
         {thumb ? <img src={thumb} alt="" /> : <SIcon name={post.kind === 'quote' ? 'quote' : 'pencil'} size={20} />}
       </span>
@@ -56,6 +65,7 @@ function Posting({ post, onDone }: { post: Post; onDone: () => void }) {
 
 function QuoteTile({ post, onLove, loved }: { post: Post; onLove: () => void; loved: boolean }) {
   const t = toneOf(post.tone);
+  const [bump, setBump] = useState(0);
   return (
     <div className="sx-qtile" style={{ background: post.tone === 'grey' ? 'var(--surface)' : t.bg, color: t.ink }}>
       <Link href={`/feed/${post.id}`} className="sx-qtile-link">
@@ -64,7 +74,8 @@ function QuoteTile({ post, onLove, loved }: { post: Post; onLove: () => void; lo
       </Link>
       <div className="sx-qtile-foot">
         <span className="t-caption" style={{ color: t.sub }}>{post.saidBy || post.by.name}</span>
-        <button type="button" className={`sx-qtile-heart${loved ? ' is-on' : ''}`} aria-pressed={loved} aria-label="Love" onClick={onLove}><SIcon name="heart" /></button>
+        <button type="button" className={`sx-qtile-heart${loved ? ' is-on' : ''}${bump ? ' is-bumped' : ''}`} aria-pressed={loved} aria-label="Love"
+                onClick={() => { if (!loved) setBump(b => b + 1); onLove(); }}><SIcon key={bump} name="heart" /></button>
       </div>
     </div>
   );
@@ -87,6 +98,11 @@ export default function FeedView() {
   const sheets = usePostSheets(toast);
   const postingId = params.get('posting');
   const posting = posts.find(p => p.id === postingId) ?? null;
+  /* The post that just went up drops into the top of the feed once the bar
+     is done; until then it shows only as the bar. */
+  const [landed, setLanded] = useState<string | null>(null);
+  /* Tabs slide their content the way the highlight moves. */
+  const [way, setWay] = useState<'left' | 'right' | null>(null);
 
   /* Pull to refresh (VF17). */
   const [pull, setPull] = useState(0);
@@ -116,6 +132,7 @@ export default function FeedView() {
     : tab === 'Quotes' ? visible.filter(p => p.kind === 'quote')
     : tab === 'Friends' ? visible.filter(p => friendHandles.has(p.by.handle))
     : visible;
+  const shown = posting && landed !== posting.id ? list.filter(p => p.id !== posting.id) : list;
 
   const loveTile = (p: Post) => setPosts(all => all.map(x => {
     if (x.id !== p.id) return x;
@@ -124,13 +141,18 @@ export default function FeedView() {
     return { ...x, reactions: r };
   }));
   const pick = (t: Tab) => {
+    if (t === tab) return;
+    setWay(TABS.indexOf(t) > TABS.indexOf(tab) ? 'right' : 'left');
     setTab(t);
     const key = Object.entries(TAB_KEY).find(([, v]) => v === t)![0];
     router.replace(key === 'foryou' ? '/feed' : `/feed?tab=${key}`, { scroll: false });
   };
   const postingDone = () => {
     const id = postingId;
-    router.replace('/feed', { scroll: false });
+    // The bar folds away as the post drops in under it; then the address settles.
+    setLanded(id);
+    setTimeout(() => router.replace('/feed', { scroll: false }), 420);
+    setTimeout(() => setLanded(l => (l === id ? null : l)), 1000);
     toast('Posted to Friends', { href: `/feed/${id}`, action: 'View' });
   };
 
@@ -158,12 +180,12 @@ export default function FeedView() {
         </label>
       )}
 
-      <div className="sx-tabs" role="tablist" aria-label="Feed">
+      <div className="sx-tabs is-slide" role="tablist" aria-label="Feed" style={{ '--i': TABS.indexOf(tab), '--n': TABS.length } as React.CSSProperties}>
         {TABS.map(t => <button key={t} type="button" role="tab" aria-selected={t === tab} className="sx-tab" onClick={() => pick(t)}>{t}</button>)}
       </div>
 
       {!hydrated ? null : <>
-        {posting && <Posting post={posting} onDone={postingDone} />}
+        {posting && <Posting post={posting} onDone={postingDone} leaving={landed === posting.id} />}
 
         {tab === 'Thoughts' && (
           <div className="sx-prompt">
@@ -184,17 +206,21 @@ export default function FeedView() {
           </div>
         )}
 
-        {tab === 'Quotes' && list.length > 0 ? (
-          <div className="sx-qgrid">
-            {list.map(p => <QuoteTile key={p.id} post={p} loved={!!p.reactions[me.handle]} onLove={() => loveTile(p)} />)}
+        {tab === 'Quotes' && shown.length > 0 ? (
+          <div key={tab} className={`sx-qgrid${way ? ` is-from-${way}` : ''}`}>
+            {shown.map(p => <QuoteTile key={p.id} post={p} loved={!!p.reactions[me.handle]} onLove={() => loveTile(p)} />)}
           </div>
-        ) : list.length > 0 ? (
-          <div className="sx-list">
-            {list.map(p => <PostCard key={p.id} post={p} {...sheets} />)}
+        ) : shown.length > 0 ? (
+          <div key={tab} className={`sx-list${way ? ` is-from-${way}` : ''}`}>
+            {shown.map(p => (
+              <div key={p.id} className={`sx-slot${p.id === landed ? ' is-landing' : ''}`}>
+                <div className="sx-slot-in"><PostCard post={p} {...sheets} /></div>
+              </div>
+            ))}
           </div>
         ) : q ? (
           <p className="t-body c-2 sx-none">Nothing matches &ldquo;{q}&rdquo;.</p>
-        ) : tab !== 'Thoughts' && !posting ? <EmptyFeed /> : null}
+        ) : tab !== 'Thoughts' && !posting ? <EmptyFeed tab={tab} any={visible.length > 0} /> : null}
       </>}
 
       {sheets.node}

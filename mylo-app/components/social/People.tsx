@@ -7,6 +7,7 @@ import Sheet from '@/components/Sheet';
 import ScreenHeader from '@/components/ScreenHeader';
 import { Avatar, Segment, SIcon } from './ui';
 import { firstName, useCheers, useMe, useRooms, useSeen, type RoomLite, type Seen } from '@/lib/social';
+import { useRooms as useAccountRooms } from '@/lib/rooms';
 import { onDay, streak, useStore, type Item } from '@/lib/store';
 import { clock, todayIso } from '@/lib/dates';
 import { useHydrated } from '@/lib/local';
@@ -16,10 +17,13 @@ import { useHydrated } from '@/lib/local';
    the rooms area; what Mylo knows of each day is yours, so your card is full
    and the others show who they are, with a cheer and a nudge. */
 
+/* The room asked for, or the first one. `loading` while the account's rooms
+   are still on their way, so "No room yet" never flashes first. */
 function useRoom() {
   const rooms = useRooms();
+  const { ready, signedOut, error } = useAccountRooms();
   const id = useSearchParams().get('room');
-  return rooms.find(r => r.id === id) ?? rooms[0] ?? null;
+  return { room: rooms.find(r => r.id === id) ?? rooms[0] ?? null, loading: !ready && !signedOut && !error };
 }
 const roomQ = (r: RoomLite) => `?room=${encodeURIComponent(r.id)}`;
 
@@ -29,6 +33,8 @@ function NoRoom() {
       <ScreenHeader fallback="/chats" />
       <section className="sx-gone">
         <img src="/figma/social/mylo-empty.svg" alt="" width={100} height={120} />
+        <h1 className="sx-empty-title">No room yet</h1>
+        <p className="sx-empty-text">Everyone in your room and how their day is going shows here. Make a room, or join one with a code.</p>
         <Link href="/rooms/new" className="btn-primary sx-wide">New room</Link>
         <Link href="/rooms/join" className="sx-btn-soft sx-wide">Join with a code</Link>
       </section>
@@ -115,12 +121,12 @@ export function WhoSeesSheet({ open, onClose }: { open: boolean; onClose: () => 
 export function RoomPeople() {
   const hydrated = useHydrated();
   const router = useRouter();
-  const room = useRoom();
+  const { room, loading } = useRoom();
   const me = useMe();
   const mine = useMine();
   const [sees, setSees] = useState(false);
   if (!hydrated || !mine.ready) return <main className="screen on-desk sx-full" aria-busy="true" />;
-  if (!room) return <NoRoom />;
+  if (!room) return loading ? <main className="screen on-desk sx-full" aria-busy="true" /> : <NoRoom />;
   const others = room.members;
   const shown = [...mine.left.slice(0, 1), ...mine.done.slice(0, 1)];
   const more = mine.day.length - shown.length;
@@ -175,7 +181,7 @@ export function PersonDay() {
   const hydrated = useHydrated();
   const { name: raw } = useParams<{ name: string }>();
   const name = decodeURIComponent(raw);
-  const room = useRoom();
+  const { room } = useRoom();
   const me = useMe();
   const mine = useMine();
   const [tab, setTab] = useState<'Today' | 'Goals'>('Today');
@@ -212,11 +218,11 @@ export function PersonDay() {
 export function RoomGoals() {
   const hydrated = useHydrated();
   const router = useRouter();
-  const room = useRoom();
+  const { room, loading } = useRoom();
   const me = useMe();
   const { items, ready } = useStore();
   if (!hydrated || !ready) return <main className="screen on-desk sx-full" aria-busy="true" />;
-  if (!room) return <NoRoom />;
+  if (!room) return loading ? <main className="screen on-desk sx-full" aria-busy="true" /> : <NoRoom />;
   const goals = items.filter(i => i.kind === 'goal');
   return (
     <main className="screen on-desk sx-full sx-room">

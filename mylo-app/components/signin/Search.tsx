@@ -9,7 +9,7 @@ import { useSession } from '@/lib/session';
 import { useStore, type Item } from '@/lib/store';
 import { supabase } from '@/lib/supabase';
 import { Screen } from './ui';
-import { goBack } from '@/components/NavMotion';
+import { canGoBack, goBack, stampNav } from '@/components/NavMotion';
 
 /* X3 Search (597:53531): the person's own tasks and goals, the rooms they
    are in, and people by name or username. Nothing shows until they type. */
@@ -73,15 +73,25 @@ export default function Search() {
   const people = term && found.q === term ? found.people : [];
   const nothing = term && !tasks.length && !myRooms.length && !people.length;
 
+  const cancel = () => {
+    if (canGoBack()) { goBack(router); return; }
+    stampNav('pop'); router.push('/today');
+  };
   return (
     <Screen className="si-search">
-      <form className="si-search-top" role="search" onSubmit={e => e.preventDefault()}>
+      <form className="si-search-top" role="search" onSubmit={e => {
+        // Enter opens the first thing found.
+        e.preventDefault();
+        const first = document.querySelector<HTMLAnchorElement>('.si-search .si-result');
+        if (first) first.click();
+      }}>
         <label className="si-search-field">
           <Icon name="search" size={20} />
           <span className="sr-only">Search</span>
-          <input type="search" value={q} onChange={e => setQ(e.target.value)} autoFocus enterKeyHint="search" placeholder="Search" />
+          <input type="search" value={q} onChange={e => setQ(e.target.value)} autoFocus enterKeyHint="search" placeholder="Search"
+                 onKeyDown={e => { if (e.key === 'Escape') { e.preventDefault(); if (q) setQ(''); else cancel(); } }} />
         </label>
-        <button type="button" className="t-body-s si-search-cancel" onClick={() => (window.history.length > 1 ? goBack(router) : router.push('/today'))}>Cancel</button>
+        <button type="button" className="t-body-s si-search-cancel" onClick={cancel}>Cancel</button>
       </form>
 
       {tasks.length > 0 && <>
@@ -123,6 +133,7 @@ export default function Search() {
         </div>
       </>}
 
+      {!term && <p className="t-body-s c-3 si-search-none">Find your tasks and goals{user ? ', your rooms and people' : ''}.</p>}
       {nothing && <p className="t-body c-2 si-search-none">Nothing matches &ldquo;{q.trim()}&rdquo;.</p>}
     </Screen>
   );

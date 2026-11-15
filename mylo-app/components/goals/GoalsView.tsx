@@ -7,6 +7,7 @@ import TaskSheet from './TaskSheet';
 import { useStore } from '@/lib/store';
 import { BOARD, TONE, goalsOf, nextUp, progress, rhythm, status, useMeta, type Goal } from '@/lib/goals';
 import { useHydrated } from '@/lib/local';
+import { SlidePill, useSlidePill } from '../SlidePill';
 
 /* E1 · Goals (877:110589) on a phone, DT3 · Goals (946:27380) from 1024.
    Active are one-off goals, Systems are the ones that repeat, Done is both
@@ -47,6 +48,8 @@ export default function GoalsView() {
   const [tab, setTab] = useState<Tab>('active');
   const [filter, setFilter] = useState<string>('All');
   const [sheet, setSheet] = useState<string | null>(null);
+  const seg = useSlidePill<HTMLDivElement>(`${tab}|${ready}`);
+  const filters = useSlidePill<HTMLDivElement>(`${filter}|${ready}`);
   if (!ready) return <main className="screen" aria-busy="true" />;
 
   const goals = goalsOf(items, all);
@@ -71,7 +74,8 @@ export default function GoalsView() {
           </div>
           <Link href="/calendar" className="round-btn" aria-label="Calendar"><Icon name="goals/calendar-22" /></Link>
         </header>
-        <div className="g-seg" role="tablist" aria-label="Show">
+        <div ref={seg} className="g-seg slide-track" role="tablist" aria-label="Show">
+          <SlidePill />
           {TABS.map(t => (
             <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} className="g-seg-btn" onClick={() => setTab(t.id)}>{t.label}</button>
           ))}
@@ -93,7 +97,8 @@ export default function GoalsView() {
           </div>
           <Link href="/goals/new" className="desk-new"><Icon name="plus-18" size={18} />New goal</Link>
         </header>
-        <div className="g-filters" role="tablist" aria-label="Filter">
+        <div ref={filters} className="g-filters slide-track" role="tablist" aria-label="Filter">
+          <SlidePill />
           {[['All', open.length], ...tags.map(t => [t, open.filter(g => g.tag?.label === t).length]), ['Done', done.length]].map(([label, n]) => (
             <button key={label} type="button" role="tab" aria-selected={filter === label} className="g-filter" onClick={() => setFilter(String(label))}>{label} {n}</button>
           ))}

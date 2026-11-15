@@ -3,6 +3,7 @@
 import '@/styles/system.css';
 import { useEffect, useRef, useState } from 'react';
 import Icon from '@/components/Icon';
+import { usePresence } from '@/lib/system';
 import { Hero, type Tone } from './ui';
 
 /* PermissionPrimer, S3 and S5–S9: a whole screen that says why Mylo wants
@@ -124,9 +125,10 @@ export default function PermissionPrimer({ kind, open, onClose, onResult }: {
     finally { setBusy(false); }
   };
 
-  if (!open) return null;
+  const { mounted, shown } = usePresence(open, 260);
+  if (!mounted) return null;
   return (
-    <div className="sys-cover" role="dialog" aria-modal="true" aria-label={denied ? `${c.thing} is off for Mylo` : c.title}>
+    <div className={`sys-cover is-sheet${shown ? ' is-in' : ''}`} role="dialog" aria-modal="true" aria-label={denied ? `${c.thing} is off for Mylo` : c.title} inert={!open}>
       {denied ? (
         <div className="sys-cover-inner has-head">
           <header className="screen-header">

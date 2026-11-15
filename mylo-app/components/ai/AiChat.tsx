@@ -8,7 +8,7 @@ import { useLocal, useHydrated } from '@/lib/local';
 import { onDay, useStore } from '@/lib/store';
 import { iso, todayIso } from '@/lib/dates';
 import {
-  AiError, CHATS_KEY, DAILY, SLIPS_KEY, USAGE_KEY, ago, askMylo, fromGoal, pickMode, readWeek, slipId, toItem, useNow, usedToday,
+  AiError, CHATS_KEY, DAILY, SLIPS_KEY, USAGE_KEY, ago, askMylo, fromGoal, pickMode, readWeek, slipId, useAddDrafts, useNow, usedToday,
   type Chat, type Draft, type Msg, type Slip, type SlipNote, type Usage
 } from '@/lib/ai';
 import { useVoice, useVoiceSupported, bars, type VoiceFail } from './useVoice';
@@ -16,7 +16,8 @@ import { Listening, RecordingBar, VoiceNote, audioFor } from './VoiceBits';
 import { DraftReview, PlanCards } from './Drafts';
 import { NoticedCard, NoticedSheet } from './Noticed';
 import Limit from './Limit';
-import { goBack } from '@/components/NavMotion';
+import { useAnnounce } from '../goals/Tick';
+import { canGoBack, goBack } from '@/components/NavMotion';
 
 /* Mylo AI. On a phone, the chat from AI2 to AI6 with the review (AI1), the
    edit sheet (AI7) and the daily limit (AI8); from 1024 wide, DT6: the chat in
@@ -37,6 +38,8 @@ const VOICE_HINT: Record<VoiceFail, string> = {
   empty: 'Mylo didn’t catch that.'
 };
 
+const STARTERS = ['Plan my evening', 'Help me start running', 'Make tomorrow lighter'];
+
 /* The server's fallback reply lists the drafts as bullets; the cards show them. */
 const tidy = (reply: string) => reply.split('\n').filter(l => !/^\s*[•\-*]\s/.test(l)).join('\n').replace(/\n{2,}/g, '\n').trim();
 const planText = (d: Draft) => `${d.title}${d.time ? ` at ${d.time}` : ''}${d.minutes ? ` for ${d.minutes} min` : ''}`;
@@ -44,7 +47,9 @@ const planText = (d: Draft) => `${d.title}${d.time ? ` at ${d.time}` : ''}${d.mi
 export default function AiChat() {
   const hydrated = useHydrated();
   const router = useRouter();
-  const { items, add } = useStore();
+  const { items } = useStore();
+  const addDrafts = useAddDrafts();
+  const announce = useAnnounce();
   const [chats, setChats] = useLocal<Chat[]>(CHATS_KEY, []);
   const [currentId, setCurrentId] = useLocal<string | null>('mylo.ai.current.v1', null);
   const [usage, setUsage] = useLocal<Usage>(USAGE_KEY, { day: '', n: 0 });
@@ -162,12 +167,17 @@ export default function AiChat() {
   function addPlan(msgId: string) {
     const m = msgs.find((x): x is MyloMsg => x.id === msgId && x.role === 'mylo');
     if (!m?.drafts || m.added || !chat) return;
-    m.drafts.filter(d => d.on).forEach(d => add(toItem(d)));
+    const kept = m.drafts.filter(d => d.on);
+    const { today, later } = addDrafts(kept);
+    // Say where they went: Today when something is for today, Goals otherwise.
+    announce(today
+      ? { line: `Added ${kept.length} to ${later ? 'your plan' : 'Today'}`, sub: later ? `${today} today, ${later} in Goals` : undefined, href: '/today' }
+      : { line: `Added ${kept.length} to Goals`, href: '/goals' });
     patchChat(chat.id, c => ({ ...c, msgs: c.msgs.map(x => (x.id === msgId && x.role === 'mylo' ? { ...x, added: true } : x)) }));
   }
   function newChat() { setCurrentId(null); setView('chat'); setMenu(false); setText(''); }
   function openChat(id: string) { setCurrentId(id); setView('chat'); setMenu(false); }
-  function back() { if (window.history.length > 1) goBack(router); else router.push('/today'); }
+  function back() { if (canGoBack()) goBack(router); else router.push('/today'); }
   function spend() { setUsage(u => { const d = todayIso(); return { day: d, n: (u.day === d ? u.n : 0) + 1 }; }); }
 
   /* Hold to talk, slide left to cancel, slide up to lock; a tap records
@@ -298,6 +308,20 @@ export default function AiChat() {
           <div className="ai-msgs" aria-live="polite">
             {!msgs.length && !recording && voice.state === 'idle' && topSlip && (
               <NoticedCard slip={topSlip} onOpen={() => setNoticed(topSlip)} />
+            )}
+            {/* A new chat opens with Mylo's own first line, as AI4 draws the
+                exchange, and three ways in; nothing is sent until you pick. */}
+            {!msgs.length && !recording && voice.state === 'idle' && !pending && (
+              <div className="ai-mylo ai-intro">
+                <div className="ai-say">
+                  <span className="ai-mini"><img src="/figma/ai/mylo-plain.svg" alt="" width={20} height={24} /></span>
+                  <img className="ai-mylo-desk" src="/figma/ai/mylo-desk.svg" alt="" width={33} height={40} />
+                  <p className="ai-bubble">Hi. What should we plan? Talk or type, and I&rsquo;ll draft it for you to keep or change.</p>
+                </div>
+                <div className="ai-chips ai-chips-inline">
+                  {STARTERS.map(c => <button key={c} type="button" className="ai-chip" onClick={() => void send(c)}>{c}</button>)}
+                </div>
+              </div>
             )}
             {msgs.map(m => m.role === 'me' ? (
               <div key={m.id} className="ai-me">

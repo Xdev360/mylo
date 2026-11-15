@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useSyncExternalStore } from 'react';
+import { useCallback, useMemo, useSyncExternalStore } from 'react';
+import { ME as ROOM_ME, useRooms as useAccountRooms } from './rooms';
 
 /* Social, on the device. Posts, friends and the rest are kept under their own
    `mylo.social.*` keys in the same JSON form `useLocal` writes, but through one
@@ -121,7 +122,11 @@ export function useMe(): Person {
 }
 export const isMe = (p: Person, me: Person) => p.handle === me.handle;
 
-/* ── Rooms, read from the rooms area (mylo.rooms.list.v1) ──────────────── */
+/* ── Rooms, from the rooms area ──────────────────────────────────────────
+   Rooms live on the account now (lib/rooms), so that is where the room
+   people screens and Share get them. The old device list
+   (mylo.rooms.list.v1) only lends a room its shared goals when its id
+   matches; the server has no room goals yet. */
 /* `members` are the others in the room, by name; `size` counts you too. */
 export type RoomLite = { id: string; name: string; members: string[]; size: number; goals: { title: string; period?: string }[] };
 export const ROOMS_KEY = 'mylo.rooms.list.v1';
@@ -140,7 +145,15 @@ function readRooms(): RoomLite[] {
 }
 const onStorage = (f: () => void) => { window.addEventListener('storage', f); return () => window.removeEventListener('storage', f); };
 export function useRooms(): RoomLite[] {
-  return useSyncExternalStore(onStorage, readRooms, () => NO_ROOMS);
+  const local = useSyncExternalStore(onStorage, readRooms, () => NO_ROOMS);
+  const { rooms } = useAccountRooms();
+  return useMemo(() => {
+    const goals = new Map(local.map(r => [r.id, r.goals]));
+    return rooms.filter(r => !r.peek && r.members.some(m => m.id === ROOM_ME)).map(r => ({
+      id: r.id, name: r.name, size: r.members.length, goals: goals.get(r.id) ?? [],
+      members: r.members.filter(m => m.id !== ROOM_ME).map(m => m.name)
+    }));
+  }, [rooms, local]);
 }
 const str = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : null);
 function parseRooms(raw: unknown): RoomLite[] {

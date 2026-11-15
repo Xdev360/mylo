@@ -12,11 +12,12 @@ import { Avatar, Head, useToast } from './ui';
 /* G5 · Scrabble (879:184139). A real 15 x 15 board and bag, words checked
    against the full list in /public/figma/apps/scrabble-words.txt, against
    Mylo. Tap a rack tile, then a square; tap a tile you put down to take it
-   back. Play word checks and scores it. */
+   back. Play word checks and scores it. The last word played drops onto
+   the board tile by tile, and a score that changes counts up with a bump. */
 type Who = 'you' | 'mylo';
 type Save = {
   id: string; board: S.Cell[]; bag: S.Tile[]; racks: Record<Who, S.Tile[]>; scores: Record<Who, number>;
-  turn: Who; passes: number; over?: boolean; last?: { who: Who; word: string; score: number };
+  turn: Who; passes: number; over?: boolean; last?: { who: Who; word: string; score: number; cells?: number[] };
 };
 const VS = 'Mylo';
 function fresh(): Save {
@@ -88,7 +89,7 @@ function ScrabblePlay({ save, setSave }: { save: Save; setSave: (s: Save) => voi
 
   const finish = (s: Save) => {
     setSave(s);
-    if (s.over) setResults(r => [{ id: s.id, game: 'scrabble', vs: VS, outcome: s.scores.you > s.scores.mylo ? 'won' : s.scores.you < s.scores.mylo ? 'lost' : 'draw', at: new Date().toISOString(), how: `${s.scores.you} to ${s.scores.mylo}` }, ...r]);
+    if (s.over) setResults(r => r.some(x => x.id === s.id) ? r : [{ id: s.id, game: 'scrabble', vs: VS, outcome: s.scores.you > s.scores.mylo ? 'won' : s.scores.you < s.scores.mylo ? 'lost' : 'draw', at: new Date().toISOString(), how: `${s.scores.you} to ${s.scores.mylo}` }, ...r]);
   };
 
   // Mylo's turn.
@@ -100,7 +101,7 @@ function ScrabblePlay({ save, setSave }: { save: Save; setSave: (s: Save) => voi
       if (found) {
         const board = save.board.slice();
         for (const p of found.placed) board[p.idx] = p.tile;
-        next = refill({ ...save, board, racks: { ...save.racks, mylo: removeFrom(save.racks.mylo, found.placed.map(p => p.tile)) }, scores: { ...save.scores, mylo: save.scores.mylo + found.score }, turn: 'you', passes: 0, last: { who: 'mylo', word: found.word, score: found.score } }, 'mylo');
+        next = refill({ ...save, board, racks: { ...save.racks, mylo: removeFrom(save.racks.mylo, found.placed.map(p => p.tile)) }, scores: { ...save.scores, mylo: save.scores.mylo + found.score }, turn: 'you', passes: 0, last: { who: 'mylo', word: found.word, score: found.score, cells: found.placed.map(p => p.idx) } }, 'mylo');
         showToast(`${VS} played ${found.word} for ${found.score}`);
       } else if (save.bag.length >= 7) {
         const bag = [...save.bag, ...save.racks.mylo];
@@ -145,7 +146,7 @@ function ScrabblePlay({ save, setSave }: { save: Save; setSave: (s: Save) => voi
     const left = rack.filter((_, i) => !used.has(i));
     const main = r.words[0].word;
     setPlaced([]); setSel(null);
-    finish(settle(refill({ ...save, board, racks: { ...save.racks, you: left }, scores: { ...save.scores, you: save.scores.you + r.score }, turn: 'mylo', passes: 0, last: { who: 'you', word: main, score: r.score } }, 'you')));
+    finish(settle(refill({ ...save, board, racks: { ...save.racks, you: left }, scores: { ...save.scores, you: save.scores.you + r.score }, turn: 'mylo', passes: 0, last: { who: 'you', word: main, score: r.score, cells: tiles.map(t => t.idx) } }, 'you')));
     showToast(`${main} for ${r.score}`);
   };
   const doSwap = () => {
@@ -163,6 +164,7 @@ function ScrabblePlay({ save, setSave }: { save: Save; setSave: (s: Save) => voi
 
   const lead: Who | null = save.scores.you === save.scores.mylo ? null : save.scores.you > save.scores.mylo ? 'you' : 'mylo';
   const newCells = new Set(placed.map(p => p.idx));
+  const dropped = save.last?.cells ?? [];
   return (
     <main className="screen on-desk ax-no-tabs no-tabs ax-game ax-scrabble">
       <Head title="Scrabble · 2 players" fallback="/games" right={<button type="button" className="ax-more" aria-label="More" onClick={() => setMenu(true)}><Icon name="apps/i-more" size={22} /></button>} />
@@ -170,15 +172,17 @@ function ScrabblePlay({ save, setSave }: { save: Save; setSave: (s: Save) => voi
         {(['you', 'mylo'] as Who[]).map(w => (
           <div key={w} className={`ax-score-p${save.turn === w && !save.over ? ' is-turn' : ''}`}>
             {w === 'you' ? <Avatar name="You" size={32} me /> : <Avatar name={VS} size={32} tint="var(--tint-red)" />}
-            <span><span className="ax-13 ax-600">{w === 'you' ? 'You' : VS}</span><span className={`ax-13 ${lead === w ? 'c-green' : 'c-2'}`}>{save.scores[w]}</span></span>
+            <span><span className="ax-13 ax-600">{w === 'you' ? 'You' : VS}</span><span key={save.scores[w]} className={`ax-13 ax-count ${lead === w ? 'c-green' : 'c-2'}`}>{save.scores[w]}</span></span>
           </div>
         ))}
       </div>
       <div className="ax-sboard" role="grid" aria-label="Scrabble board">
         {view.map((c, i) => {
           const prem = S.PREMIUM[i];
+          const k = c && !newCells.has(i) ? dropped.indexOf(i) : -1;
           return (
-            <button key={i} type="button" className={`ax-sq2${prem ? ` is-${prem.toLowerCase()}` : ''}${c ? ' has-tile' : ''}${newCells.has(i) ? ' is-new' : ''}`}
+            <button key={i} type="button" className={`ax-sq2${prem ? ` is-${prem.toLowerCase()}` : ''}${c ? ' has-tile' : ''}${newCells.has(i) ? ' is-new' : ''}${k >= 0 ? (save.last?.who === 'mylo' ? ' is-drop' : ' is-set') : ''}`}
+                    style={k >= 0 ? { '--k': k } as React.CSSProperties : undefined}
                     onClick={() => tapCell(i)} aria-label={c ? c.letter : prem ?? (i === S.CENTRE ? 'Centre' : 'Empty')}>
               {c ? <span className="ax-stile">{c.letter}{!c.blank && <span>{S.VALUES[c.letter]}</span>}</span> : prem && <span className="ax-prem">{prem}</span>}
             </button>

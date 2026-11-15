@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { stampNav } from '@/components/NavMotion';
 import Icon from '@/components/Icon';
 import { useSession } from '@/lib/session';
 import { authMessage, resolveLoginEmail, signInWithProvider, takeNext } from '@/lib/signin';
@@ -36,6 +37,7 @@ function useSignIn() {
         await sb.auth.signOut();
         throw new Error(p.banned_at ? 'This account is banned' : 'This account is disabled');
       }
+      stampNav('tab');
       router.replace(takeNext('/today'));
     } catch (e) {
       setBusy(null); setMsg({ text: authMessage(e), tone: 'error' });
@@ -72,16 +74,22 @@ export default function SignIn() {
   const f = useSignIn();
   useEffect(() => { if (!loading && session && !f.busy) router.replace('/today'); }, [loading, session, f.busy, router]);
 
+  const passRef = useRef<Record<string, HTMLInputElement | null>>({});
   const fields = (desk: boolean) => (
     <>
       <label className={desk ? 'si-dfield' : 'si-field'}>
         <span>Email</span>
-        <input type="text" inputMode="email" autoComplete="username" autoCapitalize="none" spellCheck={false}
-               value={f.who} onChange={e => f.setWho(e.target.value)} />
+        <input type="text" inputMode="email" autoComplete="username" autoCapitalize="none" spellCheck={false} enterKeyHint="next"
+               value={f.who} onChange={e => f.setWho(e.target.value)}
+               onKeyDown={e => {
+                 // Enter in the first box goes on to the password, unless it is already typed.
+                 if (e.key === 'Enter' && !f.pass) { e.preventDefault(); passRef.current[desk ? 'd' : 'p']?.focus(); }
+               }} />
       </label>
       <label className={desk ? 'si-dfield' : 'si-field'}>
         <span>Password</span>
-        <input type="password" autoComplete="current-password" value={f.pass} onChange={e => f.setPass(e.target.value)} />
+        <input ref={el => { passRef.current[desk ? 'd' : 'p'] = el; }} type="password" autoComplete="current-password" enterKeyHint="go"
+               value={f.pass} onChange={e => f.setPass(e.target.value)} />
       </label>
     </>
   );

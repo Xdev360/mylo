@@ -19,8 +19,12 @@ export default function Calendar() {
   const ready = useHydrated();
   const { items } = useStore();
   const { all } = useMeta();
-  const [month, setMonth] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
-  const [picked, setPicked] = useState(todayIso);
+  // /calendar?day=YYYY-MM-DD opens on that day (Today's week strip links here).
+  const [picked, setPicked] = useState(() => {
+    const d = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('day') : null;
+    return d && /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : todayIso();
+  });
+  const [month, setMonth] = useState(() => { const d = fromIso(picked); return new Date(d.getFullYear(), d.getMonth(), 1); });
   const [mine, setMine] = useState(false);
   const [quick, setQuick] = useState(false);
   if (!ready) return <main className="screen" aria-busy="true" />;

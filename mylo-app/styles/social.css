@@ -488,3 +488,42 @@ body:has(.sx-editor){ background:#0B0B0E; }
 .sx-own-text{ flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
 
 @media (prefers-reduced-motion: reduce){ .sx-react.is-hover, .sx-react:hover{ translate:none; } }
+
+/* ── Motion ──────────────────────────────────────────────────────────────
+   Tabs and segments slide their highlight and the feed slides the same way;
+   a new post drops into the top of the feed as the posting bar folds away;
+   a reaction pops. */
+.sx-tabs.is-slide, .sx-seg.is-slide{ position:relative; isolation:isolate; }
+.sx-tabs.is-slide > *, .sx-seg.is-slide > *{ position:relative; z-index:1; }
+.sx-tabs.is-slide .sx-tab[aria-selected="true"]{ background:none; box-shadow:none; }
+.sx-seg.is-slide .sx-seg-btn[aria-selected="true"]{ background:none; border-color:transparent; }
+.sx-tabs.is-slide::before, .sx-seg.is-slide::before{ content:''; position:absolute; z-index:0; top:4px; bottom:4px; border-radius:999px;
+  left:calc(4px + var(--i, 0) * (100% - 8px) / var(--n, 2)); width:calc((100% - 8px) / var(--n, 2));
+  transition:left .34s cubic-bezier(.22,1,.36,1); }
+.sx-tabs.is-slide::before{ background:var(--bg); box-shadow:0 1px 2px rgba(0,0,0,.06); }
+.sx-seg.is-slide::before{ background:var(--surface); box-shadow:inset 0 0 0 1px var(--line); }
+.sx-list.is-from-right, .sx-qgrid.is-from-right{ animation:sx-from-right .34s cubic-bezier(.22,1,.36,1) both; }
+.sx-list.is-from-left, .sx-qgrid.is-from-left{ animation:sx-from-left .34s cubic-bezier(.22,1,.36,1) both; }
+@keyframes sx-from-right{ from{ opacity:0; translate:28px 0; } }
+@keyframes sx-from-left{ from{ opacity:0; translate:-28px 0; } }
+
+.sx-slot{ display:grid; grid-template-rows:1fr; }
+.sx-slot-in{ min-height:0; }
+.sx-slot.is-landing{ animation:sx-land .5s cubic-bezier(.22,1,.36,1) both; }
+.sx-slot.is-landing .sx-slot-in{ overflow:hidden; animation:sx-land-in .5s cubic-bezier(.22,1,.36,1) both; }
+@keyframes sx-land{ from{ grid-template-rows:0fr; } }
+@keyframes sx-land-in{ from{ opacity:0; translate:0 -16px; scale:.97; } }
+.sx-posting{ animation:sx-rise .3s cubic-bezier(.22,1,.36,1) both; }
+.sx-posting.is-leaving{ animation:sx-fold .4s cubic-bezier(.22,1,.36,1) both; }
+@keyframes sx-fold{ to{ opacity:0; margin-bottom:-80px; scale:.96; } }
+
+.sx-heart.is-on.is-bumped .icon, .sx-qtile-heart.is-on.is-bumped .icon{ animation:sx-heart-pop .42s cubic-bezier(.34,1.56,.64,1); }
+@keyframes sx-heart-pop{ 0%{ scale:.6; } 45%{ scale:1.3; } 100%{ scale:1; } }
+.sx-react{ animation:sx-react-in .34s cubic-bezier(.34,1.56,.64,1) both; }
+.sx-react:nth-child(2){ animation-delay:.03s; } .sx-react:nth-child(3){ animation-delay:.06s; } .sx-react:nth-child(4){ animation-delay:.09s; } .sx-react:nth-child(5){ animation-delay:.12s; } .sx-react:nth-child(n+6){ animation-delay:.15s; }
+@keyframes sx-react-in{ from{ opacity:0; translate:0 14px; scale:.5; } }
+
+@media (prefers-reduced-motion:reduce){
+  .sx-tabs.is-slide::before, .sx-seg.is-slide::before{ transition:none; }
+  .sx-list, .sx-qgrid, .sx-slot, .sx-slot-in, .sx-posting, .sx-heart .icon, .sx-qtile-heart .icon, .sx-react{ animation:none !important; }
+}

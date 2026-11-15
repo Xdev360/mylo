@@ -5,11 +5,13 @@ import { useMemo, useState } from 'react';
 import Icon from './Icon';
 import QuickTodo from './QuickTodo';
 import { DailyMoments } from './goals/Moments';
-import { TICK_XP, XpPill, useBurst, useCelebrate } from './goals/Tick';
+import { Roll, TICK_XP, XpPill, useBurst } from './goals/Tick';
+import { useToggleThing } from './goals/DayItems';
 import { Me } from './Sidebar';
 import { useSession } from '@/lib/session';
 import { MyloNoticed } from './ai/Noticed';
-import { onDay, streak, useStore, type Item } from '@/lib/store';
+import { useStore } from '@/lib/store';
+import { dayThings, useMeta, useStreak, type DayThing } from '@/lib/goals';
 import { clock, dayLetter, greeting, iso, thisWeek, todayIso } from '@/lib/dates';
 
 /* "Thursday, 22 October", with the comma C2 and DT2 write. */
@@ -22,22 +24,36 @@ const longDate = (d: Date) => `${d.toLocaleDateString('en-GB', { weekday: 'long'
 const TONE = { blue: ['var(--tint-blue)', 'var(--blue)'], green: ['var(--tint-green)', 'var(--green)'], amber: ['var(--tint-amber)', 'var(--amber)'], red: ['var(--tint-red)', 'var(--red)'] } as const;
 const STARTERS = ['10 min walk', 'Read 5 pages', 'Drink water'];
 
+/* The day, counted once for both layouts: everything on it (tasks, to-dos,
+   one-off goals dated today and today's systems, lib/goals dayThings), what
+   is left, the next thing still ahead, and the week's dots. */
 function useDay() {
   const { items, ready } = useStore();
+  const { all } = useMeta();
+  const streak = useStreak();
   return useMemo(() => {
     const now = new Date();
     const today = todayIso();
-    const mine = onDay(items, today);
+    const hm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const mine = dayThings(items, all, today);
     const left = mine.filter(i => !i.done).length;
-    const next = mine.filter(i => !i.done && i.time).sort((a, b) => a.time!.localeCompare(b.time!))[0];
+    // "Next" is the next thing still ahead today; times already gone don't count.
+    const next = mine.find(i => !i.done && i.time && i.time >= hm);
     const week = thisWeek(now).map(d => {
-      const day = onDay(items, iso(d));
+      const day = dayThings(items, all, iso(d));
       // Today always carries its dot, as O17 draws it on an empty day.
       const dot = iso(d) === today ? 'today' : !day.length ? 'empty' : day.every(i => i.done) ? 'done' : 'part';
       return { date: d, today: iso(d) === today, future: iso(d) > today, dot };
     });
-    return { ready, now, mine, left, done: mine.length - left, next, week, streak: streak(items) };
-  }, [items, ready]);
+    return { ready, now, mine, left, done: mine.length - left, next, week, streak };
+  }, [items, all, ready, streak]);
+}
+
+/* Rows that arrive after the screen opened slide in; the ones there from
+   the start just sit. */
+function useFresh(ids: string[]) {
+  const [seen] = useState(() => new Set(ids));
+  return (id: string) => !seen.has(id);
 }
 
 function EmptyDay({ big = false }: { big?: boolean }) {
@@ -61,9 +77,9 @@ function EmptyDay({ big = false }: { big?: boolean }) {
   );
 }
 
-function TaskRow({ item, onTick, burst }: { item: Item; onTick: () => void; burst: boolean }) {
+function TaskRow({ item, onTick, burst }: { item: DayThing; onTick: () => void; burst: boolean }) {
   const tone = item.tag ? TONE[item.tag.tone] : null;
-  const when = [item.time ? clock(item.time) : null, item.minutes ? `${item.minutes} min` : null, item.with ? `with ${item.with}` : null].filter(Boolean).join(' · ');
+  const when = [item.time ? clock(item.time) : null, item.minutes ? `${item.minutes} min` : null, item.with ? `with ${item.with}` : null, item.repeat ? 'Routine' : null].filter(Boolean).join(' · ');
   return (
     <button type="button" className={`task-row${item.done ? ' is-done' : ''}${burst ? ' is-burst' : ''}`} aria-pressed={item.done} onClick={onTick}>
       <span className="task-bar" style={{ background: tone ? tone[1] : 'var(--text-3)' }} />
@@ -73,7 +89,7 @@ function TaskRow({ item, onTick, burst }: { item: Item; onTick: () => void; burs
   );
 }
 
-function Hero({ left, done, total, next, desk = false }: { left: number; done: number; total: number; next?: Item; desk?: boolean }) {
+function Hero({ left, done, total, next, desk = false }: { left: number; done: number; total: number; next?: DayThing; desk?: boolean }) {
   // DT2's "Today live" (943:27497): the count stacks over its words, Mylo at
   // the right, and the two plain chips run underneath.
   if (desk) return (
@@ -81,13 +97,13 @@ function Hero({ left, done, total, next, desk = false }: { left: number; done: n
       <div className="hero-desk-top">
         <div className="hero-desk-text">
           <p className="t-label hero-desk-label">Today · Live</p>
-          <p className="hero-desk-count">{left}</p>
+          <p className="hero-desk-count"><Roll value={left} /></p>
           <p className="hero-desk-words">{left === 1 ? 'task left' : 'tasks left'}</p>
         </div>
         <img className="hero-mylo-desk" src="/figma/mylo-desk.svg" alt="" width={92} height={110} />
       </div>
       <p className="hero-desk-chips">
-        <span className="hero-desk-chip">{done} of {total} done</span>
+        <span className="hero-desk-chip"><Roll value={done} /> of {total} done</span>
         {next?.time && <span className="hero-desk-chip">Next {clock(next.time, false)}</span>}
       </p>
     </section>
@@ -96,9 +112,9 @@ function Hero({ left, done, total, next, desk = false }: { left: number; done: n
     <section className="hero-card" aria-label="Today, live">
       <div className="hero-text">
         <p className="t-label hero-live"><span className="live-dot" />Today · Live</p>
-        <p className="hero-count"><span className="t-display">{left}</span><span className="t-body">{left === 1 ? 'task left' : 'tasks left'}</span></p>
+        <p className="hero-count"><Roll value={left} className="t-display" /><span className="t-body">{left === 1 ? 'task left' : 'tasks left'}</span></p>
         <p className="hero-chips">
-          <span className="hero-chip t-caption"><Icon name="check-circle" size={16} />{done} of {total} done</span>
+          <span className="hero-chip t-caption"><Icon name="check-circle" size={16} /><span><Roll value={done} /> of {total} done</span></span>
           {next?.time && <span className="hero-chip t-caption"><Icon name="clock" size={16} />Next {clock(next.time, false)}</span>}
         </p>
       </div>
@@ -108,32 +124,42 @@ function Hero({ left, done, total, next, desk = false }: { left: number; done: n
 }
 
 export default function TodayView() {
-  const { toggle, openCapture } = useStore();
-  const celebrate = useCelebrate();
+  const { openCapture } = useStore();
   const [burst, fire] = useBurst();
+  const toggleThing = useToggleThing(todayIso());
   // A tick plays C3's moment: the burst on the row and the toast.
-  const tick = (i: Item) => { toggle(i.id); if (!i.done) { fire(i.id); celebrate({}); } };
+  const tick = (i: DayThing) => { toggleThing(i); if (!i.done) fire(i.id); };
   const { session, loading, name, profile } = useSession();
   const d = useDay();
+  const fresh = useFresh(d.mine.map(i => i.id));
+  const [startedEmpty] = useState(() => d.mine.length === 0);
   const [q, setQ] = useState('');
   if (!d.ready) return <main className="screen" aria-busy="true" />;
 
   const empty = d.mine.length === 0;
-  const tasks = d.mine.filter(i => i.kind === 'task');
-  const upNext = tasks.filter(i => !i.done || i.id === burst).sort((a, b) => (a.time ?? '99').localeCompare(b.time ?? '99'));
+  // Up next is everything but the quick to-dos, which have their own card.
+  // A ticked row stays for its burst, then folds away.
+  const tasks = d.mine.filter(i => i.kind !== 'todo');
+  const upNext = tasks.filter(i => !i.done || i.id === burst);
+  const arrive = !d.ready || !startedEmpty ? '' : ' is-arriving';
   const line = empty ? 'Day one. Start with something small.' : d.left === 0 ? 'All done for today.' : `${d.left} left today.`;
   const listed = d.mine
     .filter(i => !q || i.title.toLowerCase().includes(q.toLowerCase()))
-    .sort((a, b) => Number(b.done) - Number(a.done) || (a.time ?? '99').localeCompare(b.time ?? '99'));
+    // In the day's own order, so a row stays where it is when it is ticked.
+    .sort((a, b) => (a.time ?? '99').localeCompare(b.time ?? '99'));
 
+  // Each day opens somewhere useful: a day to come opens its plan (N7), today
+  // and the days gone open the calendar on that day (E3).
   const week = (
     <nav className="week" aria-label="This week">
       {d.week.map(w => (
-        <span key={w.date.toISOString()} className={`day${w.today ? ' is-today' : ''}${w.future ? ' is-future' : ''}`} aria-current={w.today ? 'date' : undefined}>
+        <Link key={w.date.toISOString()} href={w.future ? `/plan?day=${iso(w.date)}` : `/calendar?day=${iso(w.date)}`}
+              className={`day${w.today ? ' is-today' : ''}${w.future ? ' is-future' : ''}`} aria-current={w.today ? 'date' : undefined}
+              aria-label={w.date.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}>
           <span className="t-caption day-d">{dayLetter(w.date)}</span>
           <span className="day-n">{w.date.getDate()}</span>
           <span className={`day-dot dot-${w.dot}`} />
-        </span>
+        </Link>
       ))}
     </nav>
   );
@@ -155,7 +181,7 @@ export default function TodayView() {
           <div className="today-top-right">
             <Link href="/streak" className="streak" aria-label={`${d.streak} day streak`}>
               <img src="/figma/flame.svg" alt="" width={18} height={18} />
-              <span className="t-title-s">{d.streak}</span>
+              <Roll value={d.streak} className="t-title-s" />
             </Link>
             <Link href="/notifications" className="round-btn" aria-label="Notifications"><Icon name="bell" /></Link>
           </div>
@@ -167,11 +193,17 @@ export default function TodayView() {
         </section>
         <div className="card week-card">{week}</div>
         {empty ? <EmptyDay /> : <>
-          <Hero left={d.left} done={d.done} total={d.mine.length} next={d.next} />
+          <div className={`today-arrive${arrive}`}><Hero left={d.left} done={d.done} total={d.mine.length} next={d.next} /></div>
           <QuickTodo />
           {upNext.length > 0 && <>
             <div className="section-head"><h2 className="t-title-m">Up next</h2><Link href="/calendar" className="t-body-s c-2">See all</Link></div>
-            <div className="card list">{upNext.map(t => <TaskRow key={t.id} item={t} burst={burst === t.id} onTick={() => tick(t)} />)}</div>
+            <div className="card list">
+              {upNext.map(t => (
+                <div key={t.id} className={`row-wrap${fresh(t.id) ? ' is-new' : ''}${t.done && burst === t.id ? ' is-out' : ''}`}>
+                  <div><TaskRow item={t} burst={burst === t.id} onTick={() => tick(t)} /></div>
+                </div>
+              ))}
+            </div>
           </>}
         </>}
       </main>
@@ -196,13 +228,13 @@ export default function TodayView() {
         <div className="desk-cols">
           <section className="desk-tasks">
             {empty ? <EmptyDay big /> : <>
-              <div className="desk-list-head"><h2 className="desk-list-title">Today</h2><span className="desk-list-count">{d.done} of {d.mine.length} done</span></div>
+              <div className="desk-list-head"><h2 className="desk-list-title">Today</h2><span className="desk-list-count"><Roll value={d.done} /> of {d.mine.length} done</span></div>
               {listed.map(i => (
-                <button key={i.id} type="button" className={`desk-task${i.done ? ' is-done' : ''}`} aria-pressed={i.done} onClick={() => tick(i)}>
+                <button key={i.id} type="button" className={`desk-task${i.done ? ' is-done' : ''}${fresh(i.id) ? ' is-new' : ''}${burst === i.id ? ' is-burst' : ''}`} aria-pressed={i.done} onClick={() => tick(i)}>
                   <span className="desk-check">{i.done && <Icon name="check-14" size={14} />}</span>
                   <span className="task-text">
                     <span className="desk-task-title">{i.title}</span>
-                    <span className="desk-task-sub">{[i.time ?? (i.kind === 'todo' ? 'To-do' : 'Any time'), i.tag?.label].filter(Boolean).join(' · ')}</span>
+                    <span className="desk-task-sub">{[i.time ?? (i.kind === 'todo' ? 'To-do' : 'Any time'), i.repeat ? 'Routine' : null, i.tag?.label].filter(Boolean).join(' · ')}</span>
                   </span>
                   {i.done
                     ? <span className="tag" style={{ background: i.tag ? TONE[i.tag.tone][0] : 'var(--tint-green)' }}>{TICK_XP}</span>

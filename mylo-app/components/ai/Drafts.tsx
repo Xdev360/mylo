@@ -5,6 +5,7 @@ import { useState } from 'react';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import { CATS, CAT_LOOK, planLine, whenLine, type Cat, type Draft } from '@/lib/ai';
+import { todayIso } from '@/lib/dates';
 
 /* What Mylo drafted, three ways: plan cards in the chat (AI5, and DT6's
    single card on a wide screen), the review list (AI1) and the edit sheet
@@ -17,6 +18,8 @@ const tint = (cat: Cat | null) => (cat ? CAT_LOOK[cat].tint : 'var(--surface-2)'
 
 export function PlanCards({ drafts, added, onAdd, onEdit }: { drafts: Draft[]; added?: boolean; onAdd: () => void; onEdit: () => void }) {
   const on = drafts.filter(d => d.on);
+  // Once added, the button opens where they landed.
+  const landed = on.some(d => !d.repeat.length && d.scope === 'day' && d.date === todayIso()) ? '/today' : '/goals';
   return (
     <div className="ai-plan">
       {/* AI5 · phone */}
@@ -46,7 +49,7 @@ export function PlanCards({ drafts, added, onAdd, onEdit }: { drafts: Draft[]; a
       </ul>
       <div className="ai-plan-actions">
         {added
-          ? <Link href="/today" className="ai-btn ai-btn-dark"><Icon name="check-14" size={14} />Added</Link>
+          ? <Link href={landed} className="ai-btn ai-btn-dark ai-added"><Icon name="check-14" size={14} />Added · Open</Link>
           : <button type="button" className="ai-btn ai-btn-dark" onClick={onAdd} disabled={!on.length}>
               <Icon name="ai/plus" size={18} className="ai-desk-only" />Add all {on.length}
             </button>}

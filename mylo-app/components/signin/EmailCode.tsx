@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import { stampNav } from '@/components/NavMotion';
 import { useHydrated } from '@/lib/local';
 import { authMessage, clearInvite, isBlocked, isEmail, pendingEmail, readInvite, setPendingEmail, takeNext, useOnboarding } from '@/lib/signin';
 import { supabase } from '@/lib/supabase';
@@ -34,6 +35,7 @@ export function EmailStep() {
     try {
       await sendCode(v, { mylo_name: ob.myloName, vibe: ob.vibe });
       setPendingEmail(v);
+      stampNav('push');
       router.push('/signin/code');
     } catch (e) { setBusy(false); setError(authMessage(e)); }
   };
@@ -70,7 +72,12 @@ export function CodeStep() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ text: string; tone: 'error' | 'info' }>({ text: '', tone: 'error' });
   const [left, setLeft] = useState(WAIT);
+  const [wrong, setWrong] = useState(0);
+  const [focused, setFocused] = useState(false);
   const input = useRef<HTMLInputElement>(null);
+  // The typing point always sits after the last digit, so the box that
+  // lights up is the one the next digit goes into.
+  const toEnd = () => { const el = input.current; if (el) { const n = el.value.length; el.setSelectionRange(n, n); } };
 
   useEffect(() => { if (hydrated && !email) router.replace('/signin/email'); }, [hydrated, email, router]);
   useEffect(() => {
@@ -85,9 +92,10 @@ export function CodeStep() {
     try {
       const { error } = await supabase().auth.verifyOtp({ email, token, type: 'email' });
       if (error) throw error;
+      stampNav('tab');
       router.replace(takeNext('/today'));
     } catch (e) {
-      setBusy(false); setCode(''); setMsg({ text: authMessage(e), tone: 'error' }); input.current?.focus();
+      setBusy(false); setCode(''); setWrong(n => n + 1); setMsg({ text: authMessage(e), tone: 'error' }); requestAnimationFrame(() => input.current?.focus());
     }
   };
   const resend = async () => {
@@ -102,13 +110,28 @@ export function CodeStep() {
       <header className="si-head"><BackButton fallback="/signin/email" /></header>
       <h1 className="si-title-l si-x-top">Check your email</h1>
       <p className="t-body c-2 si-x-sub">We sent a code to {email}</p>
-      <label className="si-code">
+      <label className="si-code" key={wrong} data-wrong={(wrong && msg.tone === 'error' && msg.text) ? '' : undefined}>
         <span className="sr-only">6-digit code</span>
         <input ref={input} className="si-code-input" value={code} autoFocus inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]*" maxLength={LENGTH}
-               onChange={e => { const v = e.target.value.replace(/\D/g, '').slice(0, LENGTH); setCode(v); if (v.length === LENGTH) verify(v); }} />
-        {Array.from({ length: LENGTH }, (_, i) => (
-          <span key={i} aria-hidden className={`si-digit${i === Math.min(code.length, LENGTH - 1) ? ' is-now' : ''}`}>{code[i] ?? ''}</span>
-        ))}
+               enterKeyHint="go" disabled={busy}
+               onFocus={() => { setFocused(true); requestAnimationFrame(toEnd); }} onBlur={() => setFocused(false)}
+               onSelect={toEnd} onKeyUp={toEnd}
+               onKeyDown={e => { if (e.key === 'Enter') verify(); }}
+               onPaste={e => {
+                 // A pasted code (with spaces, a dash or words around it) fills every box.
+                 const v = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, LENGTH);
+                 if (!v) return;
+                 e.preventDefault(); setCode(v); setMsg({ text: '', tone: 'error' }); if (v.length === LENGTH) verify(v);
+               }}
+               onChange={e => { const v = e.target.value.replace(/\D/g, '').slice(0, LENGTH); setCode(v); if (msg.tone === 'error') setMsg({ text: '', tone: 'error' }); if (v.length === LENGTH) verify(v); }} />
+        {Array.from({ length: LENGTH }, (_, i) => {
+          const now = focused && i === Math.min(code.length, LENGTH - 1);
+          return (
+            <span key={i} aria-hidden className={`si-digit${now ? ' is-now' : ''}${code[i] ? ' is-full' : ''}`}>
+              {code[i] ? <span className="si-digit-n">{code[i]}</span> : now && <span className="si-caret" />}
+            </span>
+          );
+        })}
       </label>
       {left > 0
         ? <p className="t-body-s c-3 si-resend">Resend in 0:{String(left).padStart(2, '0')}</p>

@@ -6,10 +6,11 @@ import { useEffect, useState } from 'react';
 import Icon from '../Icon';
 import VoiceSheet from './VoiceSheet';
 import { thingsOn } from './DayItems';
-import { streak, useStore } from '@/lib/store';
+import { useStore } from '@/lib/store';
 import { useHydrated } from '@/lib/local';
 import { addDays, fromIso, iso, todayIso, weekdayName } from '@/lib/dates';
-import { useJournal, useMeta, useMoments, type Mood } from '@/lib/goals';
+import { dayThings, momentOver, useJournal, useMeta, useMoments, useStreak, type Moments as Seen, type Mood } from '@/lib/goals';
+import { canGoBack, goBack, stampNav } from '../NavMotion';
 
 /* The daily loop's full-screen moments: C1 start your day, C6 perfect day,
    C9 welcome back and C10 evening wrap. `DailyMoments` decides when each
@@ -17,43 +18,55 @@ import { useJournal, useMeta, useMoments, type Mood } from '@/lib/goals';
 const dayLine = (d: Date) => `${weekdayName(d)} · ${d.getDate()} ${d.toLocaleDateString('en-GB', { month: 'long' })}`;
 const daysBetween = (a: string, b: string) => Math.round((fromIso(b).getTime() - fromIso(a).getTime()) / 86400000);
 
-/* Opens the right moment once: welcome back after three days or more away,
-   start your day before noon, the evening wrap from 21:30 on a day that had
-   something on it. Records the visit either way. */
+/* Opens the right moment once a day: welcome back after three days or more
+   away, start your day before noon, the evening wrap from 21:30 on a day
+   that had something on it. A moment counts as seen the moment it opens, so
+   closing it, going back or reloading never brings it straight back. */
 export function DailyMoments() {
   const ready = useHydrated();
   const router = useRouter();
   const { items } = useStore();
+  const { all } = useMeta();
   const [m, setM] = useMoments();
   useEffect(() => {
     if (!ready) return;
     const today = todayIso(); const now = new Date();
-    if (m.lastOpen === today && (m.morning === today || now.getHours() >= 12) && (m.evening === today || now.getHours() * 60 + now.getMinutes() < 21 * 60 + 30)) return;
+    const mins = now.getHours() * 60 + now.getMinutes();
     const away = m.lastOpen ? daysBetween(m.lastOpen, today) : 0;
-    setM(x => ({ ...x, lastOpen: today }));
-    if (away >= 3 && m.back !== today) { router.push(`/plan/back?days=${away}`); return; }
-    if (!m.lastOpen) return; // the very first open is onboarding's, not ours
-    // Only someone with something in the app gets a morning: a visitor looking around keeps Today.
-    if (now.getHours() < 12 && m.morning !== today && items.length > 0) { router.push('/plan/morning'); return; }
-    const had = items.some(i => i.date === today);
-    if (had && now.getHours() * 60 + now.getMinutes() >= 21 * 60 + 30 && m.evening !== today) router.push('/plan/evening');
+    let go: string | null = null; let seen: Seen = {};
+    if (away >= 3 && m.back !== today) { go = `/plan/back?days=${away}`; seen = { back: today, morning: today }; }
+    // The very first open is onboarding's, not ours; and only someone with
+    // something in the app gets a morning: a visitor looking around keeps Today.
+    else if (m.lastOpen && now.getHours() < 12 && m.morning !== today && items.length > 0) { go = '/plan/morning'; seen = { morning: today }; }
+    else if (m.lastOpen && mins >= 21 * 60 + 30 && m.evening !== today && dayThings(items, all, today).length > 0) { go = '/plan/evening'; seen = { evening: today }; }
+    if (m.lastOpen !== today || go) setM(x => ({ ...x, lastOpen: today, ...seen }));
+    if (go) { momentOver(true); stampNav('push'); router.push(go); }
   }, [ready]); // eslint-disable-line react-hooks/exhaustive-deps
   return null;
+}
+
+/* Leaving a moment: back to the screen it opened over, or to Today. */
+function useLeave() {
+  const router = useRouter();
+  return () => {
+    if (momentOver() && canGoBack()) { momentOver(false); goBack(router); return; }
+    stampNav('pop'); router.replace('/today');
+  };
 }
 
 /* ── C1 · Start your day ────────────────────────────────────────────────── */
 export function Morning() {
   const ready = useHydrated();
-  const router = useRouter();
   const { items } = useStore();
   const { all } = useMeta();
   const [, setM] = useMoments();
+  const s = useStreak();
+  const leave = useLeave();
   if (!ready) return <main className="screen on-desk" aria-busy="true" />;
   const now = new Date(); const today = todayIso();
   const things = thingsOn(items, all, today).filter(t => !t.done);
-  const s = streak(items);
   const h = now.getHours();
-  const start = () => { setM(x => ({ ...x, morning: today })); router.push('/today'); };
+  const start = () => { setM(x => ({ ...x, morning: today })); leave(); };
   return (
     <main className="screen on-desk g-moment g-c1 g-no-tabs">
       {s > 0 && <Link href="/streak" className="g-streak"><img src="/figma/flame.svg" alt="" width={16} height={16} />Day {s} · don’t break it</Link>}
@@ -79,7 +92,7 @@ export function Morning() {
         </div>
       )}
       <button type="button" className="btn-primary g-full" onClick={start}><Icon name="goals/arrow-right-bold" size={20} />Start my day</button>
-      <Link href="/ai" className="g-ghost"><Icon name="sparkles" size={18} />Plan it with Mylo first</Link>
+      <Link href="/ai" className="g-ghost" onClick={() => momentOver(false)}><Icon name="sparkles" size={18} />Plan it with Mylo first</Link>
     </main>
   );
 }
@@ -101,15 +114,16 @@ export function Perfect() {
   const ready = useHydrated();
   const { items } = useStore();
   const { all } = useMeta();
+  const s = useStreak();
+  const leave = useLeave();
   if (!ready) return <main className="screen on-desk" aria-busy="true" />;
   const now = new Date();
   const things = thingsOn(items, all, todayIso());
   const done = things.filter(t => t.done).length;
-  const s = streak(items);
   return (
     <main className="screen on-desk g-moment g-perfect g-c6 g-no-tabs">
       <Confetti />
-      <header className="g-moment-nav is-right"><Link href="/today" className="back-btn" aria-label="Close"><Icon name="close" size={20} /></Link></header>
+      <header className="g-moment-nav is-right"><button type="button" className="back-btn" aria-label="Close" onClick={leave}><Icon name="close" size={20} /></button></header>
       <div className="g-mylo-box is-165">
         <span className="g-disc g-disc-165" />
         <img className="g-mylo" src="/figma/goals/mylo-laugh.svg" alt="" width={119} height={150} />
@@ -130,18 +144,18 @@ export function Perfect() {
 /* ── C9 · Welcome back ──────────────────────────────────────────────────── */
 const RESTARTS = ['10-minute walk', 'Read 5 pages', 'Drink water'];
 export function Back({ days }: { days?: number }) {
-  const router = useRouter();
   const { add } = useStore();
   const [, setM] = useMoments();
   const [pick, setPick] = useState(0);
+  const leave = useLeave();
   const back = () => {
     add({ kind: 'task', title: RESTARTS[pick], date: todayIso() });
-    setM(x => ({ ...x, back: todayIso(), lastOpen: todayIso() }));
-    router.push('/today');
+    setM(x => ({ ...x, back: todayIso(), morning: todayIso(), lastOpen: todayIso() }));
+    leave();
   };
   return (
     <main className="screen on-desk g-moment g-c9 g-no-tabs">
-      <header className="g-moment-nav"><Link href="/today" className="back-btn" aria-label="Back"><Icon name="goals/back" size={20} /></Link></header>
+      <header className="g-moment-nav"><button type="button" className="back-btn" aria-label="Back" onClick={leave}><Icon name="goals/back" size={20} /></button></header>
       <div className="g-mylo-box is-143">
         <span className="g-disc g-disc-143" />
         <img className="g-mylo" src="/figma/goals/mylo-sad.svg" alt="" width={103} height={130} />
@@ -183,6 +197,7 @@ function Wrap() {
   const [line, setLine] = useState(() => journal[today]?.line ?? '');
   const [voice, setVoice] = useState(false);
   const [moved, setMoved] = useState(false);
+  const leave = useLeave();
 
   const things = thingsOn(items, all, today);
   const wins = things.filter(t => t.done);
@@ -198,14 +213,15 @@ function Wrap() {
   const save = () => {
     setJournal(j => ({ ...j, [today]: { ...j[today], tags: j[today]?.tags ?? [], mood: mood ?? j[today]?.mood, line: line.trim(), at: new Date().toISOString() } }));
     setM(x => ({ ...x, evening: today }));
-    router.push('/plan');
+    // The wrap gives way to tomorrow's plan; back from there lands on Today.
+    momentOver(false); stampNav('push'); router.replace('/plan');
   };
 
   return (
     <main className="screen on-desk g-wrap-screen g-no-tabs">
       <header className="g-wrap-head">
         <span className="t-label c-3">Evening wrap</span>
-        <Link href="/today" className="icon-btn" aria-label="Close"><Icon name="close" size={19} /></Link>
+        <button type="button" className="icon-btn" aria-label="Close" onClick={leave}><Icon name="close" size={19} /></button>
       </header>
       <h1 className="g-h28">Good work today. How did it feel?</h1>
       <div className="g-moods4" role="radiogroup" aria-label="How did it feel?">

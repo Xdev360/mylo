@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import ScreenHeader from '../ScreenHeader';
 import Sheet from '../Sheet';
-import { RIcon, RoomBadge, Row, Toggle } from './ui';
-import { CHAT_COLOURS, WALLPAPERS, people, rooms, useRoom, type Disappear, type Notify, type Room } from '@/lib/rooms';
+import { Gate, RIcon, RoomBadge, Row, Toggle, useToast } from './ui';
+import { CHAT_COLOURS, WALLPAPERS, caps, errText, people, rooms, useRoom, type Disappear, type Notify, type Room } from '@/lib/rooms';
 
 /* CT18 · Chat settings: colour, wallpaper and the chat's switches. */
 
@@ -28,12 +28,21 @@ export function Choices<T extends string>({ open, title, sub, options, value, on
 
 export function LeaveSheet({ room, open, onClose }: { room: Room; open: boolean; onClose: () => void }) {
   const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [toast, say] = useToast();
+  async function leave() {
+    if (busy) return;
+    setBusy(true);
+    try { await rooms.leave(room.id); onClose(); router.replace('/chats'); }
+    catch (e) { say(errText(e)); setBusy(false); }
+  }
   return (
     <Sheet open={open} onClose={onClose} title={`Leave ${room.name}?`} sub="You will lose access to the chat and shared goals. Friends can invite you back." labelId="r-leave-title">
       <div className="r-two">
         <button type="button" className="r-btn-soft" onClick={onClose}>Stay</button>
-        <button type="button" className="btn-primary r-btn-danger" onClick={() => { onClose(); router.replace('/chats'); rooms.leave(room.id); }}>Leave room</button>
+        <button type="button" className="btn-primary r-btn-danger" onClick={leave} aria-busy={busy} aria-disabled={busy}>Leave room</button>
       </div>
+      {toast}
     </Sheet>
   );
 }
@@ -44,14 +53,15 @@ export function useGone(ready: boolean, room: unknown, to = '/chats') {
 }
 
 export default function ChatSettings({ id }: { id: string }) {
-  const { ready, room, all } = useRoom(id);
+  const { ready, signedOut, error, retry, room, all } = useRoom(id);
   const [sheet, setSheet] = useState<null | 'notify' | 'disappear' | 'leave'>(null);
-  useGone(ready, room);
-  if (!ready || !room) return <main className="screen on-desk" aria-busy="true" />;
+  const [toast, say] = useToast();
+  useGone(ready, room && !room.peek ? room : null);
+  if (!ready || !room || room.peek) return <Gate signedOut={signedOut} error={error} retry={retry} />;
   const since = new Date(room.createdAt).toLocaleDateString('en-GB', { month: 'long' });
   const media = all.filter(m => !m.deleted && (m.kind === 'photo' || m.kind === 'voice')).length;
   const pinned = room.pinned.filter(p => all.some(m => m.id === p && !m.deleted));
-  const set = (patch: Partial<Room>) => rooms.update(room.id, patch);
+  const set = (patch: Partial<Room>) => { rooms.update(room.id, patch).catch(e => say(errText(e))); };
   // CT18 shows City night, Forest and Sky; the one in use always comes first.
   const row = ['city', 'forest', 'sky', 'sunrise', 'beach', 'space'].map(id => WALLPAPERS.find(w => w.id === id)!);
   const current = row.find(w => w.id === room.wallpaper);
@@ -90,7 +100,7 @@ export default function ChatSettings({ id }: { id: string }) {
         <Row icon="photo" label="Media, voice and files" value={String(media)} href={`/chats/${room.id}/media`} />
         <Row icon="pin" label="Pinned messages" value={String(pinned.length)} href={pinned.length ? `/chats/${room.id}#m-${pinned[pinned.length - 1]}` : `/chats/${room.id}`} />
         <Row icon="room" label="Members" value={String(room.members.length)} href={`/rooms/${room.id}/members`} />
-        <Row icon="lock-24" label="Disappearing messages" value={room.disappear} onClick={() => setSheet('disappear')} />
+        {caps.disappear && <Row icon="lock-24" label="Disappearing messages" value={room.disappear} onClick={() => setSheet('disappear')} />}
         <Row icon="eye" label="Read receipts" right={<Toggle label="Read receipts" on={room.readReceipts} onChange={v => set({ readReceipts: v })} />} />
       </div>
       <div className="r-rows">
@@ -104,6 +114,7 @@ export default function ChatSettings({ id }: { id: string }) {
       <Choices open={sheet === 'disappear'} title="Disappearing messages" options={['Off', '24 hours', '7 days'] as const}
                value={room.disappear} onPick={(v: Disappear) => set({ disappear: v })} onClose={() => setSheet(null)} />
       <LeaveSheet room={room} open={sheet === 'leave'} onClose={() => setSheet(null)} />
+      {toast}
     </main>
   );
 }

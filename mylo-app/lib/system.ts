@@ -1,8 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { supabase } from './supabase';
+import { goBack, stampNav } from '@/components/NavMotion';
 
 /* The system area's saved state and helpers: settings, privacy, blocked and
    muted people, hidden words, the signed-in person, device data export, the
@@ -255,4 +256,77 @@ export function since(isoDate: string) {
   if (days < 7) return `${days} days ago`;
   if (days < 31) { const w = Math.floor(days / 7); return w === 1 ? 'a week ago' : `${w} weeks ago`; }
   return `in ${d.toLocaleString('en-GB', { month: 'long' })}${d.getFullYear() !== now.getFullYear() ? ` ${d.getFullYear()}` : ''}`;
+}
+
+/* ── Moving between screens from code ─────────────────────────────────────
+   Links get their direction from NavMotion as they are tapped; a screen that
+   moves on its own (after a save, a sign out) says which way it goes, so the
+   page slides the right way. `leave` is the back button's logic: back to the
+   screen before, or to `fallback` (sliding back) when this one was opened
+   directly. */
+type Nav = { back: () => void; push: (href: string) => void; replace: (href: string) => void };
+export function go(router: Nav, href: string, dir: 'push' | 'pop' | 'tab' = 'push', replace = false) {
+  stampNav(dir);
+  if (replace) router.replace(href); else router.push(href);
+}
+export function leave(router: Nav, fallback: string) {
+  if (typeof window !== 'undefined' && window.history.length > 1) goBack(router);
+  else go(router, fallback, 'pop', true);
+}
+
+/* ── A message that outlives the screen that sent it ──────────────────────
+   "Password changed" is said by the screen the person lands on: the form
+   calls flash(), goes back, and the screen it returns to shows it with
+   useFlash(show). Kept for this tab only. */
+const FLASH = 'mylo.flash';
+export function flash(msg: string) {
+  try { sessionStorage.setItem(FLASH, msg); } catch { /* storage blocked */ }
+}
+export function useFlash(show: (msg: string) => void) {
+  const ref = useRef(show);
+  useEffect(() => { ref.current = show; }, [show]);
+  useEffect(() => {
+    let msg: string | null = null;
+    try { msg = sessionStorage.getItem(FLASH); } catch { /* blocked */ }
+    if (!msg) return;
+    // After the page has slid in, so the toast is seen landing. It is taken
+    // off the shelf only when shown (an effect may run twice in development).
+    const t = setTimeout(() => {
+      try { sessionStorage.removeItem(FLASH); } catch { /* blocked */ }
+      ref.current(msg!);
+    }, 260);
+    return () => clearTimeout(t);
+  }, []);
+}
+
+/* ── Something that animates out before it leaves ─────────────────────────
+   const { mounted, shown } = usePresence(open, 240)
+   Render while `mounted`; put the "in" class on while `shown`. It mounts
+   first and turns `shown` on a frame later (so it can transition in), and
+   turns `shown` off `ms` before unmounting (so it can transition out). */
+export function usePresence(open: boolean, ms = 240) {
+  const [mounted, setMounted] = useState(open);
+  const [shown, setShown] = useState(open);
+  // Opening mounts at once (state adjusted while rendering, not in an effect).
+  if (open && !mounted) setMounted(true);
+  useEffect(() => {
+    if (open) {
+      let b = 0;
+      const a = requestAnimationFrame(() => { b = requestAnimationFrame(() => setShown(true)); });
+      return () => { cancelAnimationFrame(a); cancelAnimationFrame(b); };
+    }
+    const t = setTimeout(() => { setShown(false); setMounted(false); }, ms);
+    return () => clearTimeout(t);
+  }, [open, ms]);
+  return { mounted: mounted || open, shown: shown && open };
+}
+
+/* ── A small saved draft for this tab ─────────────────────────────────────
+   A form half filled in survives a reload, and is gone once saved or
+   dropped. */
+export function readDraft<T>(key: string): T | null {
+  try { const raw = sessionStorage.getItem(key); return raw ? JSON.parse(raw) as T : null; } catch { return null; }
+}
+export function writeDraft(key: string, value: unknown) {
+  try { if (value === null) sessionStorage.removeItem(key); else sessionStorage.setItem(key, JSON.stringify(value)); } catch { /* blocked */ }
 }

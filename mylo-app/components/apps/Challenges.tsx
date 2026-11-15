@@ -9,7 +9,7 @@ import { todayIso } from '@/lib/dates';
 import { ME, useRooms } from '@/lib/rooms';
 import { useFriends } from '@/lib/social';
 import { uid, useChallenges, type Challenge } from '@/lib/apps';
-import { Avatar, CloseBtn, Head, Seg, Toggle, useToast } from './ui';
+import { Avatar, CloseBtn, Head, Seg, Toggle, useSlideDir, useToast } from './ui';
 
 /* CH1 to CH5: challenges you run together and dares you send or get. Kept
    on the device; people come from your rooms and friends. A challenge's
@@ -54,6 +54,7 @@ export function ChallengesList() {
   const ready = useHydrated();
   const [all] = useChallenges();
   const [tab, setTab] = useState<'active' | 'dares' | 'done'>('active');
+  const slide = useSlideDir(['active', 'dares', 'done'] as const, tab);
   if (!ready) return <main className="screen on-desk" aria-busy="true" />;
   const inbox = all.filter(c => c.kind === 'dare' && c.status === 'offered' && c.from);
   const shown = tab === 'active' ? all.filter(c => c.status === 'active')
@@ -66,6 +67,7 @@ export function ChallengesList() {
         <Link href="/challenges/new" className="ax-round is-ink" aria-label="New challenge"><Icon name="plus-20" size={22} /></Link>
       </header>
       <Seg label="Challenges" value={tab} onChange={setTab} options={[{ id: 'active', label: 'Active' }, { id: 'dares', label: 'Dares' }, { id: 'done', label: 'Done' }]} />
+      <div key={tab} className={`ax-pane ${slide}`} role="tabpanel">
       {tab !== 'done' && inbox.map(c => (
         <div key={c.id} className="ax-dare-in">
           <Avatar name={c.from!} size={40} tint="var(--tint-amber)" />
@@ -95,18 +97,26 @@ export function ChallengesList() {
           </>}
         </Link>
       ))}
+      {!shown.length && !(tab !== 'done' && inbox.length) && (
+        <div className="ax-empty">
+          <img src="/figma/apps/mylo-later.svg" alt="" width={74} height={88} />
+          <p className="t-body c-2">{tab === 'active' ? 'Run one together with your room.' : tab === 'dares' ? 'Dare a friend, or run one together.' : 'Finished challenges and dares land here.'}</p>
+          {tab !== 'done' && <Link href={tab === 'dares' ? '/challenges/new?kind=dare' : '/challenges/new'} className="ax-small-btn">New challenge</Link>}
+        </div>
+      )}
+      </div>
     </main>
   );
 }
 
 /* ── CH2 · New challenge (879:115496) ───────────────────────────────────── */
 const LONG = [{ id: '1', label: '1 day' }, { id: '3', label: '3 days' }, { id: '7', label: '1 week' }, { id: 'c', label: 'Custom' }];
-export function NewChallenge({ dareTo }: { dareTo?: string }) {
+export function NewChallenge({ dareTo, dare = false }: { dareTo?: string; dare?: boolean }) {
   const router = useRouter();
   const ready = useHydrated();
   const [, setAll] = useChallenges();
   const { groups, people } = usePeople();
-  const [kind, setKind] = useState<'challenge' | 'dare'>(dareTo ? 'dare' : 'challenge');
+  const [kind, setKind] = useState<'challenge' | 'dare'>(dareTo || dare ? 'dare' : 'challenge');
   const [title, setTitle] = useState('');
   const [picked, setPicked] = useState<string[]>([]);
   const [room, setRoom] = useState<string | null>(null);
@@ -116,6 +126,7 @@ export function NewChallenge({ dareTo }: { dareTo?: string }) {
   const [loser, setLoser] = useState('');
   const [proof, setProof] = useState(true);
   const [nudge, setNudge] = useState(true);
+  const sent = useRef(false);
   if (!ready) return <main className="screen on-desk" aria-busy="true" />;
 
   const choices = [...(kind === 'challenge' ? groups.map(g => ({ id: `room:${g.label}`, label: g.label })) : []), ...people.map(p => ({ id: p, label: p }))];
@@ -135,7 +146,8 @@ export function NewChallenge({ dareTo }: { dareTo?: string }) {
   const days = long === 'c' ? Math.min(90, Math.max(1, custom || 1)) : Number(long);
   const can = !!title.trim() && (kind === 'challenge' || who.length === 1);
   const send = () => {
-    if (!can) return;
+    if (!can || sent.current) return;
+    sent.current = true;
     const id = uid();
     setAll(a => [{ id, kind, title: title.trim(), people: who, days, loser: kind === 'challenge' ? loser.trim() || undefined : undefined, proof, nudge, startedAt: new Date().toISOString(), checkins: {}, status: kind === 'dare' ? 'offered' : 'active', room: room ?? undefined }, ...a]);
     router.replace(kind === 'dare' ? '/challenges' : `/challenges/${id}`);
@@ -149,7 +161,8 @@ export function NewChallenge({ dareTo }: { dareTo?: string }) {
       </header>
       <Seg label="Kind" value={kind} onChange={k => { setKind(k); setRoom(null); setPicked(k === 'dare' ? picked.slice(0, 1) : picked); }} options={[{ id: 'challenge', label: 'Challenge' }, { id: 'dare', label: 'Dare' }]} />
       <label className="ax-field"><span className="ax-13 c-2">What is it?</span>
-        <input className="ax-input" value={title} onChange={e => setTitle(e.target.value)} placeholder={kind === 'dare' ? 'Cold shower tomorrow morning' : '10k steps a day'} maxLength={80} />
+        <input className="ax-input" value={title} onChange={e => setTitle(e.target.value)} placeholder={kind === 'dare' ? 'Cold shower tomorrow morning' : '10k steps a day'} maxLength={80} enterKeyHint="next"
+               onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (can) send(); else (e.currentTarget.closest('main')?.querySelector('input[aria-label="Add someone by name"]') as HTMLInputElement | null)?.focus(); } }} />
       </label>
       <div className="ax-field"><span className="ax-13 c-2">Who is in</span>
         {choices.length > 0 && (
@@ -158,7 +171,8 @@ export function NewChallenge({ dareTo }: { dareTo?: string }) {
           </div>
         )}
         {(kind === 'challenge' || !picked.length) && (
-          <input className="ax-input" value={typed} onChange={e => setTyped(e.target.value)} placeholder="Name" aria-label="Add someone by name" maxLength={40} />
+          <input className="ax-input" value={typed} onChange={e => setTyped(e.target.value)} placeholder="Name" aria-label="Add someone by name" maxLength={40} enterKeyHint="send"
+                 onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); send(); } }} />
         )}
       </div>
       <div className="ax-field"><span className="ax-13 c-2">How long</span>

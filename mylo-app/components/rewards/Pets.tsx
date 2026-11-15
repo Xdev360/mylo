@@ -40,7 +40,7 @@ export default function PetHouse() {
           </button>
         ))}
         {Array.from({ length: slots }, (_, i) => (
-          <Link key={i} href="/rewards/nest" className="rw-tile rw-slot is-empty">
+          <Link key={i} href="/eggs" className="rw-tile rw-slot is-empty">
             <span className="rw-slot-plus"><Icon name="rewards/i-plus" size={20} /></span>
             <span className="rw-slot-hint">Hatch an egg</span>
           </Link>

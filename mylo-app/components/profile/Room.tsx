@@ -1,7 +1,7 @@
 'use client';
 
 import { forwardRef, useId } from 'react';
-import { decorBox, type Decor, type DecorKind, type RoomState } from './room-data';
+import { EDIT_F, decorBox, type Decor, type DecorKind, type RoomState } from './room-data';
 
 /* The room, drawn the way P3/P9/P10 draw it: 393 units wide, the floor from
    F down to H. The same drawing is the profile cover (300 high), the room
@@ -17,6 +17,7 @@ type Props = {
   selected?: string | null;
   onDecorDown?: (e: React.PointerEvent, d: Decor) => void;
   onHandleDown?: (e: React.PointerEvent, d: Decor) => void;
+  onRotateDown?: (e: React.PointerEvent, d: Decor) => void;
 };
 
 const SKY = {
@@ -107,7 +108,7 @@ function DecorShape({ kind, F }: { kind: DecorKind; F: number }) {
 }
 
 const Room = forwardRef<SVGSVGElement, Props>(function Room(
-  { room, H, F, mylo = false, layers, fit = 'slice', className, label, selected, onDecorDown, onHandleDown }, ref
+  { room, H, F, mylo = false, layers, fit = 'slice', className, label, selected, onDecorDown, onHandleDown, onRotateDown }, ref
 ) {
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
   const D = H - F;
@@ -177,7 +178,7 @@ const Room = forwardRef<SVGSVGElement, Props>(function Room(
       {decor.map(x => {
         const b = decorBox(x.kind, F);
         const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
-        const t = `translate(${cx + x.dx} ${cy + x.dy}) scale(${x.flip ? -x.s : x.s} ${x.s}) translate(${-cx} ${-cy})`;
+        const t = `translate(${cx + x.dx} ${cy + x.dy * F / EDIT_F}) rotate(${x.r ?? 0}) scale(${x.flip ? -x.s : x.s} ${x.s}) translate(${-cx} ${-cy})`;
         return (
           <g key={x.id} transform={t} style={editing ? { cursor: 'grab', touchAction: 'none' } : undefined}
              onPointerDown={onDecorDown ? e => onDecorDown(e, x) : undefined}>
@@ -190,18 +191,30 @@ const Room = forwardRef<SVGSVGElement, Props>(function Room(
       {mylo === 'cover' && <image href="/figma/profile/mylo-plain.svg" x={136} y={F + 18 - 120} width={100} height={120} />}
       {mylo === 'room' && <image href="/figma/profile/mylo-plain.svg" x={90} y={F + 0.55 * D - 181} width={151} height={181} style={{ pointerEvents: 'none' }} />}
 
-      {/* P18 · the moved piece's frame and handles */}
+      {/* P18 · the moved piece's frame, turned with it: a corner resizes, the
+          knob under it turns it. Each handle answers a finger-sized area. */}
       {selected && decor.filter(x => x.id === selected).map(x => {
-        const b = decorBox(x.kind, F);
-        const w = b.w * x.s + 16, h = b.h * x.s + 16;
-        const left = b.x + b.w / 2 + x.dx - w / 2, top = b.y + b.h / 2 + x.dy - h / 2;
+        const f = frame(x, F);
+        const hw = f.w / 2, hh = f.h / 2;
         return (
-          <g key="sel">
-            <rect x={left} y={top} width={w} height={h} rx={8} fill="none" stroke="#FFFFFF" strokeWidth={1.5} strokeDasharray="5 4" pointerEvents="none" />
-            {[[left, top], [left + w, top], [left, top + h], [left + w, top + h]].map(([hx, hy]) => (
-              <rect key={`${hx}-${hy}`} x={hx - 6} y={hy - 6} width={12} height={12} rx={3} fill="#FFFFFF"
-                    style={{ cursor: 'nwse-resize', touchAction: 'none' }} onPointerDown={onHandleDown ? e => onHandleDown(e, x) : undefined} />
+          <g key="sel" transform={`translate(${f.cx} ${f.cy}) rotate(${x.r ?? 0})`}>
+            <rect x={-hw} y={-hh} width={f.w} height={f.h} rx={8} fill="none" stroke="#FFFFFF" strokeWidth={1.5} strokeDasharray="5 4" pointerEvents="none"
+                  style={{ filter: 'drop-shadow(0 0 1px rgba(0,0,0,.35))' }} />
+            {[[-hw, -hh], [hw, -hh], [-hw, hh], [hw, hh]].map(([hx, hy]) => (
+              <g key={`${hx}-${hy}`} style={{ cursor: hx * hy > 0 ? 'nwse-resize' : 'nesw-resize', touchAction: 'none' }}
+                 onPointerDown={onHandleDown ? e => onHandleDown(e, x) : undefined}>
+                <rect x={hx - 16} y={hy - 16} width={32} height={32} fill="transparent" />
+                <rect x={hx - 6} y={hy - 6} width={12} height={12} rx={3} fill="#FFFFFF" stroke="rgba(0,0,0,.18)" strokeWidth={0.75} />
+              </g>
             ))}
+            {onRotateDown && (
+              <g style={{ cursor: 'grab', touchAction: 'none' }} onPointerDown={e => onRotateDown(e, x)}>
+                <line x1={0} y1={hh} x2={0} y2={hh + 16} stroke="#FFFFFF" strokeWidth={1.5} pointerEvents="none" />
+                <circle cx={0} cy={hh + 26} r={18} fill="transparent" />
+                <circle cx={0} cy={hh + 26} r={9} fill="#FFFFFF" stroke="rgba(0,0,0,.18)" strokeWidth={0.75} />
+                <path d={`M-4 ${hh + 24.5} a4.2 4.2 0 1 1 1.4 4.6`} fill="none" stroke="#0F0F12" strokeWidth={1.4} strokeLinecap="round" pointerEvents="none" />
+              </g>
+            )}
           </g>
         );
       })}
@@ -211,9 +224,16 @@ const Room = forwardRef<SVGSVGElement, Props>(function Room(
 
 export default Room;
 
-/* The selected piece's frame in the room's units, for placing the toolbar. */
-export function selectionBox(x: Decor, F: number) {
+/* A placed piece's frame: its centre and its unturned size, in room units. */
+export function frame(x: Decor, F: number) {
   const b = decorBox(x.kind, F);
-  const w = b.w * x.s + 16, h = b.h * x.s + 16;
-  return { left: b.x + b.w / 2 + x.dx - w / 2, top: b.y + b.h / 2 + x.dy - h / 2, w, h };
+  return { cx: b.x + b.w / 2 + x.dx, cy: b.y + b.h / 2 + x.dy * F / EDIT_F, w: b.w * x.s + 16, h: b.h * x.s + 16 };
+}
+/* The selected piece's frame as it stands (turned), in the room's units,
+   for placing the toolbar above it. */
+export function selectionBox(x: Decor, F: number) {
+  const f = frame(x, F);
+  const a = ((x.r ?? 0) * Math.PI) / 180, c = Math.abs(Math.cos(a)), s = Math.abs(Math.sin(a));
+  const w = f.w * c + f.h * s, h = f.w * s + f.h * c;
+  return { left: f.cx - w / 2, top: f.cy - h / 2, w, h, cx: f.cx, cy: f.cy };
 }

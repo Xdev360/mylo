@@ -111,7 +111,9 @@ img{ display:block; max-width:100%; }
   font-size:10px; font-weight:500; line-height:16px;
   transition:background-color .2s ease, color .2s ease, scale .2s cubic-bezier(.34,1.56,.64,1);
 }
-.tab[aria-current="page"]{ background:var(--tab-on); color:var(--ink); }
+.tab[aria-current="page"]{ color:var(--ink); }
+/* The active tab's pill is one shape that glides between tabs (SlidePill). */
+.tabbar .slide-pill{ border-radius:16px; background:var(--tab-on); }
 .tab[aria-disabled="true"]{ cursor:default; }
 .tab:active{ scale:.94; }
 .tab-add{
@@ -120,6 +122,8 @@ img{ display:block; max-width:100%; }
   transition:scale .2s cubic-bezier(.34,1.56,.64,1);
 }
 .tab-add:active{ scale:.92; }
+.tab-add > .icon{ transition:rotate .3s cubic-bezier(.34,1.56,.64,1); }
+.tab-add.is-open > .icon{ rotate:45deg; }
 
 /* Shared pieces. */
 .card{ position:relative; background:var(--surface); border:1px solid var(--line); border-radius:22px; }
@@ -155,7 +159,10 @@ img{ display:block; max-width:100%; }
 .week-card{ padding:8px; box-shadow:inset 0 1px 0 rgba(255,255,255,.06); }
 .week{ display:flex; justify-content:space-between; }
 .day-n{ font-size:16px; font-weight:600; line-height:22px; letter-spacing:-.01em; }
-.day{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; width:40px; height:64px; border-radius:15px; }
+.day{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; width:40px; height:64px; border-radius:15px; transition:background-color .15s ease, scale .2s cubic-bezier(.34,1.56,.64,1); }
+@media (hover:hover){ a.day:not(.is-today):hover{ background:var(--surface-2); } }
+a.day:active{ scale:.94; }
+.day-dot{ transition:background-color .3s ease; }
 .day-d{ color:var(--text-3); }
 .day-dot{ width:5px; height:5px; border-radius:50%; }
 .dot-done{ background:var(--green); }
@@ -205,7 +212,8 @@ img{ display:block; max-width:100%; }
 .todo-plus{ display:grid; place-items:center; width:22px; height:22px; border-radius:999px; background:var(--surface-2); color:var(--text-2); flex:none; }
 .todo-input{ flex:1; min-width:0; border:0; outline:none; background:none; color:var(--ink); font:inherit; font-size:15px; }
 .todo-input::placeholder{ color:var(--text-3); }
-.todo-key{ padding:3px 8px; border-radius:6px; background:var(--bg); border:1px solid var(--line); }
+.todo-key{ padding:3px 8px; border-radius:6px; background:var(--bg); border:1px solid var(--line); transition:color .15s ease, border-color .15s ease; }
+.todo-key.is-ready{ color:var(--ink); border-color:var(--text-3); }
 .todo-check{
   display:grid; place-items:center; width:22px; height:22px; flex:none; border-radius:999px;
   border:1.6px solid var(--text-3); color:var(--on-primary);
@@ -216,7 +224,11 @@ img{ display:block; max-width:100%; }
 .todo-text{ flex:1; min-width:0; }
 /* C3's tick moment on a row: green behind it, the circle filled green. */
 .todo-row.is-burst, .task-row.is-burst{ background-color:var(--tint-green); }
-.todo-row.is-burst .todo-check{ background:var(--progress); border-color:var(--progress); color:#fff; animation:g-pop .45s cubic-bezier(.34,1.56,.64,1); }
+.todo-row.is-burst .todo-check{ position:relative; background:var(--progress); border-color:var(--progress); color:#fff; animation:g-pop .45s cubic-bezier(.34,1.56,.64,1); }
+/* A ring rings out from the circle as it fills. */
+.todo-row.is-burst .todo-check::after{ content:''; position:absolute; inset:-2px; border-radius:50%; border:2px solid var(--progress); animation:tickRing .6s ease-out forwards; pointer-events:none; }
+@keyframes tickRing{ from{ scale:1; opacity:.7; } to{ scale:2.2; opacity:0; } }
+.todo-row.is-done .todo-text{ transition:color .25s ease; }
 .todo-row.is-done .todo-text{ color:var(--text-3); text-decoration:line-through; }
 @media (hover:hover){ button.todo-row:hover{ background:var(--surface-2); } }
 
@@ -255,7 +267,8 @@ img{ display:block; max-width:100%; }
   color:var(--text-2); font-size:15px; font-weight:500; line-height:1.3;
   transition:background-color .15s ease, color .15s ease;
 }
-.side-item[aria-current="page"]{ background:var(--bg); color:var(--ink); font-weight:600; }
+.side-item[aria-current="page"]{ color:var(--ink); font-weight:600; }
+.side-nav .slide-pill{ border-radius:12px; background:var(--bg); }
 .side-item[aria-current="page"] .icon{ color:var(--ink); }
 .side-item[aria-disabled="true"]{ cursor:default; opacity:.55; }
 @media (hover:hover){ a.side-item:not([aria-current="page"]):hover{ background:var(--surface-2); color:var(--ink); } }
@@ -304,6 +317,9 @@ img{ display:block; max-width:100%; }
   border:1.5px solid var(--check-line); color:var(--on-primary); transition:background-color .2s ease, border-color .2s ease;
 }
 .desk-task.is-done .desk-check{ background:var(--primary); border-color:var(--primary); }
+.desk-task.is-burst{ background:var(--tint-green); }
+.desk-task.is-burst .desk-check{ background:var(--progress); border-color:var(--progress); color:#fff; animation:g-pop .45s cubic-bezier(.34,1.56,.64,1); }
+.desk-task.is-new{ animation:rowFade .4s cubic-bezier(.22,1,.36,1) both; }
 .desk-task-title{ font-size:15px; font-weight:600; line-height:1.3; }
 .desk-task.is-done .desk-task-title{ color:var(--text-3); }
 .desk-task .tag{ padding:4px 10px; border-radius:12px; line-height:1.3; color:var(--ink); }
@@ -357,21 +373,33 @@ img{ display:block; max-width:100%; }
 /* D1 · Capture sheet. */
 .sheet-root{ position:fixed; inset:0; z-index:50; pointer-events:none; }
 .sheet-root.is-open{ pointer-events:auto; }
-.scrim{ position:absolute; inset:0; width:100%; background:var(--scrim); opacity:0; transition:opacity .25s ease; cursor:default; }
-.sheet-root.is-open > .scrim{ opacity:1; }
+.scrim{ position:absolute; inset:0; width:100%; background:var(--scrim); opacity:0; transition:opacity .28s ease .08s; cursor:default; }
+/* The dim lifts a beat after the sheet starts down, so a sheet that hands
+   over to another never lets the page flash through between them. */
+.sheet-root.is-open > .scrim{ opacity:1; transition-delay:0s; }
+/* A sheet opened from inside another takes its place under the same dim. */
+.sheet-root .sheet-root > .scrim{ background:transparent; }
+/* The page under an open sheet holds still. */
+html:has(.sheet-root.is-open){ overflow:hidden; }
 .sheet{
-  position:absolute; left:0; right:0; bottom:0; max-height:calc(100dvh - 40px); overflow:auto;
+  position:absolute; left:0; right:0; bottom:var(--kb, 0px); max-height:calc(100dvh - 40px - var(--kb, 0px)); overflow:auto;
   background:var(--bg); box-shadow:inset 0 0 0 1px var(--line); border-radius:32px 32px 0 0;
   padding-bottom:calc(env(safe-area-inset-bottom) + 40px);
-  translate:0 100%; transition:translate .38s cubic-bezier(.22,1,.36,1);
+  translate:0 100%; transition:translate .3s cubic-bezier(.4,0,.6,1);
 }
+.sheet:focus{ outline:none; }
+/* Rising, it eases in with the faintest settle; leaving, it simply drops. */
+.sheet-root.is-open > .sheet{ transition:translate .5s linear(0, .2 6%, .54 16%, .8 27%, .94 39%, 1.012 52%, 1.02 62%, 1.008 76%, 1); }
+.sheet-root.is-open > .sheet.is-away{ translate:0 100%; transition:translate .3s cubic-bezier(.4,0,.6,1); }
+.sheet-root .sheet-root.is-open > .sheet{ transition-delay:.06s; }
 /* Only this sheet's own panel: a sheet opened from inside another (D2 from
    D1) stays down until it is opened itself. */
 .sheet-root.is-open > .sheet{ translate:0 0; }
 @media (min-width:1024px){
   .sheet{ left:50%; right:auto; bottom:auto; top:50%; width:480px; border-radius:32px; translate:-50% -46%; opacity:0;
           transition:translate .3s cubic-bezier(.22,1,.36,1), opacity .2s ease; }
-  .sheet-root.is-open > .sheet{ translate:-50% -50%; opacity:1; }
+  .sheet-root.is-open > .sheet{ translate:-50% -50%; opacity:1; transition:translate .3s cubic-bezier(.22,1,.36,1), opacity .2s ease; }
+  .sheet-root.is-open > .sheet.is-away{ translate:-50% -46%; opacity:0; transition:translate .2s ease, opacity .15s ease; }
   .grabber{ display:none !important; }
 }
 .sheet-head{ display:flex; flex-direction:column; align-items:center; gap:14px; padding:10px 20px 0; touch-action:none; }
@@ -390,6 +418,13 @@ img{ display:block; max-width:100%; }
 }
 .smart-input::placeholder{ color:var(--text-3); }
 .smart-chips{ display:flex; flex-wrap:wrap; gap:6px 8px; }
+/* The chips' row opens as the first detail is read and folds when the text goes. */
+.smart-chips-wrap{ display:grid; grid-template-rows:0fr; margin-bottom:-12px; opacity:0;
+  transition:grid-template-rows .32s cubic-bezier(.22,1,.36,1), margin .32s cubic-bezier(.22,1,.36,1), opacity .2s ease; }
+.smart-chips-wrap > .smart-chips{ min-height:0; overflow:hidden; }
+.smart-chips-wrap.is-on{ grid-template-rows:1fr; margin-bottom:0; opacity:1; }
+.smart-chip{ animation:chipIn .38s cubic-bezier(.34,1.56,.64,1) both; }
+@keyframes chipIn{ from{ opacity:0; scale:.7; translate:0 4px; } }
 .smart-foot{ display:flex; align-items:center; gap:8px; color:var(--text-2); }
 .smart-note{ font-size:11px; font-weight:500; line-height:1.36; }
 .sheet-body > .t-label{ line-height:1.2; }
@@ -471,6 +506,7 @@ body:has(.no-tabs) .tabbar{ display:none; }
 ::view-transition-group(*){ animation-duration:.34s; animation-timing-function:cubic-bezier(.22,1,.36,1); }
 ::view-transition-old(root),::view-transition-new(root){ animation-duration:.34s; animation-timing-function:cubic-bezier(.22,1,.36,1); }
 
+:root[data-nav="none"]::view-transition-old(root), :root[data-nav="none"]::view-transition-new(root){ animation:none; }
 :root[data-nav="tab"]::view-transition-old(root){ animation:navFadeOut .18s ease-out both; }
 :root[data-nav="tab"]::view-transition-new(root){ animation:navRise .3s cubic-bezier(.22,1,.36,1) both; }
 
@@ -482,8 +518,8 @@ body:has(.no-tabs) .tabbar{ display:none; }
 }
 @media (min-width:1024px){
   /* On desktop the sidebar frames the page: a quick fade and rise reads better than a slide. */
-  :root[data-nav]::view-transition-old(root){ animation:navFadeOut .16s ease-out both; }
-  :root[data-nav]::view-transition-new(root){ animation:navRise .28s cubic-bezier(.22,1,.36,1) both; }
+  :root[data-nav]:not([data-nav="none"])::view-transition-old(root){ animation:navFadeOut .16s ease-out both; }
+  :root[data-nav]:not([data-nav="none"])::view-transition-new(root){ animation:navRise .28s cubic-bezier(.22,1,.36,1) both; }
 }
 @keyframes navFadeOut{ to{ opacity:0; } }
 @keyframes navRise{ from{ opacity:0; translate:0 10px; } }
@@ -504,3 +540,70 @@ body:has(.no-tabs) .tabbar{ display:none; }
   transition-duration:.18s; transition-timing-function:cubic-bezier(.34,1.56,.64,1);
 }
 :where(button:not(:disabled),[role="button"],a.card,.chip):active{ scale:.97; transition-duration:.08s; }
+
+
+/* ──────────────────────────────────────────────────────────────────────────
+   In-page motion: things that change on the screen move rather than pop.
+   ────────────────────────────────────────────────────────────────────────── */
+/* A count rolls to its new value (Roll in components/goals/Tick). */
+.roll{ display:inline-flex; overflow:hidden; vertical-align:baseline; padding-block:.06em; margin-block:-.06em; }
+.roll > span{ display:inline-block; }
+.roll-up{ animation:rollUp .42s cubic-bezier(.34,1.4,.64,1) both; }
+.roll-down{ animation:rollDown .42s cubic-bezier(.34,1.4,.64,1) both; }
+@keyframes rollUp{ from{ translate:0 70%; opacity:0; } }
+@keyframes rollDown{ from{ translate:0 -70%; opacity:0; } }
+.t-display.roll{ padding-block:.04em; }
+
+/* A label that changes in place fades in rather than flicking. */
+.swap-in{ display:inline-block; animation:swapIn .22s ease both; }
+@keyframes swapIn{ from{ opacity:0; translate:0 3px; } }
+
+/* A list row that arrives opens its own space; a ticked row in Up next folds
+   away once its burst has played (the burst is 1.6s, the fold its last .32s). */
+.row-wrap{ display:grid; grid-template-rows:1fr; }
+.row-wrap > div{ min-height:0; }
+.row-wrap.is-new, .row-wrap.is-out{ overflow:hidden; }
+.row-wrap.is-new{ animation:rowOpen .42s cubic-bezier(.22,1,.36,1) both; }
+.row-wrap.is-new > div{ animation:rowFade .42s cubic-bezier(.22,1,.36,1) both; }
+.row-wrap.is-out{ animation:rowFold .32s cubic-bezier(.4,0,.2,1) 1.28s forwards; }
+.row-wrap :focus-visible{ outline-offset:-2px; }
+@keyframes rowOpen{ from{ grid-template-rows:0fr; } }
+@keyframes rowFade{ from{ opacity:0; translate:0 -6px; } }
+@keyframes rowFold{ to{ grid-template-rows:0fr; opacity:0; } }
+
+/* Today's first thing: the hero card rises in where the empty state was. */
+.today-arrive.is-arriving{ animation:navRise .45s cubic-bezier(.22,1,.36,1) both; }
+.today-arrive{ display:flex; flex-direction:column; }
+
+/* The sliding highlight (components/SlidePill). Each control paints its own. */
+/* Positioned only where the control isn't already (the tab bar is fixed). */
+:where(.slide-track){ position:relative; }
+.slide-track{ isolation:isolate; }
+.slide-pill{
+  position:absolute; left:0; top:0; z-index:-1; pointer-events:none;
+  width:var(--pill-w, 0); height:var(--pill-h, 0); translate:var(--pill-x, 0) var(--pill-y, 0); opacity:var(--pill-o, 0);
+}
+.slide-track[data-pill] > .slide-pill{
+  transition:translate .42s cubic-bezier(.34,1.25,.64,1), width .42s cubic-bezier(.34,1.25,.64,1), height .42s cubic-bezier(.34,1.25,.64,1), opacity .2s ease;
+}
+
+/* Across a page change the bars hold still and their pill keeps sliding:
+   only the new bar is drawn, live, so the old highlight never ghosts. */
+::view-transition-old(tabbar), ::view-transition-old(sidebar){ animation:none; opacity:0; }
+::view-transition-new(tabbar), ::view-transition-new(sidebar){ animation:none; }
+/* Going to or from a screen drawn without the tab bar, it fades. */
+::view-transition-old(tabbar):only-child{ opacity:1; animation:navFadeOut .18s ease-out both; }
+::view-transition-new(tabbar):only-child{ animation:titleIn .25s ease both; }
+/* A pushed screen's back button and title stay put while the page under
+   them slides; arriving from a screen without one, they fade in place. */
+.screen-header > .back-btn:first-child{ view-transition-name:back-btn; }
+.screen-header > .screen-header-title{ view-transition-name:screen-title; }
+::view-transition-group(back-btn), ::view-transition-group(screen-title){ animation-duration:.3s; }
+::view-transition-new(screen-title){ animation:titleIn .3s ease both; }
+::view-transition-old(screen-title){ animation:navFadeOut .14s ease-out both; }
+@keyframes titleIn{ from{ opacity:0; } }
+::view-transition-new(back-btn):only-child{ animation:titleIn .3s ease both; }
+::view-transition-old(back-btn):only-child{ animation:navFadeOut .14s ease-out both; }
+@media (prefers-reduced-motion: reduce){
+  .slide-track[data-pill] > .slide-pill, .sheet, .scrim, .smart-chips-wrap{ transition:none !important; }
+}

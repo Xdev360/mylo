@@ -8,7 +8,11 @@ export type Floor = 'oak' | 'walnut' | 'checker' | 'concrete' | 'carpet' | 'herr
 export type Rug = 'round' | 'striped' | 'shaggy' | 'none';
 export type Light = 'day' | 'sunset' | 'night' | 'neon';
 export type DecorKind = 'plant' | 'lamp' | 'shelf' | 'poster' | 'sofa' | 'desk' | 'weights';
-export type Decor = { id: string; kind: DecorKind; dx: number; dy: number; s: number; flip?: boolean };
+/* A placed piece: moved by dx, dy (room units; dy as measured in the editor,
+   whose floor is at EDIT_F, and scaled to each drawing's floor), sized by s,
+   turned by r degrees, mirrored by flip. */
+export type Decor = { id: string; kind: DecorKind; dx: number; dy: number; s: number; r?: number; flip?: boolean };
+export const EDIT_F = 290;
 
 export type RoomState = { wall: Wall; window: Win; floor: Floor; rug: Rug; light: Light; decor: Decor[] };
 

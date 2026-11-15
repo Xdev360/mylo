@@ -64,12 +64,20 @@ a.sys-row:active, button.sys-row:active{ opacity:.6; }
 .sys-toggle.is-s[aria-checked="true"]::after{ background:var(--on-primary); }
 
 /* Segmented tabs, ST2. */
-.sys-seg{ display:flex; padding:4px; border-radius:99px; background:var(--surface); }
+.sys-seg{ position:relative; display:flex; padding:4px; border-radius:99px; background:var(--surface); }
 .sys-seg button{
-  flex:1; min-width:0; height:32px; border-radius:99px; font-size:14px; font-weight:500; line-height:17px; color:var(--text-2);
-  transition:background-color .2s ease, color .2s ease;
+  position:relative; z-index:1; flex:1; min-width:0; height:32px; border-radius:99px; font-size:14px; font-weight:500; line-height:17px; color:var(--text-2);
+  transition:color .2s ease;
 }
-.sys-seg button[aria-checked="true"]{ background:var(--bg); color:var(--ink); font-weight:600; box-shadow:0 1px 4px rgba(0,0,0,.08); }
+.sys-seg button[aria-checked="true"]{ color:var(--ink); font-weight:600; }
+.sys-seg button:active{ scale:1; }
+/* The white pill slides under the picked option instead of jumping. */
+.sys-seg-pill{
+  position:absolute; top:4px; bottom:4px; left:4px; width:calc((100% - 8px) / var(--n)); border-radius:99px;
+  background:var(--bg); box-shadow:0 1px 4px rgba(0,0,0,.08);
+  translate:calc(var(--i) * 100%) 0; transition:translate .32s cubic-bezier(.22,1,.36,1);
+}
+@media (prefers-reduced-motion: reduce){ .sys-seg-pill{ transition:none; } }
 
 /* Text and inputs, ST7 and ST8. */
 .sys-intro{ margin-top:8px; font-size:14px; font-weight:500; line-height:21px; color:var(--text-2); }
@@ -87,7 +95,10 @@ a.sys-row:active, button.sys-row:active{ opacity:.6; }
 .sys-eye{ display:grid; place-items:center; width:32px; height:32px; margin-right:-6px; color:var(--text-3); border-radius:99px; }
 .sys-eye[aria-pressed="true"]{ color:var(--ink); }
 .sys-hint{ margin-top:12px; font-size:13px; font-weight:500; line-height:16px; color:var(--text-2); }
-.sys-hint a{ color:var(--ink); text-decoration:underline; text-underline-offset:2px; }
+.sys-hint a, .sys-link{ color:var(--ink); text-decoration:underline; text-underline-offset:2px; font:inherit; }
+.sys-link:disabled{ opacity:.5; }
+.sys-error{ animation:sys-say .22s cubic-bezier(.22,1,.36,1); }
+@keyframes sys-say{ from{ opacity:0; translate:0 -4px; } }
 .sys-error{ margin-top:12px; font-size:13px; font-weight:500; line-height:18px; color:var(--red); }
 .sys-ok{ margin-top:12px; font-size:13px; font-weight:500; line-height:18px; color:var(--green); }
 .sys-strength{ display:flex; gap:6px; margin-top:8px; }
@@ -109,11 +120,27 @@ a.sys-row:active, button.sys-row:active{ opacity:.6; }
 .sys-btn.is-danger{ background:var(--red); color:#fff; }
 @media (hover:hover){ .sys-btn:not(:disabled):hover{ opacity:.9; } }
 
+/* Toast: the dark pill that says a change landed. */
+.sys-toast{
+  position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom) + 32px); z-index:70;
+  display:flex; align-items:center; gap:12px; width:max-content; max-width:calc(100vw - 40px); padding:12px 20px 12px 16px; border-radius:99px;
+  background:var(--primary); color:var(--on-primary); font-size:14px; font-weight:500; line-height:17px; box-shadow:0 8px 24px rgba(15,15,18,.18);
+  opacity:0; translate:-50% 14px; scale:.96; pointer-events:none;
+  transition:opacity .2s ease, translate .3s cubic-bezier(.22,1,.36,1), scale .3s cubic-bezier(.22,1,.36,1);
+}
+.sys-toast.is-on{ opacity:1; translate:-50% 0; scale:1; }
+@media (min-width:1024px){ .sys-toast{ margin-left:124px; } :root[data-side="rail"] .sys-toast{ margin-left:44px; } }
+
 /* ── People lists, ST3 ────────────────────────────────────────────────── */
 .sys-people{ margin-top:12px; }
 .sys-person{ position:relative; display:flex; align-items:center; gap:14px; min-height:64px; }
 .sys-person::after{ content:''; position:absolute; left:54px; right:0; bottom:0; height:1px; background:var(--line); }
 .sys-person + .sys-person{ margin-top:8px; }
+.sys-person, .sys-word{ animation:sys-item-in .26s cubic-bezier(.22,1,.36,1); transition:opacity .2s ease, translate .24s ease, scale .2s ease; }
+.sys-person.is-going{ opacity:0; translate:24px 0; }
+.sys-word.is-going{ opacity:0; scale:.8; }
+@keyframes sys-item-in{ from{ opacity:0; scale:.96; } }
+@media (prefers-reduced-motion: reduce){ .sys-person, .sys-word{ animation:none; transition:opacity .15s ease; } .sys-person.is-going, .sys-word.is-going{ translate:0 0; scale:1; } }
 .sys-person-avatar{
   display:grid; place-items:center; flex:none; width:40px; height:40px; border-radius:20px; border:2px solid var(--bg);
   font-size:17px; font-weight:600; line-height:20px; color:var(--ink);
@@ -200,15 +227,30 @@ a.sys-row:active, button.sys-row:active{ opacity:.6; }
 }
 .sys-cover-inner.has-head{ padding-top:max(env(safe-area-inset-top), 12px); }
 @media (min-width:1024px){ .sys-cover-inner{ justify-content:center; padding-top:48px; } .sys-cover-inner .sys-actions{ margin-top:32px; } }
+/* A primer rises over the screen that asked for it, and sinks back. */
+.sys-cover.is-sheet{ opacity:0; translate:0 28px; transition:opacity .22s ease, translate .26s cubic-bezier(.4,0,1,1); }
+.sys-cover.is-sheet.is-in{ opacity:1; translate:0 0; transition:opacity .24s ease, translate .38s cubic-bezier(.22,1,.36,1); }
+@media (prefers-reduced-motion: reduce){ .sys-cover.is-sheet, .sys-cover.is-sheet.is-in{ translate:0 0; } }
 
 /* Offline bar, S27. */
 .sys-offline{
   position:fixed; z-index:46; left:0; right:0; top:0; display:flex; align-items:center; gap:8px;
   padding:calc(env(safe-area-inset-top) + 8px) 16px 8px; background:var(--primary); color:var(--on-primary);
-  font-size:13px; font-weight:500; line-height:16px; animation:sys-drop .3s cubic-bezier(.22,1,.36,1);
+  font-size:13px; font-weight:500; line-height:16px;
+  translate:0 -100%; visibility:hidden; pointer-events:none;
+  transition:translate .26s cubic-bezier(.4,0,1,1), visibility 0s linear .26s;
 }
-.sys-offline.is-inline{ position:relative; z-index:auto; margin:0 -20px; padding-top:10px; padding-bottom:10px; }
+.sys-offline.is-on{
+  translate:0 0; visibility:visible;
+  transition:translate .34s cubic-bezier(.22,1,.36,1), visibility 0s;
+}
+.sys-offline.is-inline{ position:relative; z-index:auto; margin:0 -20px; padding-top:10px; padding-bottom:10px; translate:none; visibility:visible; animation:sys-drop .3s cubic-bezier(.22,1,.36,1); }
 @keyframes sys-drop{ from{ translate:0 -100%; } }
+@media (prefers-reduced-motion: reduce){ .sys-offline, .sys-offline.is-on{ transition:visibility 0s; } }
+/* While the bar is down the screen makes room for it, so it never sits on a
+   back button or a title. */
+.app-main{ transition:padding-top .3s cubic-bezier(.22,1,.36,1); }
+html:has(.sys-offline.is-on:not(.is-inline)) .app-main{ padding-top:calc(env(safe-area-inset-top) + 32px); }
 
 /* Permission denied, S9. */
 .sys-denied-icon{ position:relative; display:grid; place-items:center; width:88px; height:88px; margin:30px auto 0; border-radius:44px; background:var(--surface); color:var(--text-2); }
@@ -246,18 +288,26 @@ button.sys-install-step:active{ scale:.98; }
 /* ── Confirm dialog, S23–S26 and ST9 ──────────────────────────────────── */
 .sys-dialog-root{ position:fixed; inset:0; z-index:60; display:grid; place-items:center; padding:20px; pointer-events:none; }
 .sys-dialog-root.is-open{ pointer-events:auto; }
-.sys-dim{ position:absolute; inset:0; width:100%; background:rgba(11,11,14,.45); opacity:0; transition:opacity .2s ease; cursor:default; }
+.sys-dim{ position:absolute; inset:0; width:100%; background:rgba(11,11,14,.45); opacity:0; transition:opacity .24s ease; cursor:default; }
 .sys-dialog-root.is-open .sys-dim{ opacity:1; }
+/* It rises a little and settles as the screen behind dims; closing reverses
+   it, a touch quicker. */
 .sys-dialog{
   position:relative; width:min(321px, 100%); padding:26px 20px 22px; border-radius:26px; background:var(--bg); text-align:center;
-  box-shadow:var(--elev); opacity:0; scale:.94; transition:opacity .2s ease, scale .25s cubic-bezier(.34,1.56,.64,1);
+  box-shadow:var(--elev); opacity:0; scale:.96; translate:0 14px;
+  transition:opacity .16s ease, scale .2s ease, translate .2s ease;
 }
-.sys-dialog-root.is-open .sys-dialog{ opacity:1; scale:1; }
+.sys-dialog-root.is-open .sys-dialog{
+  opacity:1; scale:1; translate:0 0;
+  transition:opacity .2s ease, scale .34s cubic-bezier(.34,1.4,.64,1), translate .34s cubic-bezier(.22,1,.36,1);
+}
+@media (prefers-reduced-motion: reduce){ .sys-dialog, .sys-dialog-root.is-open .sys-dialog{ translate:0 0; scale:1; transition:opacity .15s ease; } }
 .sys-dialog h2{ padding:0 4px; font-size:20px; font-weight:600; line-height:24px; letter-spacing:-.015em; }
 .sys-dialog p{ margin-top:12px; padding:0 4px; font-size:15px; font-weight:500; line-height:23px; color:var(--text-2); }
 .sys-dialog-actions{ display:flex; flex-direction:column; gap:8px; margin-top:22px; }
 .sys-dialog .sys-btn{ height:50px; }
-:root[data-theme="dark"] .sys-dialog{ border:1px solid var(--line); }
+:root[data-theme="dark"] .sys-dim{ background:rgba(0,0,0,.6); }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .sys-dim{ background:rgba(0,0,0,.6); } }
 
 /* ── Skeletons, S19–S22 ───────────────────────────────────────────────── */
 .sk{ display:block; background:var(--surface-2); border-radius:8px; animation:sk-pulse 1.4s ease-in-out infinite; }
@@ -327,11 +377,20 @@ button.sys-install-step:active{ scale:.98; }
 .dt8-cols{ display:flex; gap:24px; align-items:flex-start; }
 .dt8-nav{ position:sticky; top:32px; width:240px; flex:none; display:flex; flex-direction:column; gap:2px; }
 .dt8-nav button{
-  display:flex; align-items:center; gap:12px; height:38px; padding:0 12px; border-radius:12px; text-align:left;
+  position:relative; z-index:1; display:flex; align-items:center; gap:12px; height:38px; padding:0 12px; border-radius:12px; text-align:left;
   font-size:14px; font-weight:500; line-height:18px; color:var(--text-2); transition:background-color .15s ease, color .15s ease;
 }
-.dt8-nav button[aria-current="true"]{ background:var(--surface); color:var(--ink); font-weight:600; }
-@media (hover:hover){ .dt8-nav button:not([aria-current="true"]):hover{ background:var(--surface); color:var(--ink); } }
+.dt8-nav button:active{ scale:1; }
+.dt8-nav button[aria-current="true"]{ color:var(--ink); font-weight:600; }
+/* The highlight slides to the picked section. */
+.dt8-nav-pill{
+  position:absolute; left:0; right:0; top:0; height:38px; border-radius:12px; background:var(--surface);
+  translate:0 calc(var(--i) * 40px); transition:translate .3s cubic-bezier(.22,1,.36,1);
+}
+@media (hover:hover){ .dt8-nav button:not([aria-current="true"]):hover{ background:color-mix(in srgb, var(--surface) 60%, transparent); color:var(--ink); } }
+.dt8-main{ animation:dt8-in .28s cubic-bezier(.22,1,.36,1); }
+@keyframes dt8-in{ from{ opacity:0; translate:0 8px; } }
+@media (prefers-reduced-motion: reduce){ .dt8-nav-pill{ transition:none; } .dt8-main{ animation:none; } }
 .dt8-main{ flex:1; min-width:0; max-width:848px; display:flex; flex-direction:column; gap:16px; }
 .dt8-card{ border-radius:16px; background:var(--surface); }
 .dt8-card-head{ padding:18px 20px 6px; font-size:15px; font-weight:600; line-height:20px; }

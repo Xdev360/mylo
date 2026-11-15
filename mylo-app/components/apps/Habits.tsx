@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import Icon from '@/components/Icon';
 import { useHydrated } from '@/lib/local';
-import { streak, useStore } from '@/lib/store';
+import { useStore } from '@/lib/store';
+import { useStreak } from '@/lib/goals';
 import { iso, thisWeek, todayIso } from '@/lib/dates';
 import { ANCHORS, IDENTITIES, uid, useHard, useIdentities, useOwnIdentities, useStacks, type Identity } from '@/lib/apps';
 import { CloseBtn, Head, Toggle } from './ui';
@@ -78,13 +79,15 @@ export function StackIt() {
   const [habit, setHabit] = useState('');
   const [smallOn, setSmallOn] = useState(true);
   const [small, setSmall] = useState('');
+  const [saved, setSaved] = useState(false);
   if (!ready) return <main className="screen on-desk" aria-busy="true" />;
   const chip = ANCHORS.find(a => a.toLowerCase() === anchor.trim().toLowerCase());
   const save = () => {
-    if (!anchor.trim() || !habit.trim()) return;
-    const itemId = uid();
-    add({ kind: 'system', title: habit.trim(), date: todayIso() });
-    setStacks(s => [...s, { id: itemId, anchor: anchor.trim(), habit: habit.trim(), small: small.trim() || undefined, smallOn, identity: identities[0], at: new Date().toISOString() }]);
+    if (!anchor.trim() || !habit.trim() || saved) return;
+    setSaved(true);
+    // The stack keeps the id of the system it put on Today, so the two stay linked.
+    const itemId = add({ kind: 'system', title: habit.trim(), date: todayIso() });
+    setStacks(s => [...s, { id: uid(), itemId, anchor: anchor.trim(), habit: habit.trim(), small: small.trim() || undefined, smallOn, identity: identities[0], at: new Date().toISOString() }]);
     router.push('/today');
   };
   return (
@@ -116,7 +119,7 @@ export function StackIt() {
       </div>
       <p className="ax-note">Mylo will nudge you right after you {anchor.trim() || 'do it'}, not at a random time.</p>
       <span className="spacer" />
-      <button type="button" className="ax-btn ax-cta" disabled={!anchor.trim() || !habit.trim()} onClick={save}>Save</button>
+      <button type="button" className="ax-btn ax-cta" disabled={!anchor.trim() || !habit.trim() || saved} onClick={save}>Save</button>
     </main>
   );
 }
@@ -128,10 +131,13 @@ export function NeverMiss() {
   const ready = useHydrated();
   const { add } = useStore();
   const [stacks] = useStacks();
+  const [used, setUsed] = useState(false);
   if (!ready) return <main className="screen on-desk" aria-busy="true" />;
   const easy = stacks.filter(s => s.smallOn && s.small);
   const useEasy = () => {
+    if (used) return;
     if (!easy.length) { router.push('/apps/stack'); return; }
+    setUsed(true);
     easy.forEach(s => add({ kind: 'task', title: s.small!, date: todayIso() }));
     router.push('/today');
   };
@@ -169,6 +175,7 @@ const HARD = ['Late nights', 'Too many tasks', 'Busy work week', 'Nothing, I fle
 export function Review() {
   const ready = useHydrated();
   const { items } = useStore();
+  const streakNow = useStreak();
   const [picked] = useIdentities();
   const [own] = useOwnIdentities();
   const [stacks] = useStacks();
@@ -189,6 +196,7 @@ export function Review() {
   const tones = ['var(--blue)', 'var(--green)'];
   return (
     <main className="screen on-desk ax-no-tabs no-tabs ax-flow ax-review">
+      <div className="ax-review-close"><CloseBtn href="/apps" /></div>
       <div className="ax-flow-top">
         <p className="ax-step">Sunday review</p>
         <h1 className="ax-h1">Your week, in votes</h1>
@@ -210,7 +218,7 @@ export function Review() {
         </Link>
       )}
       <div className="ax-stats">
-        <div className="ax-stat"><img src="/figma/apps/i-streak.svg" alt="" width={24} height={24} /><span className="t-body ax-600">{streak(items)} {streak(items) === 1 ? 'day' : 'days'}</span></div>
+        <div className="ax-stat"><img src="/figma/apps/i-streak.svg" alt="" width={24} height={24} /><span className="t-body ax-600">{streakNow} {streakNow === 1 ? 'day' : 'days'}</span></div>
         <div className="ax-stat"><Icon name="apps/i-done" size={24} /><span className="t-body ax-600">{done.length} {done.length === 1 ? 'task' : 'tasks'}</span></div>
       </div>
       <section className="ax-block">
