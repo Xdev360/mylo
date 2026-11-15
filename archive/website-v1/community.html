@@ -1,0 +1,559 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mylo — Community</title>
+<meta name="description" content="Report a bug, request a feature, vote on what other testers want, and see what shipped. Confirmed bug reports are worth 100 $MYL.">
+<meta name="theme-color" content="#050505">
+<meta name="color-scheme" content="dark">
+<meta property="og:title" content="Mylo — Community">
+<meta property="og:description" content="Report a bug, request a feature, vote on what others want, and see what shipped.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Mylo">
+<meta property="og:url" content="https://www.staymylo.com/community">
+<meta property="og:image" content="https://www.staymylo.com/og.png?v=2">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://www.staymylo.com/og.png?v=2">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 237 301'%3E%3Cpath d='M169.6 0c9 4.7 5 13 .8 21.8-4.5 9.7-9.3 19.8 2.5 26.1 13.1 7.1 24.8 16.7 34.5 28.2 2.5-.5 5.1-1.5 7.6-2.5 5.5-2.2 10.8-4.2 13.9 0-.1 1.3-.3 2.6-.5 4-1.2 7.3-3.4 14.1-6.3 20.4 11.4 21.5 16.4 46 14.4 70.4-2 24.5-10.8 47.7-25.4 66.9-1 1.4-2.1 2.7-3.2 4-3.3 11.1-6.5 22.2-9.7 33.5-2 7-4.6 16.1-8.6 22-9.7 14.3-27.1-4.4-35.2-11.8-3.5-.4-8.9-.2-12.5-.2l-22.2-.1-13.2-.2c-3.8 6.1-7 10.7-13 14.5-13.1 8.2-25-11-27.5-23.8-3.1 4.3-12.5 13.1-17.8 10-5.8-3.4-10.6-12.1-13-18.9-2.9-8.2-5.1-16.7-6.7-25.4h.2c-.3-.3-.5-.6-.7-.9C12.9 219.3 3.4 196.3.7 172c-2.6-24.4 1.7-49 12.5-70.8C31 65.2 81.4 13.3 161.3 1.1c2.7-.4 5.5-.8 8.3-1.1z' fill='%23fff'/%3E%3Cpath d='M99 198h34' stroke='%23000' stroke-width='8' stroke-linecap='round'/%3E%3Crect x='72' y='150' width='21' height='30' rx='9'/%3E%3Crect x='147' y='150' width='21' height='30' rx='9'/%3E%3Cpath d='M88.5 165h63' stroke='%23000' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#050505; --bg-2:#0B0B0B;
+  --ink:#FAFAFA; --ink-2:rgba(250,250,250,.74); --muted:rgba(250,250,250,.5); --faint:rgba(250,250,250,.3);
+  --line:rgba(255,255,255,.09); --line-2:rgba(255,255,255,.16); --line-3:rgba(255,255,255,.26);
+  --glass:rgba(255,255,255,.04); --glass-2:rgba(255,255,255,.07); --glass-3:rgba(255,255,255,.11);
+  --r-xl:28px; --r-lg:22px; --r:16px; --r-sm:11px;
+  --ease:cubic-bezier(.16,1,.3,1); --spring:cubic-bezier(.34,1.56,.64,1);
+  --ok:#5EC48A; --warn:#E0A05A; --bad:#D7364C; --plan:#5AA9D6; --build:#8B5CF6;
+  --wrap:1060px; --gutter:clamp(16px,4vw,40px);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-size:16px; line-height:1.55; -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+body::before{
+  content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background:
+    radial-gradient(760px 620px at 82% -6%, rgba(120,120,200,.13), transparent 62%),
+    radial-gradient(560px 460px at 4% 2%, rgba(70,193,253,.07), transparent 60%);
+}
+a{color:inherit}
+.wrap{width:100%; max-width:var(--wrap); margin:0 auto; padding-inline:var(--gutter); position:relative; z-index:1}
+.glass{
+  background:var(--glass); border:1px solid var(--line); border-radius:var(--r-lg);
+  backdrop-filter:blur(22px) saturate(140%); -webkit-backdrop-filter:blur(22px) saturate(140%);
+}
+.ico{width:1em; height:1em; display:block; fill:none; stroke:currentColor; stroke-width:2;
+     stroke-linecap:round; stroke-linejoin:round; flex:none}
+.ico-sm{width:14px;height:14px} .ico-lg{width:22px;height:22px}
+
+/* ── header ─────────────────────────────────────────────────────────── */
+.top{position:sticky; top:0; z-index:40; backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
+     background:rgba(5,5,5,.72); border-bottom:1px solid var(--line)}
+.top-in{display:flex; align-items:center; justify-content:space-between; gap:14px; height:62px}
+.brand{display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:-.02em;
+       font-size:18px; text-decoration:none}
+.brand-mark{width:28px;height:28px;border-radius:9px;background:#fff;display:grid;place-items:center;flex:none}
+.brand-mark svg{width:17px;height:21px;margin-top:1px}
+.btn{
+  display:inline-flex; align-items:center; gap:8px; border-radius:100px; cursor:pointer;
+  font:inherit; font-weight:600; font-size:14px; letter-spacing:-.01em;
+  padding:10px 18px; border:1px solid var(--line-2); background:var(--glass-2); color:var(--ink);
+  text-decoration:none; transition:background .2s var(--ease), border-color .2s var(--ease), transform .12s var(--ease);
+}
+.btn:hover{background:var(--glass-3); border-color:var(--line-3)}
+.btn:active{transform:translateY(1px)}
+.btn-solid{background:#fff; color:#0A0A0B; border-color:#fff; font-weight:700}
+.btn-solid:hover{background:#ECECEC; border-color:#ECECEC}
+.btn[disabled]{opacity:.5; cursor:not-allowed}
+
+/* ── hero ───────────────────────────────────────────────────────────── */
+.hero{padding:clamp(40px,7vw,76px) 0 clamp(20px,3vw,30px)}
+.eyebrow{display:inline-flex; align-items:center; gap:8px; font-size:12px; font-weight:700;
+  letter-spacing:.12em; text-transform:uppercase; color:var(--muted)}
+.eyebrow i{width:6px;height:6px;border-radius:50%;background:var(--ok);display:block}
+h1{font-size:clamp(34px,6.2vw,58px); line-height:1.03; letter-spacing:-.04em; font-weight:700;
+   margin:14px 0 0; text-wrap:balance; max-width:16ch}
+.lede{color:var(--ink-2); font-size:clamp(15px,1.7vw,18px); margin:16px 0 0; max-width:60ch}
+.pay{display:inline-flex; align-items:center; gap:12px; margin-top:22px; padding:12px 18px 12px 14px;
+     border-radius:100px; background:var(--glass-2); border:1px solid var(--line-2)}
+.pay .amt{font-weight:800; letter-spacing:-.02em; font-size:17px}
+.pay span{color:var(--muted); font-size:13px}
+
+/* ── tabs ───────────────────────────────────────────────────────────── */
+.tabs{display:flex; gap:6px; margin:30px 0 22px; padding:5px; border-radius:100px;
+      background:var(--glass); border:1px solid var(--line); width:max-content; max-width:100%;
+      overflow-x:auto; scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{
+  appearance:none; border:0; background:transparent; color:var(--muted); cursor:pointer;
+  font:inherit; font-weight:600; font-size:14px; padding:9px 18px; border-radius:100px; white-space:nowrap;
+  transition:color .2s var(--ease), background .2s var(--ease);
+}
+.tabs button:hover{color:var(--ink)}
+.tabs button[aria-selected=true]{background:#fff; color:#0A0A0B; font-weight:700}
+.panel[hidden]{display:none}
+
+/* ── board ──────────────────────────────────────────────────────────── */
+.board-head{display:flex; align-items:center; justify-content:space-between; gap:14px;
+            flex-wrap:wrap; margin-bottom:14px}
+.sorts{display:flex; gap:4px}
+.sorts button{appearance:none; border:1px solid transparent; background:transparent; color:var(--muted);
+  font:inherit; font-size:13px; font-weight:600; padding:6px 13px; border-radius:100px; cursor:pointer}
+.sorts button[aria-pressed=true]{background:var(--glass-2); border-color:var(--line-2); color:var(--ink)}
+.list{display:flex; flex-direction:column; gap:10px; list-style:none; margin:0; padding:0}
+.item{display:flex; gap:14px; padding:16px 18px; align-items:flex-start}
+.vote{
+  display:flex; flex-direction:column; align-items:center; gap:2px; flex:none;
+  min-width:56px; padding:9px 6px 7px; border-radius:14px; cursor:pointer;
+  background:var(--glass-2); border:1px solid var(--line-2); color:var(--ink);
+  font:inherit; transition:background .18s var(--ease), border-color .18s var(--ease), transform .12s var(--spring);
+}
+.vote:hover{background:var(--glass-3); border-color:var(--line-3)}
+.vote:active{transform:scale(.95)}
+.vote[aria-pressed=true]{background:#fff; border-color:#fff; color:#0A0A0B}
+.vote .n{font-weight:800; font-size:16px; letter-spacing:-.02em; font-variant-numeric:tabular-nums; line-height:1.1}
+.vote .cap{font-size:9.5px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; opacity:.62}
+.item h3{margin:0; font-size:16.5px; font-weight:700; letter-spacing:-.02em; line-height:1.3; text-wrap:balance}
+.item p{margin:6px 0 0; color:var(--ink-2); font-size:14px; line-height:1.5}
+.meta{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:10px;
+      font-size:12px; color:var(--faint)}
+.tag{font-size:10.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+     padding:3px 9px; border-radius:100px; background:var(--glass-2); color:var(--muted)}
+.tag.s-planned {background:color-mix(in srgb,var(--plan) 16%,transparent);  color:var(--plan)}
+.tag.s-building{background:color-mix(in srgb,var(--build) 18%,transparent); color:#B49BF0}
+.tag.s-shipped {background:color-mix(in srgb,var(--ok) 15%,transparent);    color:var(--ok)}
+.note{margin-top:9px; padding:9px 12px; border-radius:12px; background:var(--glass);
+      border:1px solid var(--line); color:var(--ink-2); font-size:13px}
+.empty{padding:34px 22px; text-align:center; color:var(--muted); font-size:14.5px}
+.empty b{display:block; color:var(--ink); font-size:16px; font-weight:700; margin-bottom:5px}
+.skel{height:86px; border-radius:var(--r-lg); background:var(--glass); border:1px solid var(--line);
+      animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.5}50%{opacity:.85}}
+
+/* ── forms ──────────────────────────────────────────────────────────── */
+.form-card{padding:clamp(20px,3vw,30px); margin-top:22px}
+.form-card h2{margin:0 0 6px; font-size:clamp(20px,2.6vw,26px); letter-spacing:-.03em; font-weight:700}
+.form-card > p{margin:0 0 20px; color:var(--ink-2); font-size:14.5px; max-width:62ch}
+.lbl{display:block; font-size:12px; font-weight:700; letter-spacing:.09em; text-transform:uppercase;
+     color:var(--muted); margin-bottom:9px}
+.fld + .fld{margin-top:18px}
+input[type=text], textarea{
+  width:100%; font:inherit; font-size:15px; color:var(--ink); background:var(--glass);
+  border:1px solid var(--line-2); border-radius:var(--r); padding:13px 15px; resize:vertical;
+  transition:border-color .2s var(--ease), background .2s var(--ease);
+}
+input[type=text]::placeholder, textarea::placeholder{color:var(--faint)}
+input[type=text]:focus, textarea:focus{outline:none; border-color:var(--line-3); background:var(--glass-2)}
+textarea{min-height:120px; line-height:1.55}
+.chips{display:flex; flex-wrap:wrap; gap:7px}
+.chips button{
+  appearance:none; font:inherit; font-size:13px; font-weight:600; cursor:pointer;
+  padding:8px 14px; border-radius:100px; border:1px solid var(--line-2);
+  background:var(--glass); color:var(--ink-2);
+  transition:background .18s var(--ease), color .18s var(--ease), border-color .18s var(--ease);
+}
+.chips button:hover{background:var(--glass-2); color:var(--ink)}
+.chips button[aria-pressed=true]{background:#fff; border-color:#fff; color:#0A0A0B; font-weight:700}
+.row{display:flex; gap:14px; align-items:flex-end; margin-top:18px; flex-wrap:wrap}
+.row .fld{flex:1 1 220px; margin-top:0}
+.hp{position:absolute; left:-9999px; width:1px; height:1px; opacity:0}
+.msg{margin-top:14px; font-size:14px; padding:12px 15px; border-radius:var(--r); display:none}
+.msg.show{display:block}
+.msg.ok{background:color-mix(in srgb,var(--ok) 13%,transparent); color:var(--ok);
+        border:1px solid color-mix(in srgb,var(--ok) 26%,transparent)}
+.msg.err{background:color-mix(in srgb,var(--bad) 13%,transparent); color:#F08A96;
+         border:1px solid color-mix(in srgb,var(--bad) 26%,transparent)}
+.fine{display:flex; align-items:center; gap:7px; margin-top:13px; color:var(--faint); font-size:12.5px}
+
+/* ── footer ─────────────────────────────────────────────────────────── */
+.foot{margin-top:clamp(50px,8vw,90px); padding:30px 0 40px; border-top:1px solid var(--line);
+      color:var(--faint); font-size:13px; display:flex; justify-content:space-between;
+      gap:14px; flex-wrap:wrap; align-items:center}
+.foot a{color:var(--muted); text-decoration:none}
+.foot a:hover{color:var(--ink)}
+:focus-visible{outline:2px solid var(--ink); outline-offset:3px; border-radius:6px}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important; transition-duration:.01ms!important}}
+@media (max-width:560px){
+  .item{padding:14px 15px; gap:11px}
+  .vote{min-width:50px}
+  .hero{padding-top:30px}
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-arrow-r" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol>
+<symbol id="i-arrow-l" viewBox="0 0 24 24"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></symbol>
+<symbol id="i-up" viewBox="0 0 24 24"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></symbol>
+<symbol id="i-lock" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+<symbol id="i-coins" viewBox="0 0 24 24"><circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="m16.71 13.88.7.71-2.82 2.82"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+<symbol id="i-bug" viewBox="0 0 24 24"><path d="m8 2 1.88 1.88"/><path d="M14.12 3.88 16 2"/><path d="M9 7.13V6a3 3 0 1 1 6 0v1.13"/><path d="M12 20a6 6 0 0 0 6-6v-3a4 4 0 0 0-4-4h-4a4 4 0 0 0-4 4v3a6 6 0 0 0 6 6Z"/><path d="M6 13H2"/><path d="M22 13h-4"/></symbol>
+<symbol id="i-spark" viewBox="0 0 24 24"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></symbol>
+</defs></svg>
+
+<header class="top">
+  <div class="wrap top-in">
+    <a class="brand" href="/"><span class="brand-mark"><svg viewBox="0 0 237 301"><path d="M169.6 0c9 4.7 5 13 .8 21.8-4.5 9.7-9.3 19.8 2.5 26.1 13.1 7.1 24.8 16.7 34.5 28.2 2.5-.5 5.1-1.5 7.6-2.5 5.5-2.2 10.8-4.2 13.9 0-.1 1.3-.3 2.6-.5 4-1.2 7.3-3.4 14.1-6.3 20.4 11.4 21.5 16.4 46 14.4 70.4-2 24.5-10.8 47.7-25.4 66.9-1 1.4-2.1 2.7-3.2 4-3.3 11.1-6.5 22.2-9.7 33.5-2 7-4.6 16.1-8.6 22-9.7 14.3-27.1-4.4-35.2-11.8-3.5-.4-8.9-.2-12.5-.2l-22.2-.1-13.2-.2c-3.8 6.1-7 10.7-13 14.5-13.1 8.2-25-11-27.5-23.8-3.1 4.3-12.5 13.1-17.8 10-5.8-3.4-10.6-12.1-13-18.9-2.9-8.2-5.1-16.7-6.7-25.4h.2c-.3-.3-.5-.6-.7-.9C12.9 219.3 3.4 196.3.7 172c-2.6-24.4 1.7-49 12.5-70.8C31 65.2 81.4 13.3 161.3 1.1c2.7-.4 5.5-.8 8.3-1.1z" fill="#fff"/><path d="M99 198h34" stroke="#000" stroke-width="8" stroke-linecap="round"/><rect x="72" y="150" width="21" height="30" rx="9"/><rect x="147" y="150" width="21" height="30" rx="9"/><path d="M88.5 165h63" stroke="#000" stroke-width="3" stroke-linecap="round"/></svg></span>Mylo</a>
+    <a class="btn" href="/#join"><svg class="ico ico-sm"><use href="#i-arrow-l"/></svg>Back to the site</a>
+  </div>
+</header>
+
+<main>
+  <section class="wrap hero">
+    <span class="eyebrow"><i></i>Testers</span>
+    <h1>Build Mylo with us.</h1>
+    <p class="lede">Mylo is early, and the people using it early are the reason it gets good. Tell us what broke, ask for what's missing, and vote on what everyone else wants — so we build in the order that actually helps.</p>
+    <div class="pay">
+      <svg class="ico ico-lg"><use href="#i-coins"/></svg>
+      <div><div class="amt">100 $MYL</div><span>for every bug report we can confirm</span></div>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <div class="tabs" role="tablist">
+      <button role="tab" id="t-req"  aria-controls="p-req"  aria-selected="true">Requests</button>
+      <button role="tab" id="t-ship" aria-controls="p-ship" aria-selected="false">Shipped</button>
+      <button role="tab" id="t-bug"  aria-controls="p-bug"  aria-selected="false">Report a bug</button>
+    </div>
+
+    <!-- ── requests ─────────────────────────────────────────────────── -->
+    <section class="panel" id="p-req" role="tabpanel" aria-labelledby="t-req">
+      <div class="board-head">
+        <div class="sorts" data-sorts>
+          <button data-sort="top" aria-pressed="true">Most wanted</button>
+          <button data-sort="new" aria-pressed="false">Newest</button>
+        </div>
+        <span style="color:var(--faint);font-size:13px" data-req-count></span>
+      </div>
+      <ul class="list" data-req-list>
+        <li class="skel"></li><li class="skel"></li><li class="skel"></li>
+      </ul>
+
+      <div class="glass form-card">
+        <h2>Ask for something</h2>
+        <p>Check the list first — if it's already there, vote for it instead. Votes decide what gets built next.</p>
+        <form data-fr novalidate>
+          <div class="fld">
+            <span class="lbl">Which part of Mylo?</span>
+            <div class="chips" data-fr-areas><button type="button" data-fr-area="Today">Today</button><button type="button" data-fr-area="Goals">Goals</button><button type="button" data-fr-area="Calendar">Calendar</button><button type="button" data-fr-area="Chat">Chat</button><button type="button" data-fr-area="Rooms">Rooms</button><button type="button" data-fr-area="Apps & games">Apps &amp; games</button><button type="button" data-fr-area="Mylo AI">Mylo AI</button><button type="button" data-fr-area="Stories">Stories</button><button type="button" data-fr-area="Wallet & $MYL">Wallet &amp; $MYL</button><button type="button" data-fr-area="Look & themes">Look &amp; themes</button><button type="button" data-fr-area="Signing in">Signing in</button><button type="button" data-fr-area="Notifications">Notifications</button><button type="button" data-fr-area="Something else">Something else</button></div>
+          </div>
+          <div class="fld">
+            <span class="lbl">In one line, what do you want?</span>
+            <input type="text" name="title" maxlength="90" placeholder="Let me snooze a to-do to tomorrow" aria-label="Title">
+          </div>
+          <div class="fld">
+            <span class="lbl">Why — what are you trying to do?</span>
+            <textarea name="detail" maxlength="2000" placeholder="Some nights I know I'm not getting to something. I'd rather move it than leave it sitting there unticked and lose the day…" aria-label="Detail"></textarea>
+          </div>
+          <input type="text" name="company" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+          <div class="row">
+            <div class="fld">
+              <span class="lbl">Your Mylo username</span>
+              <input type="text" name="username" maxlength="20" autocomplete="off" placeholder="@yourname" aria-label="Your Mylo username" data-uname>
+            </div>
+            <button class="btn btn-solid" type="submit" data-fr-submit>Post request<svg class="ico ico-sm"><use href="#i-arrow-r"/></svg></button>
+          </div>
+          <div class="msg" data-fr-msg role="status"></div>
+          <div class="fine"><svg class="ico ico-sm"><use href="#i-lock"/></svg>Your username is shown on the request so people know who asked.</div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ── shipped ──────────────────────────────────────────────────── -->
+    <section class="panel" id="p-ship" role="tabpanel" aria-labelledby="t-ship" hidden>
+      <ul class="list" data-ship-list>
+        <li class="skel"></li><li class="skel"></li>
+      </ul>
+    </section>
+
+    <!-- ── bug ──────────────────────────────────────────────────────── -->
+    <section class="panel" id="p-bug" role="tabpanel" aria-labelledby="t-bug" hidden>
+      <div class="glass form-card" style="margin-top:0">
+        <h2>Found a bug?</h2>
+        <p>Tell us what broke, where, and what you expected instead. No screenshots needed — plain words are fine. Duplicates don't pay, but they still help: they tell us how often it bites.</p>
+        <form data-bug novalidate>
+          <div class="fld">
+            <span class="lbl">Where did it happen?</span>
+            <div class="chips" data-bug-areas><button type="button" data-bug-area="Today">Today</button><button type="button" data-bug-area="Goals">Goals</button><button type="button" data-bug-area="Calendar">Calendar</button><button type="button" data-bug-area="Chat">Chat</button><button type="button" data-bug-area="Rooms">Rooms</button><button type="button" data-bug-area="Apps & games">Apps &amp; games</button><button type="button" data-bug-area="Mylo AI">Mylo AI</button><button type="button" data-bug-area="Stories">Stories</button><button type="button" data-bug-area="Wallet & $MYL">Wallet &amp; $MYL</button><button type="button" data-bug-area="Look & themes">Look &amp; themes</button><button type="button" data-bug-area="Signing in">Signing in</button><button type="button" data-bug-area="Notifications">Notifications</button><button type="button" data-bug-area="Something else">Something else</button></div>
+          </div>
+          <div class="fld">
+            <span class="lbl">What happened?</span>
+            <textarea name="detail" maxlength="2000" placeholder="I tapped the tick on a Shared goal and it went back to undone when I reopened the room…" aria-label="What happened"></textarea>
+          </div>
+          <input type="text" name="company" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+          <div class="row">
+            <div class="fld">
+              <span class="lbl">Your Mylo username</span>
+              <input type="text" name="username" maxlength="20" autocomplete="off" placeholder="@yourname" aria-label="Your Mylo username" data-uname>
+            </div>
+            <button class="btn btn-solid" type="submit" data-bug-submit>Send report<svg class="ico ico-sm"><use href="#i-arrow-r"/></svg></button>
+          </div>
+          <div class="msg" data-bug-msg role="status"></div>
+          <div class="fine"><svg class="ico ico-sm"><use href="#i-lock"/></svg>We only use your username to pay you. Bug reports are never shown publicly.</div>
+        </form>
+      </div>
+    </section>
+  </div>
+
+  <div class="wrap">
+    <footer class="foot">
+      <span>© <span data-year></span> Mylo</span>
+      <span><a href="/">staymylo.com</a> · <a href="mailto:hello@staymylo.com">hello@staymylo.com</a></span>
+    </footer>
+  </div>
+</main>
+
+<script>
+(function(){
+  'use strict';
+  document.documentElement.classList.remove('no-js');
+  var SB_URL = 'https://bjenyxrxbfgphnbncnwv.supabase.co', SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJqZW55eHJ4YmZncGhuYm5jbnd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ3ODg2MjksImV4cCI6MjEwMDM2NDYyOX0.hDr4ehJO_tZo7VXYh3Njfm6Ig0rDlYBDtDWasOecfmM';
+  var $  = function(s,r){ return (r||document).querySelector(s); };
+  var $$ = function(s,r){ return Array.prototype.slice.call((r||document).querySelectorAll(s)); };
+  var yr = $('[data-year]'); if (yr) yr.textContent = new Date().getFullYear();
+
+  function rpc(fn, body){
+    return fetch(SB_URL + '/rest/v1/rpc/' + fn, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'apikey':SB_KEY, 'Authorization':'Bearer ' + SB_KEY },
+      body: JSON.stringify(body || {})
+    }).then(function(r){
+      return r.text().then(function(t){
+        var d = null; try { d = t ? JSON.parse(t) : null; } catch(e){}
+        if (!r.ok) throw new Error((d && (d.message || d.hint)) || 'Something went wrong. Try again.');
+        return d;
+      });
+    });
+  }
+  function esc(s){
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+      return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
+    });
+  }
+  function ago(iso){
+    var d = (Date.now() - new Date(iso)) / 1000;
+    if (d < 90) return 'just now';
+    if (d < 3600) return Math.round(d/60) + 'm ago';
+    if (d < 86400) return Math.round(d/3600) + 'h ago';
+    if (d < 2592000) return Math.round(d/86400) + 'd ago';
+    return new Date(iso).toLocaleDateString(undefined, { month:'short', day:'numeric' });
+  }
+
+  /* One username across both forms and the vote buttons. Remembered locally so
+     voting is a single tap after the first time; never sent anywhere but the RPCs. */
+  var KEY = 'mylo.community.uname';
+  function uname(){
+    var el = $$('[data-uname]').filter(function(i){ return i.value.trim(); })[0];
+    var v = el ? el.value : (function(){ try { return localStorage.getItem(KEY) || ''; } catch(e){ return ''; } })();
+    return String(v || '').trim().replace(/^@/, '');
+  }
+  function remember(v){
+    v = String(v || '').trim().replace(/^@/, '');
+    if (!v) return;
+    try { localStorage.setItem(KEY, v); } catch(e){}
+    $$('[data-uname]').forEach(function(i){ if (!i.value.trim()) i.value = v; });
+  }
+  (function(){ var v = ''; try { v = localStorage.getItem(KEY) || ''; } catch(e){}
+    if (v) $$('[data-uname]').forEach(function(i){ i.value = v; }); })();
+  $$('[data-uname]').forEach(function(i){
+    i.addEventListener('change', function(){ remember(i.value); });
+  });
+
+  /* ── tabs ──────────────────────────────────────────────────────────── */
+  var tabs = $$('[role=tab]');
+  function show(id){
+    tabs.forEach(function(t){
+      var on = t.id === id;
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+      var p = document.getElementById(t.getAttribute('aria-controls'));
+      if (p) p.hidden = !on;
+    });
+    if (id === 't-ship' && !shipLoaded) loadShipped();
+  }
+  tabs.forEach(function(t){ t.addEventListener('click', function(){ show(t.id); }); });
+  if (location.hash === '#bug') show('t-bug');
+  if (location.hash === '#shipped') show('t-ship');
+
+  /* ── chips ─────────────────────────────────────────────────────────── */
+  function chipGroup(sel){
+    var picked = '';
+    $$(sel + ' button').forEach(function(b){
+      b.setAttribute('aria-pressed','false');
+      b.addEventListener('click', function(){
+        picked = b.getAttribute('data-bug-area') || b.getAttribute('data-fr-area') || '';
+        $$(sel + ' button').forEach(function(x){
+          x.setAttribute('aria-pressed', x === b ? 'true' : 'false');
+        });
+      });
+    });
+    return function(){ return picked; };
+  }
+  var bugArea = chipGroup('[data-bug-areas]');
+  var frArea  = chipGroup('[data-fr-areas]');
+
+  function say(el, text, ok){
+    el.textContent = text;
+    el.className = 'msg show ' + (ok ? 'ok' : 'err');
+  }
+
+  /* ── the board ─────────────────────────────────────────────────────── */
+  var sort = 'top', shipLoaded = false;
+  var reqList = $('[data-req-list]'), shipList = $('[data-ship-list]'), reqCount = $('[data-req-count]');
+
+  function statusTag(s){
+    if (s === 'planned')  return '<span class="tag s-planned">Planned</span>';
+    if (s === 'building') return '<span class="tag s-building">Building</span>';
+    if (s === 'shipped')  return '<span class="tag s-shipped">Shipped</span>';
+    if (s === 'declined') return '<span class="tag">Not planned</span>';
+    return '';
+  }
+  function itemHTML(r, shipped){
+    var who = r.username ? '@' + esc(r.username) : 'someone';
+    var when = shipped && r.shipped_at ? 'shipped ' + ago(r.shipped_at) : ago(r.created_at);
+    return '<li class="glass item">' +
+      (shipped
+        ? '<div class="vote" style="cursor:default" aria-hidden="true"><svg class="ico ico-lg" style="color:var(--ok);margin:0 auto"><use href="#i-check"/></svg></div>'
+        : '<button class="vote" data-vote="' + esc(r.ref) + '" aria-pressed="' + (r.voted ? 'true' : 'false') +
+          '" aria-label="Vote for ' + esc(r.title) + '">' +
+            '<svg class="ico ico-sm"><use href="#i-up"/></svg>' +
+            '<span class="n">' + (r.votes || 0) + '</span>' +
+            '<span class="cap">want</span></button>') +
+      '<div style="min-width:0;flex:1">' +
+        '<h3>' + esc(r.title) + '</h3>' +
+        '<p>' + esc(r.detail) + '</p>' +
+        (r.note ? '<div class="note">' + esc(r.note) + '</div>' : '') +
+        '<div class="meta">' + statusTag(r.status) +
+          '<span class="tag">' + esc(r.area) + '</span>' +
+          '<span>' + who + ' · ' + when + '</span>' +
+        '</div>' +
+      '</div></li>';
+  }
+  function emptyHTML(title, sub){
+    return '<li class="glass empty"><b>' + esc(title) + '</b>' + esc(sub) + '</li>';
+  }
+
+  function loadRequests(){
+    rpc('list_features', { p_status:'open', p_sort:sort, p_limit:60, p_voter: uname() || null })
+      .then(function(rows){
+        rows = rows || [];
+        reqList.innerHTML = rows.length
+          ? rows.map(function(r){ return itemHTML(r, false); }).join('')
+          : emptyHTML('Nothing yet', 'Be the first to ask for something.');
+        if (reqCount) reqCount.textContent = rows.length ? rows.length + (rows.length === 1 ? ' request' : ' requests') : '';
+      })
+      .catch(function(){
+        reqList.innerHTML = emptyHTML('Could not load the board', 'Refresh the page and it should come back.');
+      });
+  }
+  function loadShipped(){
+    shipLoaded = true;
+    rpc('list_features', { p_status:'shipped', p_sort:'recent', p_limit:60, p_voter:null })
+      .then(function(rows){
+        rows = rows || [];
+        shipList.innerHTML = rows.length
+          ? rows.map(function(r){ return itemHTML(r, true); }).join('')
+          : emptyHTML('Nothing shipped yet', 'What gets built from this board shows up here.');
+      })
+      .catch(function(){
+        shipList.innerHTML = emptyHTML('Could not load this', 'Refresh the page and it should come back.');
+      });
+  }
+
+  $$('[data-sorts] button').forEach(function(b){
+    b.addEventListener('click', function(){
+      sort = b.getAttribute('data-sort');
+      $$('[data-sorts] button').forEach(function(x){
+        x.setAttribute('aria-pressed', x === b ? 'true' : 'false');
+      });
+      loadRequests();
+    });
+  });
+
+  /* Vote. Optimistic, and put back exactly as it was if the call fails. */
+  document.addEventListener('click', function(e){
+    var btn = e.target.closest ? e.target.closest('[data-vote]') : null;
+    if (!btn) return;
+    var who = uname();
+    if (!who){
+      show('t-req');
+      var f = $('[data-fr] [data-uname]');
+      if (f){ f.focus(); f.scrollIntoView({ block:'center', behavior:'smooth' }); }
+      say($('[data-fr-msg]'), 'Add your Mylo username first — that is how a vote counts once.', false);
+      return;
+    }
+    var n = btn.querySelector('.n');
+    var was = btn.getAttribute('aria-pressed') === 'true';
+    var wasN = parseInt(n.textContent, 10) || 0;
+    btn.setAttribute('aria-pressed', was ? 'false' : 'true');
+    n.textContent = was ? Math.max(0, wasN - 1) : wasN + 1;
+    btn.disabled = true;
+    rpc('vote_feature', { p_username: who, p_ref: btn.getAttribute('data-vote') })
+      .then(function(d){
+        if (d && typeof d.votes === 'number'){
+          n.textContent = d.votes;
+          btn.setAttribute('aria-pressed', d.voted ? 'true' : 'false');
+        }
+      })
+      .catch(function(){
+        btn.setAttribute('aria-pressed', was ? 'true' : 'false');
+        n.textContent = wasN;
+      })
+      .then(function(){ btn.disabled = false; });
+  });
+
+  /* ── request form ──────────────────────────────────────────────────── */
+  var fr = $('[data-fr]');
+  fr.addEventListener('submit', function(e){
+    e.preventDefault();
+    if (fr.company.value) return;                       // honeypot
+    var msg = $('[data-fr-msg]'), btn = $('[data-fr-submit]');
+    if (!frArea()){ say(msg, 'Pick which part of Mylo this is about.', false); return; }
+    btn.disabled = true;
+    rpc('file_feature_request', {
+      p_username: fr.username.value, p_title: fr.title.value,
+      p_detail: fr.detail.value, p_area: frArea()
+    }).then(function(ref){
+      remember(fr.username.value);
+      say(msg, 'Posted — ' + ref + '. It is on the board now.', true);
+      fr.title.value = ''; fr.detail.value = '';
+      loadRequests();
+    }).catch(function(err){
+      say(msg, err.message, false);
+    }).then(function(){ btn.disabled = false; });
+  });
+
+  /* ── bug form ──────────────────────────────────────────────────────── */
+  var bug = $('[data-bug]');
+  bug.addEventListener('submit', function(e){
+    e.preventDefault();
+    if (bug.company.value) return;
+    var msg = $('[data-bug-msg]'), btn = $('[data-bug-submit]');
+    if (!bugArea()){ say(msg, 'Pick where it happened.', false); return; }
+    btn.disabled = true;
+    rpc('file_bug_report', {
+      p_username: bug.username.value, p_area: bugArea(), p_kind: 'bug',
+      p_detail: bug.detail.value, p_agent: navigator.userAgent.slice(0, 200)
+    }).then(function(ref){
+      remember(bug.username.value);
+      say(msg, 'Thank you — your reference is ' + ref + '. If we can confirm it, 100 $MYL goes to your account.', true);
+      bug.detail.value = '';
+    }).catch(function(err){
+      say(msg, err.message, false);
+    }).then(function(){ btn.disabled = false; });
+  });
+
+  loadRequests();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="icon/bell">
+<g id="Vector" opacity="0.28">
+<use xlink:href="#stroke0_0_230" fill="#1D1D22"/>
+<mask id="stroke1_0_230" fill="white">
+<use xlink:href="#stroke0_0_230"/>
+</mask>
+<path d="M17.0833 11.25C17.0833 15.162 13.912 18.3333 10 18.3333C6.08798 18.3333 2.91667 15.162 2.91667 11.25C2.91667 7.33798 6.08798 4.16667 10 4.16667C13.912 4.16667 17.0833 7.33798 17.0833 11.25Z" stroke-width="3.33333" stroke-linejoin="round" stroke="#0F0F12" mask="url(#stroke1_0_230)"/>
+</g>
+<path id="Vector_2" d="M10 11.25V7.5" stroke-width="4.66667" stroke-linecap="round" stroke-linejoin="round" stroke="#0F0F12"/>
+<g id="Vector_3">
+<use xlink:href="#stroke2_0_230" fill="#1D1D22"/>
+<mask id="stroke3_0_230" fill="white">
+<use xlink:href="#stroke2_0_230"/>
+</mask>
+<path d="M8.58333 1.25H11.4167C12.015 1.25 12.5 1.73502 12.5 2.33333C12.5 2.93164 12.015 3.41667 11.4167 3.41667H8.58333C7.98502 3.41667 7.5 2.93164 7.5 2.33333C7.5 1.73502 7.98502 1.25 8.58333 1.25Z" stroke-width="3.33333" stroke-linejoin="round" stroke="#0F0F12" mask="url(#stroke3_0_230)"/>
+</g>
+</g>
+<defs>
+<path id="stroke0_0_230" d="M10 18.3333C13.912 18.3333 17.0833 15.162 17.0833 11.25C17.0833 7.33798 13.912 4.16667 10 4.16667C6.08798 4.16667 2.91667 7.33798 2.91667 11.25C2.91667 15.162 6.08798 18.3333 10 18.3333Z"/>
+<path id="stroke2_0_230" d="M11.4167 1.25H8.58333C7.98502 1.25 7.5 1.73502 7.5 2.33333C7.5 2.93164 7.98502 3.41667 8.58333 3.41667H11.4167C12.015 3.41667 12.5 2.93164 12.5 2.33333C12.5 1.73502 12.015 1.25 11.4167 1.25Z"/>
+</defs>
+</svg>

@@ -1,0 +1,13 @@
+node_modules
+.next
+.vercel
+.env*
+!.env.example
+next-env.d.ts
+
+# Native builds
+android/app/build
+android/.gradle
+android/build
+ios/App/build
+ios/DerivedData

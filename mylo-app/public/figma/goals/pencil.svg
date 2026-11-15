@@ -1,0 +1,18 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="icon/bell">
+<g id="Vector">
+<use xlink:href="#stroke0_0_178" fill="#1D1D22"/>
+<mask id="stroke1_0_178" fill="white">
+<use xlink:href="#stroke0_0_178"/>
+</mask>
+<path d="M12.9167 3.16667C13.75 2.33333 14.5833 2.33333 15.4167 3.16667L16.8333 4.58333C17.6667 5.41667 17.6667 6.25 16.8333 7.08333L7.5 16.4167L2.91667 17.0833L3.58333 12.5L12.9167 3.16667Z" stroke-width="3.33333" stroke-linejoin="round" stroke="#0F0F12" mask="url(#stroke1_0_178)"/>
+</g>
+<g id="Vector_2">
+<path d="M11.25 4.83333L15.1667 8.75Z" fill="#1D1D22"/>
+<path d="M11.25 4.83333L15.1667 8.75" stroke-width="2.66667" stroke="#0F0F12"/>
+</g>
+</g>
+<defs>
+<path id="stroke0_0_178" d="M12.9167 3.16667C13.75 2.33333 14.5833 2.33333 15.4167 3.16667L16.8333 4.58333C17.6667 5.41667 17.6667 6.25 16.8333 7.08333L7.5 16.4167L2.91667 17.0833L3.58333 12.5L12.9167 3.16667Z"/>
+</defs>
+</svg>

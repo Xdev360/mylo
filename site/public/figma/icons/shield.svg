@@ -1,0 +1,7 @@
+<svg width="29" height="29" viewBox="0 0 29 29" fill="none" xmlns="http://www.w3.org/2000/svg">
+<mask id="stroke0_887_4616" fill="white">
+<path d="M14.4997 3.02051L24.1663 6.64551V13.8955C24.1663 19.1316 20.9441 23.1594 14.4997 25.9788C8.05523 23.1594 4.83301 19.1316 4.83301 13.8955V6.64551L14.4997 3.02051Z"/>
+</mask>
+<path opacity="0.28" d="M14.4997 3.02051L24.1663 6.64551V13.8955C24.1663 19.1316 20.9441 23.1594 14.4997 25.9788C8.05523 23.1594 4.83301 19.1316 4.83301 13.8955V6.64551L14.4997 3.02051Z" stroke-width="3.86667" stroke-linejoin="round" stroke="currentColor" mask="url(#stroke0_887_4616)"/>
+<path d="M10.0293 14.2587L13.2918 17.5212L19.0918 11.4795" stroke-width="1.93333" stroke-linecap="round" stroke-linejoin="round" stroke="currentColor"/>
+</svg>

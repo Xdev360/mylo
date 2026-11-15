@@ -1,0 +1,17 @@
+{
+  "name": "Mylo Chat",
+  "id": "mylo-chat-figma",
+  "api": "1.0.0",
+  "main": "code.js",
+  "ui": "ui.html",
+  "editorType": ["figma", "figjam"],
+  "networkAccess": {
+    "allowedDomains": [
+      "https://bjenyxrxbfgphnbncnwv.supabase.co",
+      "https://*.supabase.co",
+      "https://cdn.jsdelivr.net"
+    ],
+    "reasoning": "Mylo auth, room chat, and realtime via Supabase; Supabase JS from jsDelivr."
+  },
+  "documentAccess": "dynamic-page"
+}

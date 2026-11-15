@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mylo Chat</title>
+<style>
+  :root {
+    --bg: #111;
+    --surface: #1a1a1a;
+    --border: #2a2a2a;
+    --ink: #f2f2f2;
+    --muted: #8a8a8a;
+    --accent: #e8e8e8;
+    --me: #2a2a2a;
+    --them: #161616;
+    --danger: #e11d48;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%;
+    font: 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--bg); color: var(--ink);
+  }
+  body { display: flex; flex-direction: column; }
+  .hidden { display: none !important; }
+  header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 12px; border-bottom: 1px solid var(--border);
+    background: var(--surface); flex-shrink: 0;
+  }
+  header .brand { font-weight: 600; letter-spacing: -0.02em; }
+  header .meta { flex: 1; min-width: 0; color: var(--muted); font-size: 11px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  button, .btn {
+    appearance: none; border: 0; cursor: pointer;
+    font: inherit; border-radius: 10px;
+  }
+  .btn-ghost {
+    background: transparent; color: var(--muted); padding: 6px 8px;
+  }
+  .btn-ghost:hover { color: var(--ink); }
+  .btn-primary {
+    background: var(--accent); color: #111; font-weight: 600;
+    padding: 10px 14px; width: 100%;
+  }
+  .btn-primary:disabled { opacity: 0.45; cursor: default; }
+  .btn-link {
+    background: none; color: var(--muted); width: 100%;
+    padding: 8px; text-align: center; font-size: 12px;
+  }
+  main { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .panel { padding: 16px 14px; display: flex; flex-direction: column; gap: 10px; }
+  #view-chat {
+    flex: 1; min-height: 0; display: flex; flex-direction: column;
+  }
+  #view-chat.hidden { display: none !important; }
+  .field label {
+    display: block; font-size: 11px; color: var(--muted); margin-bottom: 4px;
+  }
+  .field input, .field select {
+    width: 100%; height: 40px; border-radius: 10px;
+    border: 1px solid var(--border); background: var(--surface);
+    color: var(--ink); padding: 0 12px; font: inherit;
+  }
+  .field input:focus, .field select:focus, .composer input:focus {
+    outline: none; border-color: #555;
+  }
+  .hint { font-size: 12px; color: var(--muted); line-height: 1.45; }
+  .err { color: var(--danger); font-size: 12px; min-height: 16px; }
+  #msgs {
+    flex: 1; overflow: auto; padding: 12px; display: flex;
+    flex-direction: column; gap: 8px;
+  }
+  .bubble {
+    max-width: 85%; padding: 8px 10px; border-radius: 12px;
+    border: 1px solid var(--border); word-break: break-word;
+  }
+  .bubble.me { align-self: flex-end; background: var(--me); }
+  .bubble.them { align-self: flex-start; background: var(--them); }
+  .bubble .who { font-size: 10px; color: var(--muted); margin-bottom: 2px; }
+  .bubble .when { font-size: 10px; color: var(--muted); margin-top: 4px; text-align: right; }
+  .empty {
+    margin: auto; text-align: center; color: var(--muted); padding: 24px;
+    font-size: 12px; line-height: 1.5;
+  }
+  .composer {
+    display: flex; gap: 8px; padding: 10px 12px;
+    border-top: 1px solid var(--border); background: var(--surface); flex-shrink: 0;
+  }
+  .composer input {
+    flex: 1; height: 40px; border-radius: 10px;
+    border: 1px solid var(--border); background: var(--bg);
+    color: var(--ink); padding: 0 12px; font: inherit;
+  }
+  .composer button {
+    width: 40px; height: 40px; border-radius: 10px;
+    background: var(--accent); color: #111; font-weight: 700;
+  }
+  .row { display: flex; gap: 8px; }
+  .row > * { flex: 1; }
+</style>
+</head>
+<body>
+  <header>
+    <div class="brand">Mylo</div>
+    <div class="meta" id="hdr-meta">Sign in with your account</div>
+    <button type="button" class="btn-ghost hidden" id="btn-signout">Out</button>
+  </header>
+
+  <main>
+    <!-- AUTH -->
+    <div class="panel" id="view-auth">
+      <p class="hint">Each person signs in with their own Mylo account. Same file = same room chat.</p>
+      <div class="field">
+        <label>Username</label>
+        <input id="auth-user" autocomplete="username" placeholder="your username">
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input id="auth-pass" type="password" autocomplete="current-password" placeholder="password">
+      </div>
+      <div class="err" id="auth-err"></div>
+      <button type="button" class="btn-primary" id="auth-go">Sign in</button>
+      <p class="hint">No account yet? Create one at <strong>mylo.vercel.app</strong>, then come back.</p>
+    </div>
+
+    <!-- LINK ROOM -->
+    <div class="panel hidden" id="view-link">
+      <p class="hint">Link this Figma file to a Mylo room. Everyone who opens the plugin on this file will share that chat — each with their own login.</p>
+      <div class="field">
+        <label>Your rooms</label>
+        <select id="room-select"><option value="">Loading…</option></select>
+      </div>
+      <div class="or hint" style="text-align:center">or join with code</div>
+      <div class="field">
+        <label>Room code</label>
+        <input id="room-code" maxlength="8" placeholder="K7M2QX" style="text-transform:uppercase">
+      </div>
+      <div class="err" id="link-err"></div>
+      <button type="button" class="btn-primary" id="link-go">Link & open chat</button>
+      <button type="button" class="btn-link" id="place-badge">Place Mylo badge on canvas</button>
+    </div>
+
+    <!-- CHAT -->
+    <div class="hidden" id="view-chat">
+      <div id="msgs"><div class="empty">Loading messages…</div></div>
+      <div class="composer">
+        <input id="chat-in" placeholder="Message the room…" maxlength="2000">
+        <button type="button" id="chat-send" aria-label="Send">↑</button>
+      </div>
+      <div class="row" style="padding:0 12px 10px;background:var(--surface)">
+        <button type="button" class="btn-link" id="btn-relink" style="padding:4px">Change room</button>
+        <button type="button" class="btn-link" id="btn-badge" style="padding:4px">Canvas badge</button>
+      </div>
+    </div>
+  </main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.8/dist/umd/supabase.min.js"></script>
+<script>
+const CFG = {
+  url: 'https://bjenyxrxbfgphnbncnwv.supabase.co',
+  anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJqZW55eHJ4YmZncGhuYm5jbnd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ3ODg2MjksImV4cCI6MjEwMDM2NDYyOX0.hDr4ehJO_tZo7VXYh3Njfm6Ig0rDlYBDtDWasOecfmM',
+  emailDomain: 'example.com'
+};
+
+const sb = supabase.createClient(CFG.url, CFG.anonKey, {
+  auth: { persistSession: true, autoRefreshToken: true, storageKey: 'mylo-figma-auth' }
+});
+
+const state = {
+  user: null,
+  profile: null,
+  rooms: [],
+  link: null,       // { id, code, title } from file pluginData
+  messages: [],
+  profiles: {},
+  channel: null
+};
+
+const $ = (s) => document.querySelector(s);
+
+function emailFromUsername(u) {
+  return `${u}@${CFG.emailDomain}`;
+}
+function show(view) {
+  $('#view-auth').classList.toggle('hidden', view !== 'auth');
+  $('#view-link').classList.toggle('hidden', view !== 'link');
+  $('#view-chat').classList.toggle('hidden', view !== 'chat');
+}
+function setMeta(t) { $('#hdr-meta').textContent = t || ''; }
+function notify(text) { parent.postMessage({ pluginMessage: { type: 'notify', text } }, '*'); }
+
+async function loadProfile(uid) {
+  const { data, error } = await sb.from('profiles').select('*').eq('id', uid).maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+async function loadRooms() {
+  const { data: mems, error } = await sb.from('room_members').select('room_id, role').eq('user_id', state.user.id);
+  if (error) throw error;
+  const ids = (mems || []).map((m) => m.room_id);
+  if (!ids.length) { state.rooms = []; return; }
+  const { data: rooms, error: rErr } = await sb.from('rooms')
+    .select('id, code, kind, title, avatar_url, created_at')
+    .in('id', ids);
+  if (rErr) throw rErr;
+  state.rooms = rooms || [];
+}
+
+function fillRoomSelect() {
+  const sel = $('#room-select');
+  if (!state.rooms.length) {
+    sel.innerHTML = '<option value="">No rooms yet — join with a code</option>';
+    return;
+  }
+  sel.innerHTML = '<option value="">Pick a room…</option>' + state.rooms.map((r) =>
+    `<option value="${r.id}">${escapeHtml(r.title || 'Room')} (${r.code || '—'})</option>`
+  ).join('');
+  if (state.link?.id) sel.value = state.link.id;
+}
+
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
+
+async function joinByCode(code) {
+  const clean = String(code || '').trim().toUpperCase();
+  if (!clean) throw new Error('Enter a room code');
+  const { data, error } = await sb.rpc('request_join', { p_code: clean });
+  if (error) {
+    // Already a member → unarchive via join_room
+    if (/already a member/i.test(error.message || '')) {
+      const again = await sb.rpc('join_room', { p_code: clean });
+      if (again.error) throw again.error;
+      await loadRooms();
+      fillRoomSelect();
+      const room = state.rooms.find((r) => r.code === clean || r.id === again.data?.id) || again.data;
+      if (!room?.id) throw new Error('Joined, but room not found');
+      return room;
+    }
+    throw error;
+  }
+  if (data?.status === 'pending') {
+    throw new Error('Request sent — ask a room admin to Allow you in Mylo, then try again');
+  }
+  await loadRooms();
+  fillRoomSelect();
+  const room = state.rooms.find((r) => r.id === data?.room_id);
+  if (!room?.id) throw new Error('Request sent — wait for admin approval in Mylo');
+  return room;
+}
+
+function postLink(link) {
+  parent.postMessage({ pluginMessage: { type: 'set-link', link } }, '*');
+}
+
+async function ensureProfiles(ids) {
+  const missing = ids.filter((id) => id && !state.profiles[id]);
+  if (!missing.length) return;
+  const { data } = await sb.from('profiles').select('id, username, character').in('id', missing);
+  (data || []).forEach((p) => { state.profiles[p.id] = p; });
+}
+
+function renderMessages() {
+  const box = $('#msgs');
+  if (!state.messages.length) {
+    box.innerHTML = '<div class="empty">No messages yet.<br>Say hi — your teammate will see it when they open Mylo on this file.</div>';
+    return;
+  }
+  const me = state.user.id;
+  box.innerHTML = state.messages.map((m) => {
+    const mine = m.from_id === me;
+    const who = state.profiles[m.from_id]?.username || (mine ? 'you' : 'member');
+    const when = m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+    const body = escapeHtml(m.body || '');
+    return `<div class="bubble ${mine ? 'me' : 'them'}">
+      ${mine ? '' : `<div class="who">${escapeHtml(who)}</div>`}
+      <div>${body}</div>
+      <div class="when">${when}</div>
+    </div>`;
+  }).join('');
+  box.scrollTop = box.scrollHeight;
+}
+
+async function loadMessages(roomId) {
+  const { data, error } = await sb.from('messages')
+    .select('id, room_id, from_id, kind, body, payload, created_at')
+    .eq('room_id', roomId)
+    .order('created_at', { ascending: true })
+    .limit(200);
+  if (error) throw error;
+  // Prefer plain text chat; still show text-like rows
+  state.messages = (data || []).filter((m) => {
+    if (m.kind && m.kind !== 'text') return false;
+    const pk = m.payload && m.payload.msg_kind;
+    if (pk && pk !== 'chat') return false; // hide milestone/meta noise if tagged
+    return true;
+  });
+  await ensureProfiles(state.messages.map((m) => m.from_id));
+  renderMessages();
+}
+
+function stopRealtime() {
+  if (state.channel) {
+    sb.removeChannel(state.channel);
+    state.channel = null;
+  }
+}
+
+function startRealtime(roomId) {
+  stopRealtime();
+  state.channel = sb.channel('mylo-figma-' + roomId)
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'messages',
+      filter: `room_id=eq.${roomId}`
+    }, async (payload) => {
+      const row = payload.new;
+      if (!row || state.messages.some((m) => m.id === row.id)) return;
+      if (row.kind && row.kind !== 'text') return;
+      state.messages.push(row);
+      await ensureProfiles([row.from_id]);
+      renderMessages();
+    })
+    .subscribe();
+}
+
+async function openChat(link) {
+  state.link = link;
+  setMeta(`${state.profile?.username || 'you'} · ${link.title || link.code || 'room'}`);
+  show('chat');
+  $('#btn-signout').classList.remove('hidden');
+  await loadMessages(link.id);
+  startRealtime(link.id);
+}
+
+async function afterAuth() {
+  $('#btn-signout').classList.remove('hidden');
+  setMeta(state.profile?.username || 'Signed in');
+  await loadRooms();
+  fillRoomSelect();
+  if (state.link?.id) {
+    const stillMember = state.rooms.some((r) => r.id === state.link.id);
+    if (stillMember) {
+      await openChat(state.link);
+      return;
+    }
+  }
+  show('link');
+}
+
+async function bootSession() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session?.user) {
+    show('auth');
+    setMeta('Sign in with your account');
+    $('#btn-signout').classList.add('hidden');
+    return;
+  }
+  state.user = session.user;
+  state.profile = await loadProfile(session.user.id);
+  if (!state.profile) {
+    await sb.auth.signOut();
+    show('auth');
+    return;
+  }
+  await afterAuth();
+}
+
+$('#auth-go').onclick = async () => {
+  const err = $('#auth-err');
+  err.textContent = '';
+  const username = $('#auth-user').value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 20);
+  const pass = $('#auth-pass').value;
+  if (!/^[a-z0-9_]{3,20}$/.test(username)) { err.textContent = 'Username: 3–20 letters, numbers, _'; return; }
+  if (pass.length < 4) { err.textContent = 'Password needs 4+ characters'; return; }
+  $('#auth-go').disabled = true;
+  try {
+    const { data, error } = await sb.auth.signInWithPassword({
+      email: emailFromUsername(username),
+      password: pass
+    });
+    if (error) throw error;
+    state.user = data.user;
+    state.profile = await loadProfile(data.user.id);
+    if (!state.profile) throw new Error('Profile missing — open mylo.vercel.app once');
+    if (state.profile.banned_at || state.profile.disabled_at) {
+      await sb.auth.signOut();
+      throw new Error(state.profile.banned_at ? 'Account banned' : 'Account disabled');
+    }
+    await afterAuth();
+  } catch (e) {
+    err.textContent = e.message || String(e);
+  } finally {
+    $('#auth-go').disabled = false;
+  }
+};
+
+$('#auth-pass').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') $('#auth-go').click();
+});
+
+$('#link-go').onclick = async () => {
+  const err = $('#link-err');
+  err.textContent = '';
+  $('#link-go').disabled = true;
+  try {
+    let room = null;
+    const code = $('#room-code').value.trim();
+    if (code) {
+      room = await joinByCode(code);
+    } else {
+      const id = $('#room-select').value;
+      room = state.rooms.find((r) => r.id === id);
+      if (!room) throw new Error('Pick a room or enter a code');
+    }
+    const link = { id: room.id, code: room.code || '', title: room.title || 'Room' };
+    postLink(link);
+    await openChat(link);
+  } catch (e) {
+    err.textContent = e.message || String(e);
+  } finally {
+    $('#link-go').disabled = false;
+  }
+};
+
+async function sendChat() {
+  const input = $('#chat-in');
+  const text = (input.value || '').trim();
+  if (!text || !state.link?.id || !state.user) return;
+  input.value = '';
+  const { data, error } = await sb.from('messages').insert({
+    room_id: state.link.id,
+    from_id: state.user.id,
+    kind: 'text',
+    body: text,
+    payload: { msg_kind: 'chat', source: 'figma' }
+  }).select().single();
+  if (error) {
+    notify(error.message || 'Send failed');
+    input.value = text;
+    return;
+  }
+  if (!state.messages.some((m) => m.id === data.id)) {
+    state.messages.push(data);
+    renderMessages();
+  }
+}
+
+$('#chat-send').onclick = sendChat;
+$('#chat-in').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+});
+
+$('#btn-signout').onclick = async () => {
+  stopRealtime();
+  await sb.auth.signOut();
+  state.user = null;
+  state.profile = null;
+  state.messages = [];
+  show('auth');
+  setMeta('Sign in with your account');
+  $('#btn-signout').classList.add('hidden');
+};
+
+$('#btn-relink').onclick = () => {
+  stopRealtime();
+  show('link');
+  setMeta(state.profile?.username || 'Signed in');
+};
+
+$('#place-badge').onclick = () => {
+  parent.postMessage({ pluginMessage: { type: 'place-badge' } }, '*');
+};
+$('#btn-badge').onclick = () => {
+  parent.postMessage({ pluginMessage: { type: 'place-badge' } }, '*');
+};
+
+window.onmessage = (event) => {
+  const msg = event.data?.pluginMessage;
+  if (!msg) return;
+  if (msg.type === 'link') {
+    state.link = msg.link || null;
+    if (state.user && state.link?.id && $('#view-chat').classList.contains('hidden') === false) {
+      // already in chat
+    } else if (state.user && state.link?.id && state.rooms.some((r) => r.id === state.link.id)) {
+      openChat(state.link).catch(() => show('link'));
+    }
+  }
+};
+
+parent.postMessage({ pluginMessage: { type: 'ready' } }, '*');
+bootSession().catch((e) => {
+  $('#auth-err').textContent = e.message || String(e);
+  show('auth');
+});
+</script>
+</body>
+</html>

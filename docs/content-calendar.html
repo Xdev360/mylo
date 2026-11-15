@@ -1,0 +1,231 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mylo — road to 3 December</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#050505;--ink:#FAFAFA;--ink2:rgba(250,250,250,.74);--mut:rgba(250,250,250,.5);--fnt:rgba(250,250,250,.3);
+--line:rgba(255,255,255,.09);--line2:rgba(255,255,255,.16);--glass:rgba(255,255,255,.04);--ease:cubic-bezier(.16,1,.3,1);--spring:cubic-bezier(.34,1.56,.64,1)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,sans-serif;font-weight:500;background:var(--bg);color:var(--ink2);
+-webkit-font-smoothing:antialiased;line-height:1.55;padding-bottom:80px}
+h1,h2,h3{font-weight:600;color:var(--ink);letter-spacing:-.03em;line-height:1.1}
+.wrap{width:min(1180px,100% - 40px);margin-inline:auto}
+.top{padding:52px 0 26px}
+.eyebrow{font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);font-weight:600;display:flex;align-items:center;gap:8px}
+.eyebrow i{width:6px;height:6px;border-radius:50%;background:#fff}
+h1{font-size:clamp(30px,4.4vw,46px);margin:16px 0 12px;letter-spacing:-.04em}
+.sub{font-size:15.5px;color:var(--mut);max-width:64ch}
+.rail{display:flex;gap:2px;margin-top:26px;border-radius:14px;overflow:hidden;border:1px solid var(--line)}
+.rail div{flex:1;padding:13px 14px;background:var(--glass);min-width:0}
+.rail b{display:block;font-size:13px;color:var(--ink);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rail span{font-size:11px;color:var(--fnt)}
+.rail div.hot{background:#fff}.rail div.hot b{color:#000}.rail div.hot span{color:rgba(0,0,0,.55)}
+nav{position:sticky;top:0;z-index:5;background:rgba(5,5,5,.88);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);
+border-bottom:1px solid var(--line);padding:12px 0;margin-top:28px}
+nav .wrap{display:flex;gap:6px;flex-wrap:wrap}
+nav button{height:36px;padding:0 15px;border-radius:999px;border:1px solid var(--line);background:var(--glass);color:var(--mut);
+font:inherit;font-size:13px;font-weight:500;cursor:pointer;transition:transform .4s var(--spring),background .3s,color .3s}
+nav button:hover{transform:translateY(-2px)}
+nav button.on{background:#fff;color:#000;border-color:#fff}
+.phase{padding:40px 0 10px;display:none}.phase.on{display:block;animation:fade .5s var(--ease)}
+@keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.phead{max-width:74ch;margin-bottom:22px}
+.pr{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--fnt);font-weight:600}
+.phead h2{font-size:clamp(24px,3vw,32px);margin:10px 0 10px}
+.tag{display:inline-block;font-size:11.5px;padding:5px 11px;border-radius:99px;background:#fff;color:#000;font-weight:600;margin-bottom:12px}
+.phead p{font-size:14.5px;color:var(--mut)}
+.todo{padding:18px 20px;border-radius:16px;background:var(--glass);border:1px dashed var(--line2);margin-bottom:26px}
+.todo ul{padding-left:18px;display:grid;gap:6px;font-size:13.5px;color:var(--ink2)}
+.lbl{display:flex;align-items:center;gap:10px;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--fnt);font-weight:600;margin-bottom:8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(370px,1fr));gap:16px}
+.post{padding:22px;border-radius:20px;background:linear-gradient(150deg,rgba(255,255,255,.06),rgba(255,255,255,.025));
+border:1px solid var(--line);display:flex;flex-direction:column;gap:13px;transition:border-color .4s,transform .5s var(--ease)}
+.post:hover{border-color:var(--line2);transform:translateY(-2px)}
+.post.first{border-color:rgba(255,255,255,.4);background:linear-gradient(150deg,rgba(255,255,255,.12),rgba(255,255,255,.03))}
+.flag{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:#000;background:#fff;padding:4px 9px;border-radius:99px;width:max-content;font-weight:600}
+.post header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.when b{display:block;font-size:14px;color:var(--ink);font-weight:600}.when span{font-size:12px;color:var(--fnt)}
+.pill{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);padding:4px 9px;border-radius:99px;border:1px solid var(--line);white-space:nowrap;font-weight:600}
+.post h3{font-size:18px;letter-spacing:-.02em}
+.hook{font-size:14px;color:var(--ink2);font-style:italic;padding-left:12px;border-left:2px solid var(--line2)}
+.slides{padding-left:18px;display:grid;gap:5px;font-size:13.5px;color:var(--ink2)}
+.cap{font:inherit;font-size:13.5px;color:var(--ink2);white-space:pre-wrap;background:rgba(0,0,0,.32);border:1px solid var(--line);
+border-radius:12px;padding:13px 15px;max-height:230px;overflow:auto;line-height:1.55}
+.cp{margin-left:auto;height:24px;padding:0 10px;border-radius:7px;border:1px solid var(--line2);background:var(--glass);
+color:var(--ink);font:inherit;font-size:11px;font-weight:600;letter-spacing:0;text-transform:none;cursor:pointer;transition:.3s}
+.cp:hover{background:rgba(255,255,255,.12)}.cp.did{background:#fff;color:#000;border-color:#fff}
+.foot{display:grid;gap:12px;margin-top:auto;padding-top:13px;border-top:1px solid var(--line)}
+.foot p{font-size:12.5px;color:var(--mut)}
+.tblwrap{margin-top:24px}
+table{width:100%;border-collapse:collapse}
+td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+td.dt{width:120px;font-size:13px;color:var(--ink);font-weight:600;white-space:nowrap}
+td b{display:block;font-size:14px;color:var(--ink);font-weight:600}
+td span{font-size:12.5px;color:var(--mut)}
+tr:hover td{background:rgba(255,255,255,.03)}
+.rules{margin-top:44px;padding:24px;border-radius:20px;background:var(--glass);border:1px solid var(--line)}
+.rules h3{font-size:17px;margin-bottom:12px}
+.rules ul{padding-left:18px;display:grid;gap:8px;font-size:14px;color:var(--mut);max-width:80ch}
+.rules b{color:var(--ink);font-weight:600}
+@media(max-width:720px){.rail{flex-direction:column}.grid{grid-template-columns:1fr}.cap{max-height:none}td.dt{width:92px}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style></head><body>
+<div class="top"><div class="wrap">
+<span class="eyebrow"><i></i>Mylo · plan</span>
+<h1>Road to 3 December</h1>
+<p class="sub">Eleven weeks from today. Nothing gets posted until the plumbing is done, nothing gets sold until testing says the rooms hold, and the launch lands a month before the biggest moment of the year for a goals app.</p>
+<div class="rail">
+<div><b>17–25 Sep</b><span>Plumbing · silent</span></div>
+<div class="hot"><b>23 Sep – 25 Oct</b><span>Build in public · 1/wk</span></div>
+<div><b>26 Oct – 2 Dec</b><span>Waitlist open · 3/wk</span></div>
+<div><b>3 Dec</b><span>Launch · daily</span></div>
+<div><b>Dec – Jan</b><span>Grow · 4/wk</span></div>
+</div>
+</div></div>
+<nav><div class="wrap"><button data-go="0">Plumbing</button><button class=on data-go="1">Build in public</button><button data-go="2">Waitlist open</button><button data-go="3">Launch week</button><button data-go="4">December → January</button></div></nav>
+<main class="wrap"><section class="phase" data-ph="0">
+  <div class="phead"><span class="pr">Thu 17 – Fri 25 Sep</span><h2>Plumbing</h2>
+  <span class="tag">No posting</span><p>Nine days of unglamorous setup. Nothing public, nothing posted. If this slips, everything after it slips — do it first.</p></div>
+  <div class="todo"><span class="lbl">This phase</span><ul><li>Deploy the site, connect staymylo.com and app.staymylo.com</li><li>Run APPLY_20260917_bugs.sql in the Supabase SQL editor</li><li>Email forwarding for hello@staymylo.com</li><li>Supabase Auth → Site URL + Redirect URLs → app.staymylo.com</li><li>Google Cloud + Notion OAuth redirect URIs</li><li>Test the WhatsApp link preview by sending staymylo.com to yourself</li><li>Line up 10–20 testers — in pairs and crews, not individuals</li></ul></div>
+  
+</section><section class="phase" data-ph="1">
+  <div class="phead"><span class="pr">Wed 23 Sep – Sun 25 Oct</span><h2>Build in public</h2>
+  <span class="tag">1 post a week · no CTA</span><p>Closed testing runs underneath this. You are not selling anything yet — you are building an audience that is already warm when the waitlist opens. One post, every Wednesday, same time. Consistency is the whole mechanic.</p></div>
+  <div class="todo"><span class="lbl">This phase</span><ul><li>Testers in a WhatsApp group, not the bug form — faster when it is people you know</li><li>Ship fixes visibly so testers see their reports land</li><li>EXIT CONDITION before Phase 2: 7 days with no won&#x27;t-load / can&#x27;t-sign-in / lost-data bug, AND 5+ rooms where 2+ people used it 5 days out of 7</li><li>If that condition is not met by 25 Oct, the problem is the product. Push the date.</li></ul></div>
+  <div class="grid"><article class="post first">
+  <header><div class="when"><b>Wed 23 Sep</b><span>Carousel · 6 slides · 1080×1350</span></div>
+  <span class="pill">Purpose</span></header>
+  <div class="flag">Post one</div>
+  <h3>The purpose of Mylo</h3>
+  <p class="hook">It&#x27;s hard to do it alone.</p>
+  <div class="blk"><span class="lbl">Slides</span><ol class="slides"><li>It&#x27;s hard to do it alone.</li><li>Most productivity apps are built for one person.</li><li>Mylo is built for the people you&#x27;re doing life with.</li><li>A private room. Your goals, their goals, one board. No feed. No strangers. Just your people.</li><li>Talk. Plan. Play. Prove it.</li><li>Do it together. — Mylo · December 2026</li></ol></div>
+  <div class="blk"><span class="lbl">Caption<button class="cp" type="button" data-cp="0">Copy</button></span>
+  <pre class="cap" id="cap0">It&#x27;s hard to do it alone.
+
+Our first app was called Goalden. It worked, and people used it, and we still stopped — because every productivity app, ours included, is built for one person in a quiet room. You set the goal alone. You miss it alone. Nobody notices either way.
+
+Mylo is the second attempt, built the other way round. It&#x27;s a private room for you and the people you&#x27;re actually doing life with — your partner, your crew, your one friend who&#x27;ll notice. Your goals and theirs on one board. No feed. No strangers.
+
+It&#x27;s still fine if it&#x27;s just you. It&#x27;s just easier when it isn&#x27;t.
+
+Built by Wintech Studio, Lagos. Out in December. Every Wednesday until then we&#x27;ll show you a piece of it.
+
+No link yet. Nothing to sign up for. Follow if you want to watch it get made.</pre></div>
+  <div class="foot"><div><span class="lbl">CTA</span><p>None. Deliberately. The only ask is a follow.</p></div>
+  <div><span class="lbl">Asset</span><p>Designed in Figma → SOCIALS → SEPTEMBER → &#x27;Wed 23 Sep · 01&#x27;. Dark and light rows; export the dark row at 1x for the first post. Post Wed 23 Sep between 7 and 9pm Lagos.</p></div></div>
+</article><article class="post">
+  <header><div class="when"><b>Wed 30 Sep</b><span>Carousel or slow reel</span></div>
+  <span class="pill">Craft</span></header>
+  
+  <h3>Seven faces</h3>
+  <p class="hook">Pick your Mylo.</p>
+  
+  <div class="blk"><span class="lbl">Caption<button class="cp" type="button" data-cp="1">Copy</button></span>
+  <pre class="cap" id="cap1">Pick your Mylo.
+
+Seven personas — Classic, Sharp, Soft, Focus, Play, Party, Crown. Whichever one you pick becomes your face in the room, on the progress bar, and in every reaction when you finish something.
+
+Which one are you? Tell us in the comments.
+
+Designed in Figma → SOCIALS → SEPTEMBER → &#x27;Wed 30 Sep · 02&#x27;. Four slides, dark and light.</pre></div>
+  <div class="foot"><div><span class="lbl">CTA</span><p>Comment your pick. No link.</p></div>
+  <div><span class="lbl">Asset</span><p>The seven characters on black, evenly spaced, named underneath. Consider a slow pan reel over the Figma file instead — showing the artboards is more interesting than showing the export.</p></div></div>
+</article><article class="post">
+  <header><div class="when"><b>Wed 7 Oct</b><span>Carousel · 5 slides</span></div>
+  <span class="pill">Product</span></header>
+  
+  <h3>Six tabs, one room</h3>
+  <p class="hook">Everything you&#x27;re working on. One room.</p>
+  
+  <div class="blk"><span class="lbl">Caption<button class="cp" type="button" data-cp="2">Copy</button></span>
+  <pre class="cap" id="cap2">Everything you&#x27;re working on. One room.
+
+Today — your day, in order.
+Goals — systems, not wishes.
+Rooms — your people. Private.
+Stories — what actually happened.
+Apps — games and tools that belong.
+Mylo AI — a coach that has actually read your room.
+
+Six tabs. Zero app-switching. Your people already inside.
+
+Designed in Figma → SOCIALS → OCTOBER → &#x27;Wed 7 Oct · 03&#x27;.</pre></div>
+  <div class="foot"><div><span class="lbl">CTA</span><p>None.</p></div>
+  <div><span class="lbl">Asset</span><p>The Figma carousel as-is. Slide 2 is the six-tile grid people will save.</p></div></div>
+</article><article class="post">
+  <header><div class="when"><b>Wed 14 Oct</b><span>Carousel or reel</span></div>
+  <span class="pill">Testing</span></header>
+  
+  <h3>What the testers broke</h3>
+  <p class="hook">Two weeks of real people using it. Here&#x27;s what broke.</p>
+  
+  <div class="blk"><span class="lbl">Caption<button class="cp" type="button" data-cp="3">Copy</button></span>
+  <pre class="cap" id="cap3">Two weeks of real people in the app. Here&#x27;s what they broke.
+
+Write the actual bugs here — the specific ones, with the ugly details. What was reported, what you found underneath, what you changed. If one of them was embarrassing, lead with that one.
+
+This is the post that makes people trust the thing. Anyone can post a pretty screen. Not everyone will post the screen that was wrong.
+
+Every one of these came from someone who took two minutes to tell me. That&#x27;s the whole reason it&#x27;s getting better.</pre></div>
+  <div class="foot"><div><span class="lbl">CTA</span><p>None.</p></div>
+  <div><span class="lbl">Asset</span><p>Real screenshots of real breakage. Blur nothing except people&#x27;s names. If you have no good bugs by 14 Oct, that is itself a warning sign — it means nobody is really using it.</p></div></div>
+</article><article class="post">
+  <header><div class="when"><b>Wed 21 Oct</b><span>Reel · 15–20s</span></div>
+  <span class="pill">Problem</span></header>
+  
+  <h3>Nobody quits in week one</h3>
+  <p class="hook">Week one you go four times. Week three you go once. Nothing changed except nobody was watching.</p>
+  
+  <div class="blk"><span class="lbl">Caption<button class="cp" type="button" data-cp="4">Copy</button></span>
+  <pre class="cap" id="cap4">Nobody quits in week one. Week one is easy — you&#x27;re excited, the plan is fresh, you feel like a different person.
+
+Week three is where it dies. Not because you got lazy. Because the only person who knew about the plan was you, and you are very good at negotiating with yourself.
+
+The fix was never more discipline. It&#x27;s one other person who knows what you said you&#x27;d do.
+
+That&#x27;s the whole idea behind what I&#x27;ve been building. It opens to a waiting list on Monday.</pre></div>
+  <div class="foot"><div><span class="lbl">CTA</span><p>First mention that something is coming. Still no link — that lands Monday.</p></div>
+  <div><span class="lbl">Asset</span><p>Talking head in one take, or a screen recording of a streak building then breaking. This is the pivot post: last one before the CTA turns on. Make it the best thing you&#x27;ve posted.</p></div></div>
+</article></div>
+</section><section class="phase" data-ph="2">
+  <div class="phead"><span class="pr">Mon 26 Oct – Wed 2 Dec</span><h2>Waitlist open</h2>
+  <span class="tag">3 a week · Wed / Fri / Sun</span><p>Site goes public, CTA turns on, invite batches go out weekly. Sunday evening is your strongest slot — put the reflective posts there. Captions for this phase get written once testing tells us what is actually true.</p></div>
+  <div class="todo"><span class="lbl">This phase</span><ul><li>Invite in batches sized to what you can support</li><li>Aim to have WhatsApp shipped in this window — do not let it block 3 Dec</li><li>Every batch email should ask them to bring one person</li></ul></div>
+  <div class="tblwrap"><span class="lbl">Slots — designed in Figma (SOCIALS → month → day). Captions written closer to the date</span><table><tr><td class="dt">Mon 26 Oct</td><td><b>The waitlist is open</b><span>Carousel · 5 slides · the announcement. Link goes live. Pin this post.</span></td></tr><tr><td class="dt">Wed 28 Oct</td><td><b>How a room works. 30 seconds.</b><span>Reel · create → invite → first goal.</span></td></tr><tr><td class="dt">Fri 30 Oct</td><td><b>Two of you is a room.</b><span>Static · couples angle.</span></td></tr><tr><td class="dt">Sun 1 Nov</td><td><b>Batch one is in.</b><span>Carousel · first invites went out. Honest numbers.</span></td></tr><tr><td class="dt">Wed 4 Nov</td><td><b>A real morning in the Today tab.</b><span>Reel · POV, unstaged.</span></td></tr><tr><td class="dt">Fri 6 Nov</td><td><b>Systems, not wishes.</b><span>Static · Goals tab quote card.</span></td></tr><tr><td class="dt">Sun 8 Nov</td><td><b>Stories: what actually happened.</b><span>Carousel · feature.</span></td></tr><tr><td class="dt">Wed 11 Nov</td><td><b>Mylo AI reads the room.</b><span>Reel · demo.</span></td></tr><tr><td class="dt">Fri 13 Nov</td><td><b>Your crew has a streak now.</b><span>Static · Rooms.</span></td></tr><tr><td class="dt">Sun 15 Nov</td><td><b>Batch two. Three weeks out.</b><span>Carousel · numbers + waitlist reminder.</span></td></tr><tr><td class="dt">Wed 18 Nov</td><td><b>Apps &amp; games, inside the room.</b><span>Reel · feature.</span></td></tr><tr><td class="dt">Fri 20 Nov</td><td><b>$MYL: earned, not bought.</b><span>Static · rewards. No promises about money.</span></td></tr><tr><td class="dt">Sun 22 Nov</td><td><b>Premium is for the room.</b><span>Carousel · plans, honestly.</span></td></tr><tr><td class="dt">Wed 25 Nov</td><td><b>One week of testers. Unedited.</b><span>Reel · build in public.</span></td></tr><tr><td class="dt">Fri 27 Nov</td><td><b>Six days.</b><span>Static · countdown.</span></td></tr><tr><td class="dt">Sun 29 Nov</td><td><b>Everything that&#x27;s in v1.</b><span>Carousel · the save-worthy reference post.</span></td></tr><tr><td class="dt">Wed 2 Dec</td><td><b>Tomorrow.</b><span>Static · one word, the mascot, the time.</span></td></tr></table></div>
+</section><section class="phase" data-ph="3">
+  <div class="phead"><span class="pr">Thu 3 – Sun 6 Dec</span><h2>Launch week</h2>
+  <span class="tag">Daily</span><p>Public. No waiting, anyone signs up. Four posts in four days, then breathe.</p></div>
+  <div class="todo"><span class="lbl">This phase</span><ul><li>Clear your calendar. Be on your phone all day Thursday answering comments.</li><li>Have a rollback plan and a status message ready before you post.</li></ul></div>
+  <div class="tblwrap"><span class="lbl">Slots — captions written closer to the date</span><table><tr><td class="dt">Thu 3 DEC</td><td><b>Mylo is live</b><span>LAUNCH. Post at 8am, not the evening — give the day room to run. Be on comments all day.</span></td></tr><tr><td class="dt">Fri 4 Dec</td><td><b>Pull one person in</b><span>The ask: don&#x27;t just sign up, bring the person you&#x27;d share a room with.</span></td></tr><tr><td class="dt">Sat 5 Dec</td><td><b>First rooms</b><span>Show real rooms forming, with permission.</span></td></tr><tr><td class="dt">Sun 6 Dec</td><td><b>Day four</b><span>Numbers, honestly. Including what went wrong on day one.</span></td></tr></table></div>
+</section><section class="phase" data-ph="4">
+  <div class="phead"><span class="pr">Mon 7 Dec – Jan</span><h2>December → January</h2>
+  <span class="tag">4 a week</span><p>December in Lagos is when everyone is physically together, which suits &#x27;do it together&#x27; better than any month of the year. January is resolution season — the biggest moment of the year for a goals app. You go into it with rooms that already have a month of history.</p></div>
+  <div class="todo"><span class="lbl">This phase</span><ul><li>Plan the January push in late November, not in January</li><li>By 1 Jan you want testimonials from people who have been in since December</li></ul></div>
+  <div class="tblwrap"><span class="lbl">Slots — designed in Figma (SOCIALS → DECEMBER / JANUARY). Wed · Fri · Sun</span><table><tr><td class="dt">Wed 9 Dec</td><td><b>How to start a room with your partner.</b><span>Reel · tutorial.</span></td></tr><tr><td class="dt">Fri 11 Dec</td><td><b>December isn&#x27;t a write-off.</b><span>Static.</span></td></tr><tr><td class="dt">Sun 13 Dec</td><td><b>Season 1 is counting.</b><span>Carousel · 10% of revenue, published monthly. No naira figure, ever.</span></td></tr><tr><td class="dt">Wed 16 Dec</td><td><b>Crew room tour.</b><span>Reel.</span></td></tr><tr><td class="dt">Fri 18 Dec</td><td><b>Finish the year in the room.</b><span>Static.</span></td></tr><tr><td class="dt">Sun 20 Dec</td><td><b>Bugs you found. $MYL you earned.</b><span>Carousel · bounty recap.</span></td></tr><tr><td class="dt">Wed 23 Dec</td><td><b>Holiday mode is a real setting.</b><span>Static.</span></td></tr><tr><td class="dt">Fri 25 Dec</td><td><b>Merry Christmas from the room.</b><span>Static · no CTA.</span></td></tr><tr><td class="dt">Sun 27 Dec</td><td><b>Plan the year with your person.</b><span>Carousel · five questions.</span></td></tr><tr><td class="dt">Wed 30 Dec</td><td><b>The year, in the room.</b><span>Reel · recap.</span></td></tr><tr><td class="dt">Thu 1 Jan</td><td><b>This year, together.</b><span>Carousel · 4 slides · designed. Resolution season.</span></td></tr><tr><td class="dt">4 – 30 Jan</td><td><b>Twelve January posts</b><span>Week-three retention story, first leaderboard drop (11 Jan), crew challenge announcement (28 Jan). All in Figma → JANUARY.</span></td></tr></table></div>
+</section>
+<div class="rules"><h3>Rules that do not move</h3><ul>
+<li><b>Post at 7–9pm Lagos</b>, except launch day — that one goes out at 8am so the day has room to run.</li>
+<li><b>Phase 1 has no call to action.</b> Not one. The discipline is the point: you are building an audience, not a queue you cannot serve.</li>
+<li><b>Never put a naira figure on the reward pool.</b> Ten percent of revenue, published monthly.</li>
+<li><b>No post links into the app.</b> The waitlist is the gate and testers get their link by email.</li>
+<li><b>Real quotes only.</b> Two slots need a tester quote. If you do not have one, skip the slot. Do not invent a testimonial.</li>
+<li><b>Reply to every comment for the first hour.</b> At this size the comments are the distribution.</li>
+<li><b>The date moves if the product says so.</b> If the Phase 1 exit condition is not met by 25 October, push 3 December. Launching wider into a product people leave after three days just burns the attention.</li>
+</ul></div>
+</main>
+<script>
+(function(){
+  var btns=[].slice.call(document.querySelectorAll('[data-go]')),ph=[].slice.call(document.querySelectorAll('.phase'));
+  function show(n){ph.forEach(function(s){s.classList.toggle('on',s.dataset.ph===String(n));});
+    btns.forEach(function(b){b.classList.toggle('on',b.dataset.go===String(n));});window.scrollTo({top:0,behavior:'smooth'});}
+  btns.forEach(function(b){b.addEventListener('click',function(){show(b.dataset.go);});});
+  show(1);
+  [].slice.call(document.querySelectorAll('[data-cp]')).forEach(function(b){
+    b.addEventListener('click',function(){
+      var t=document.getElementById('cap'+b.dataset.cp).textContent;
+      function done(){b.classList.add('did');b.textContent='Copied';setTimeout(function(){b.classList.remove('did');b.textContent='Copy';},1500);}
+      if(navigator.clipboard)navigator.clipboard.writeText(t).then(done,done);else done();
+    });});
+})();
+</script></body></html>

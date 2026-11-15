@@ -1,0 +1,14 @@
+# Vercel reads this for every project built from this repo, so it may only
+# leave out what no project needs: site/ is the website's own project and
+# must stay. Left out: the native store projects, archives, design and tooling.
+mylo-app/android
+mylo-app/ios
+mylo-app/assets
+mylo-app/store
+archive
+supabase
+docs
+figma-plugin
+test
+design-photos
+Mylo Character

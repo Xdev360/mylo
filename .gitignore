@@ -1,0 +1,33 @@
+.DS_Store
+.vercel
+.cursor
+.claude
+.agents
+node_modules
+*.log
+.env
+.env.*
+skills-lock.json
+
+# Deploy/MCP scratch (transient tooling output — never commit)
+.deploy-*
+.mcp-*
+.mylo-*
+.notion-*
+.telegram-*
+.tg-*
+.wa-*
+.full-mcp.json
+.last-deploy-payload.json
+.supabase-home/
+tmp-deploy/
+tmp-home/
+MCP_ARGS_*.json
+G.json
+N.json
+T.json
+
+# Supabase CLI scratch
+supabase/.temp/
+
+# Cowork/desktop scratch

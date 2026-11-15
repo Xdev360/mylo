@@ -1,0 +1,18 @@
+<svg width="120" height="150" viewBox="0 0 120 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="State=Warm">
+<path id="Vector" opacity="0.08" d="M60 149C80.9868 149 98 146.761 98 144C98 141.239 80.9868 139 60 139C39.0132 139 22 141.239 22 144C22 146.761 39.0132 149 60 149Z" fill="black"/>
+<path id="Vector_2" d="M60 4C92 4 114 62 114 92C114 124 90 142 60 142C30 142 6 124 6 92C6 62 28 4 60 4Z" fill="url(#paint0_linear_440_47252)"/>
+<path id="Vector_3" opacity="0.55" d="M45.4724 59.0347C50.6622 57.1458 52.4193 48.8831 49.397 40.5794C46.3748 32.2758 39.7176 27.0756 34.5278 28.9646C29.338 30.8535 27.5809 39.1162 30.6032 47.4198C33.6255 55.7235 40.2827 60.9237 45.4724 59.0347Z" fill="white"/>
+<path id="Vector_4" opacity="0.5" d="M78 66C81.3137 66 84 63.3137 84 60C84 56.6863 81.3137 54 78 54C74.6863 54 72 56.6863 72 60C72 63.3137 74.6863 66 78 66Z" fill="white"/>
+<path id="Vector_5" opacity="0.45" d="M44 101C46.7614 101 49 98.7614 49 96C49 93.2386 46.7614 91 44 91C41.2386 91 39 93.2386 39 96C39 98.7614 41.2386 101 44 101Z" fill="white"/>
+<path id="Vector_6" opacity="0.4" d="M86 112C90.4183 112 94 108.418 94 104C94 99.5817 90.4183 96 86 96C81.5817 96 78 99.5817 78 104C78 108.418 81.5817 112 86 112Z" fill="white"/>
+<path id="Vector_7" opacity="0.45" d="M64 126C66.2091 126 68 124.209 68 122C68 119.791 66.2091 118 64 118C61.7909 118 60 119.791 60 122C60 124.209 61.7909 126 64 126Z" fill="white"/>
+<path id="Vector_8" opacity="0.55" d="M24 82L38 90L46 78L58 92L68 80L80 94L92 82L98 88" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" stroke="#6B5640"/>
+</g>
+<defs>
+<linearGradient id="paint0_linear_440_47252" x1="6" y1="4" x2="70.8719" y2="130.923" gradientUnits="userSpaceOnUse">
+<stop stop-color="#FFE9D6"/>
+<stop offset="1" stop-color="#FFC2A8"/>
+</linearGradient>
+</defs>
+</svg>

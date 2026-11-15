@@ -1,0 +1,515 @@
+/* ==========================================================================
+   Mylo redesign v1 (Figma: MYLO / App Redesign, Oct 2026)
+   A layer on top of styles.css. It retunes tokens and restyles the mobile
+   shell; app logic and markup stay where they were. Remove this one file to
+   roll the look back.
+   Colour meaning: green = done, amber = streak, violet = Mylo AI, red = danger.
+   Type: Inter 500 and 600 only.
+   ========================================================================== */
+
+/* ---------- tokens: default dark ---------- */
+html[data-mood="dark"]:not([data-theme*="-"]){
+  --bg:#050505;
+  --bg-elevated:#0E0E10;
+  --bg-sheet:#121214;
+  --surface:rgba(255,255,255,.05);
+  --surface-2:rgba(255,255,255,.08);
+  --surface-3:rgba(255,255,255,.13);
+  --border:rgba(255,255,255,.08);
+  --border-2:rgba(255,255,255,.06);
+  --border-strong:rgba(255,255,255,.18);
+  --ink:#FAFAFA;
+  --text:#FAFAFA;
+  --text-2:rgba(250,250,250,.64);
+  --muted:rgba(250,250,250,.52);
+  --faint:rgba(250,250,250,.32);
+  --energy:#EDEDED;
+  --energy-soft:rgba(255,255,255,.10);
+  --streak:#FFB547;
+  --streak-soft:rgba(255,181,71,.14);
+  --ai:#D1D1D6;
+  --ai-soft:rgba(255,255,255,.08);
+  --danger:#FF5A5F;
+  --danger-soft:rgba(255,90,95,.14);
+  --nav-bg:rgba(18,18,20,.72);
+  --scrim:rgba(0,0,0,.6);
+  --glass-hi:inset 0 1px 0 rgba(255,255,255,.07);
+  --glass-shadow:0 12px 32px -8px rgba(0,0,0,.2);
+  --shadow-pop:0 20px 48px -12px rgba(0,0,0,.5);
+  --bubble-in:#16161A;
+  --seg-pill:rgba(255,255,255,.13);
+}
+/* ---------- tokens: default light ---------- */
+html[data-mood="light"]:not([data-theme*="-"]){
+  --bg:#F6F6F4;
+  --bg-elevated:#FFFFFF;
+  --bg-sheet:#FFFFFF;
+  --surface:#FFFFFF;
+  --surface-2:rgba(0,0,0,.04);
+  --surface-3:rgba(0,0,0,.07);
+  --border:rgba(0,0,0,.07);
+  --border-2:rgba(0,0,0,.05);
+  --border-strong:rgba(0,0,0,.16);
+  --ink:#0A0A0A;
+  --text:#0A0A0A;
+  --text-2:rgba(10,10,10,.62);
+  --muted:rgba(10,10,10,.5);
+  --faint:rgba(10,10,10,.3);
+  --energy:#0A0A0A;
+  --energy-soft:rgba(0,0,0,.06);
+  --streak:#E8890C;
+  --streak-soft:rgba(232,137,12,.12);
+  --ai:#3A3A40;
+  --ai-soft:rgba(0,0,0,.05);
+  --danger:#D92D20;
+  --danger-soft:rgba(217,45,32,.10);
+  --nav-bg:rgba(255,255,255,.72);
+  --scrim:rgba(0,0,0,.32);
+  --glass-hi:inset 0 1px 0 rgba(255,255,255,.8);
+  --glass-shadow:0 10px 30px -12px rgba(0,0,0,.12);
+  --shadow-pop:0 20px 48px -12px rgba(0,0,0,.22);
+  --seg-pill:#FFFFFF;
+}
+
+/* ---------- type: Inter 500 / 600 ---------- */
+body{font-family:Inter,system-ui,-apple-system,sans-serif;font-weight:500;-webkit-font-smoothing:antialiased;letter-spacing:-.005em}
+b,strong,h1,h2,h3,h4{font-weight:600}
+
+/* ---------- shared surfaces ---------- */
+.card,.m-card,.todo-block,.streak-card,.day-preview,.win-banner{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:24px;
+  box-shadow:var(--glass-hi),var(--glass-shadow);
+  -webkit-backdrop-filter:blur(40px);backdrop-filter:blur(40px);
+}
+
+/* ---------- buttons: pills, semibold ---------- */
+.btn-primary,.btn-secondary,.btn-dark,.btn-ghost,.btn-social{border-radius:999px;font-weight:600;letter-spacing:-.01em}
+.btn-primary{background:var(--ink);color:var(--bg);border-color:var(--ink);min-height:50px}
+.btn-dark{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+html[data-mood="dark"]:not([data-theme*="-"]) .btn-secondary,
+html[data-mood="dark"]:not([data-theme*="-"]) .btn-social{background:var(--surface-2);border:1px solid var(--border);color:var(--ink)}
+.btn-ghost{background:var(--surface-2);border:1px solid var(--border)}
+
+/* ---------- fields ---------- */
+.field label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.field input,.field select,.field textarea,.todo-big-in{
+  background:var(--surface-2);border:1px solid var(--border);border-radius:14px;color:var(--ink)
+}
+.field input:focus,.field select:focus,.field textarea:focus,.todo-big-in:focus{
+  background:var(--surface-2);border-color:var(--border-strong);outline:none;
+  box-shadow:0 0 0 3px var(--surface-2)
+}
+
+/* ---------- segmented controls ---------- */
+.seg{background:var(--surface-2);border:1px solid var(--border);border-radius:14px;padding:3px}
+.seg > .seg-ind{background:var(--seg-pill);border-radius:11px;box-shadow:0 1px 2px rgba(0,0,0,.18)}
+.seg button{font-weight:600;color:var(--muted)}
+.seg button.is-active{color:var(--ink)}
+.status-seg{background:var(--surface);border:1px solid var(--border);box-shadow:var(--glass-hi)}
+.status-seg > .seg-ind{background:var(--ink)}
+.status-tab{font-weight:500;font-size:13px;color:var(--muted)}
+.status-tab.on{color:var(--bg)}
+
+/* ---------- sheets ---------- */
+.sheet{background:var(--bg-sheet);border:1px solid var(--border);box-shadow:var(--shadow-pop)}
+@media (max-width:900px){
+  .sheet{border-radius:28px 28px 0 0;border-bottom:0}
+  .sheet::before{
+    content:"";display:block;width:36px;height:5px;border-radius:3px;
+    background:var(--border-strong);margin:0 auto 12px
+  }
+}
+.sheet h3{font-size:18px;font-weight:600;letter-spacing:-.015em}
+.sheet p{font-size:13px;color:var(--text-2)}
+.sheet-x{background:var(--surface-2)!important;border-radius:50%}
+.scrim{background:var(--scrim);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+
+/* ==========================================================================
+   MOBILE SHELL
+   ========================================================================== */
+@media (max-width:900px){
+  .mobile{background:var(--bg)}
+  /* a low warm glow behind the top of every screen, the v1 "morning" light */
+  html[data-mood="dark"]:not([data-theme*="-"]) .m-app::before{
+    content:"";position:fixed;left:50%;top:-140px;transform:translateX(-50%);
+    width:min(620px,140vw);height:420px;pointer-events:none;z-index:0;
+    background:radial-gradient(closest-side,rgba(255,255,255,.06),transparent 72%);
+  }
+  html[data-mood="light"]:not([data-theme*="-"]) .m-app::before{
+    content:"";position:fixed;left:50%;top:-140px;transform:translateX(-50%);
+    width:min(620px,140vw);height:420px;pointer-events:none;z-index:0;
+    background:radial-gradient(closest-side,rgba(0,0,0,.035),transparent 72%);
+  }
+  .m-screen{background:transparent;position:relative;z-index:1}
+  .m-app{padding-bottom:calc(120px + env(safe-area-inset-bottom))}
+
+  /* top bar: avatar · title · bell, bell in a glass circle */
+  .m-top{background:linear-gradient(to bottom,var(--bg) 62%,transparent);padding:10px 16px 10px;z-index:40}
+  .m-top-title{font-size:16px;font-weight:600;letter-spacing:-.01em}
+  .m-top-action,.m-top-back,.m-top-cal{
+    width:40px;height:40px;border-radius:50%;
+    background:var(--surface-2);border:1px solid var(--border);color:var(--ink);
+    box-shadow:var(--glass-hi);
+  }
+  .m-top-actions{display:flex;align-items:center;gap:8px}
+  .m-top-cal{display:grid;place-items:center;padding:0;cursor:pointer}
+  .m-top-cal[hidden]{display:none!important}
+  .m-avatar-btn .m-avatar{box-shadow:0 0 0 2px var(--bg),0 0 0 3.5px var(--border-strong)}
+
+  /* bottom nav: a floating glass pill, Mylo "+" in the middle */
+  .m-nav{
+    left:16px;right:16px;bottom:calc(12px + env(safe-area-inset-bottom,0px));
+    max-width:488px;margin:0 auto;
+    height:64px;padding:0 6px;align-items:center;
+    background:var(--nav-bg);border:1px solid var(--border);border-radius:32px;
+    -webkit-backdrop-filter:blur(28px) saturate(1.4);backdrop-filter:blur(28px) saturate(1.4);
+    box-shadow:var(--glass-hi),0 18px 40px -14px rgba(0,0,0,.55);
+  }
+  html[data-mood="light"]:not([data-theme*="-"]) .m-nav{box-shadow:var(--glass-hi),0 14px 34px -14px rgba(0,0,0,.2)}
+  .m-nav-item{gap:3px;color:var(--faint);padding:0}
+  .m-nav-item span:last-child{font-size:10.5px;font-weight:600;letter-spacing:0}
+  .m-nav-ic{width:auto;height:24px;background:none!important}
+  .m-nav-item.on{color:var(--ink)}
+  .m-nav-item.on::after{
+    content:"";position:absolute;bottom:-7px;left:50%;transform:translateX(-50%);
+    width:4px;height:4px;border-radius:50%;background:var(--ink)
+  }
+  .m-nav .m-fab{
+    position:relative;right:auto;bottom:auto;inset:auto;flex:0 0 auto;z-index:1;
+    width:48px;height:48px;border-radius:50%;margin:0 6px;
+    background:var(--ink);color:var(--bg);border:0;
+    box-shadow:0 8px 22px -6px rgba(0,0,0,.5);
+  }
+  .m-nav .m-fab.hidden{display:grid!important;visibility:hidden}
+  body.dual-fab .m-mylo-fab{right:20px}
+  .m-mylo-fab{bottom:calc(92px + env(safe-area-inset-bottom))}
+
+  /* ---------- Today ---------- */
+  .today-hello{margin:2px 2px 14px}
+  .today-hello-d{font-size:11px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+  .today-hello-t{font-size:22px;font-weight:600;letter-spacing:-.02em;line-height:1.2;color:var(--ink);margin-top:4px}
+  .today-hello-s{font-size:14px;font-weight:500;color:var(--text-2);margin-top:4px;line-height:1.4}
+  .today-hello-s b{color:var(--ink);font-weight:600}
+  .today-hello-s .is-good{color:var(--ink)}
+
+  /* week strip: no card, a white pill on the chosen day */
+  .wk-strip{background:transparent;border:0;box-shadow:none;padding:4px 0;margin-bottom:18px;-webkit-backdrop-filter:none;backdrop-filter:none}
+  .wk-slider{top:4px;bottom:4px;border-radius:18px;background:var(--ink)}
+  .wk-day{opacity:1;padding:9px 0 10px;gap:5px}
+  .wk-dow{font-size:11px;font-weight:500;color:var(--muted)}
+  .wk-num{font-size:15px;font-weight:600}
+  .wk-day.is-today:not(.on) .wk-num{color:var(--ink)}
+  .wk-day.on .wk-dow{color:color-mix(in srgb,var(--bg) 62%,transparent)}
+}
+
+/* The Today progress bar is left exactly as the live app has it. */
+
+/* ---------- streak card ---------- */
+.streak-card .stk-flame{color:var(--streak)}
+.streak-card.is-lit .stk-tile{background:var(--streak-soft)}
+.streak-card .stk-n{font-weight:600}
+
+
+/* ---------- daypart headers ---------- */
+.tier-hd .t{font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--muted)}
+.tier-hd .c{font-size:11px;font-weight:600;color:var(--faint)}
+.tier-hd .line{background:var(--border)}
+
+/* ---------- task rows ---------- */
+.tcard{
+  background:var(--surface);border:1px solid var(--border);border-radius:20px;
+  padding:14px 14px 14px 12px;gap:12px;box-shadow:var(--glass-hi)
+}
+.tcard-ic{width:42px;height:42px;border-radius:14px}
+.tcard-name{font-size:14.5px;font-weight:500;letter-spacing:-.01em}
+.tcard-time{font-size:12.5px;color:var(--text-2)}
+.tcard.done{opacity:.55}
+.tcard.done .tcard-name{color:var(--text-2)}
+.tcard.is-missed{border-color:color-mix(in srgb,var(--danger) 40%,var(--border))}
+.tcard-time.is-missed-label,.is-missed-label{color:var(--danger)}
+.tcheck{width:28px;height:28px;border:2px solid var(--border-strong)}
+.tcheck.on{background:var(--ink);border-color:var(--ink);color:var(--bg);box-shadow:none}
+.tcheck.is-late{border-color:var(--danger)}
+.tcard-subs{background:var(--surface);border-color:var(--border)}
+
+/* ---------- quick to-dos ---------- */
+.todo-block{padding:16px 16px 10px}
+.todo-h{font-size:14px;font-weight:600}
+.todo-add{background:var(--surface-2);border:1px solid var(--border);color:var(--ink);font-weight:500}
+.todo-row{border-top-color:var(--border-2)}
+.todo-check{border:2px solid var(--border-strong)}
+.todo-check.on{background:var(--ink);border-color:var(--ink)}
+.todo-check.on::after{border-color:var(--bg)}
+.todo-empty{color:var(--muted)}
+
+/* ---------- chat bubbles pick up the new surfaces ---------- */
+html[data-mood="dark"]:not([data-theme*="-"]) .msg:not(.mine) .msg-card{background:var(--surface-2)}
+
+/* ---------- toasts ---------- */
+.toast{border-radius:999px;font-weight:600}
+
+/* ---------- generated: every 700/800 in styles.css becomes 600 ---------- */
+.acct-outline-btn,
+.acct-sec,
+.acct-title,
+.app-ic,
+.app-ic-price,
+.app-ic-soon,
+.apps-bal,
+.apps-feature-t,
+.apps-hero-lite h2,
+.badge-demo-tag,
+.badge-sheet-btn,
+.badge-sheet-earned,
+.badge-sheet-name,
+.badge-sheet-title,
+.badge-shelf-item span,
+.badge-tile-new,
+.bal-label,
+.bal-topup,
+.bal-value,
+.boot-word,
+.btn-primary,
+.cal-task-kind,
+.cal-todo-h,
+.call-n,
+.cardprev-btn,
+.cardprev-t,
+.cat-ic,
+.cb-status,
+.ch-badge,
+.ch-claim,
+.ch-sec,
+.ch-step > span,
+.ch-when,
+.chance-brand,
+.chance-head,
+.chat-at,
+.chat-row-at,
+.chat-row.has-unread .chat-row-name,
+.chat-row.has-unread .chat-row-preview,
+.cover-label,
+.day-preview-t,
+.daydone-go,
+.daydone-labels,
+.daydone-n,
+.daydone-share,
+.daydone-u,
+.desk-settings-h,
+.desk-settings-kicker,
+.desk-settings-title,
+.drawer-plan-chip,
+.drawer-reqs-h,
+.drawer-tag,
+.duo-meta-n,
+.duo-name,
+.duo-plan-mark,
+.duo-sec-h,
+.duo-stat-n,
+.edit-done,
+.focus-clock,
+.focus-copy b,
+.focus-entry-copy b,
+.focus-h,
+.focus-min,
+.focus-min i,
+.focus-sec,
+.focus-x,
+.fsv-cta,
+.fsv-face,
+.fsv-room b,
+.game-brand,
+.game-card-go,
+.game-card-n,
+.game-end-dl,
+.game-end-t,
+.game-tile-crown,
+.game-tile-n,
+.gcal-mark,
+.goal-scope-drawer-t,
+.gplayer-n,
+.gstatus,
+.h2h-p b,
+.h2h-score,
+.home-card-t,
+.home-chip,
+.home-code-go,
+.home-cover,
+.home-empty-t,
+.home-feed-t,
+.home-req-btn,
+.home-req-t,
+.home-status,
+.home-top .gate-brand,
+.import-t,
+.install-hero h3,
+.install-step-n,
+.intg-name,
+.jr-h1,
+.jr-past-day,
+.launch-bal,
+.launch-label,
+.lb-rank,
+.letter-grid button,
+.letter-pick-h b,
+.look-panel-label,
+.look-photo-cta,
+.look-photo-remove,
+.look-save,
+.look-studio-title,
+.look-tab,
+.m-myl-pill b,
+.m-myl-pill i,
+.m-myl-pill.is-coin i,
+.m-top-title,
+.mention-hit,
+.mic-card h3,
+.mic-steps b,
+.mic-steps span,
+.mini-t,
+.mini-title,
+.ms-card-pct,
+.ms-head-pct,
+.ms-head-t,
+.mylo-card-kicker,
+.notif-badge,
+.notif-nudge-go,
+.notif-t strong,
+.np-sec,
+.nset-ios-d b,
+.nset-ios-t,
+.onboard-choice-t,
+.onboard-cta,
+.onboard-plan-badge,
+.onboard-plan-name,
+.onboard-plan-price,
+.onboard-title,
+.onboard-walk-n,
+.onboard-walk-t,
+.pack-amt,
+.pack-price,
+.pack-tag,
+.pay-section-h,
+.pcard b,
+.pend-copy b,
+.person-actions-t,
+.pick-sec,
+.plan-card-name,
+.plan-card-price,
+.plan-card-tag,
+.plan-card-title,
+.plan-compare-h,
+.plan-cta,
+.plan-current-chip,
+.plan-ribbon,
+.plan-status-mark,
+.plan-web-t,
+.pot-btn,
+.pot-k,
+.pot-n,
+.profile-panel-title,
+.profile-private-tag,
+.q-reply-who,
+.rcard-c,
+.rcard-m,
+.rcat-ic,
+.reaction-cta,
+.reaction-emoji,
+.rec-time,
+.reply-bar-who,
+.room-pub-t,
+.row-act,
+.rseat-c,
+.rseat-n,
+.rush-deck-n,
+.rush-mini-seat,
+.rush-status,
+.sb-k,
+.sb-p b,
+.sc-mini-board,
+.sc-prem,
+.sc-rack-t b,
+.sc-rack-t i,
+.sc-score b,
+.sc-tile b,
+.sc-tile i,
+.sc-words-btn,
+.sc-words-btn b,
+.scw-chip b,
+.scw-word b,
+.seen-more,
+.settings-group-h,
+.settings-logout,
+.sm-state,
+.soon-t,
+.soon-tag,
+.sp-card.is-mini b,
+.sp-cta,
+.sp-day em,
+.sp-day i b,
+.sp-h,
+.sp-mark em,
+.sp-ms-n,
+.sp-ms.is-done .sp-ms-s,
+.sp-n,
+.sp-row b,
+.sp-top h2,
+.sp-u,
+.stake-btn,
+.stat-num,
+.stk-day.is-today em,
+.stk-n,
+.stk-prog b,
+.stk-prog em,
+.store-btn,
+.store-n,
+.store-soon,
+.story-ov-timer b,
+.story-proof-s,
+.story-proof-t,
+.streak-day-m,
+.streak-flag,
+.streak-pip,
+.sy-chip-s,
+.sy-chip-t,
+.sy-dest.is-switch span,
+.sy-timer-n,
+.sy-tray-h,
+.tcard-ic,
+.theme-picker-label,
+.todo-cap,
+.todo-grace,
+.todo-h,
+.todo-missed,
+.todo-when-l,
+.tok-bal,
+.tok-topup,
+.tx-amt b,
+.tx-amt i,
+.tx-btn,
+.vb-name,
+.wal-amt input,
+.wal-amt span,
+.wal-bal b,
+.wal-bal i,
+.wal-card-d b,
+.wal-card-h b,
+.wal-hist-h,
+.wal-k,
+.wal-lv-n,
+.wal-qbtn,
+.wal-row-ic,
+.wal-row-n,
+.wal-send,
+.wal-topup,
+.who-badge,
+.win-t,
+.ws-amt b,
+.ws-hero-n,
+.ws-list-k,
+.ws-mark,
+.ws-net,
+.ws-settle-k,
+.xp-pop{font-weight:600!important}

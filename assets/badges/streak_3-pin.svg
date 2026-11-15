@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" fill="none">
+  <defs>
+    <linearGradient id="g" x1="24" y1="12" x2="104" y2="116" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F5C542"/>
+      <stop offset="1" stop-color="#C99212"/>
+    </linearGradient>
+    <filter id="s" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-opacity=".25"/>
+    </filter>
+  </defs>
+  <path filter="url(#s)" fill="url(#g)" d="M64 8 L108 34 V78 L64 120 L20 78 V34 Z"/>
+  <path fill="rgba(255,255,255,.22)" d="M64 18 L96 36 V70 L64 100 L32 70 V36 Z"/>
+  <text x="64" y="68" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="36" font-weight="800" fill="#fff">3</text>
+  <text x="64" y="88" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="14" font-weight="700" fill="rgba(255,255,255,.9)">day</text>
+</svg>

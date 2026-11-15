@@ -1,0 +1,52 @@
+<svg width="112" height="156" viewBox="0 0 112 156" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g clip-path="url(#clip0_877_113146)">
+<rect width="112" height="156" rx="16" fill="url(#paint0_linear_877_113146)"/>
+<rect y="117" width="13.44" height="39" fill="#11163A"/>
+<rect x="4.03125" y="127" width="4" height="6" fill="#FFD27A"/>
+<rect x="4.03125" y="141" width="4" height="6" fill="#FFD27A"/>
+<rect x="4.03125" y="155" width="4" height="6" fill="#FFD27A"/>
+<rect x="14.5625" y="95.1602" width="13.44" height="60.84" fill="#11163A"/>
+<rect x="18.5938" y="105.16" width="4" height="6" fill="#FFD27A"/>
+<rect x="18.5938" y="119.16" width="4" height="6" fill="#FFD27A"/>
+<rect x="18.5938" y="133.16" width="4" height="6" fill="#FFD27A"/>
+<rect x="18.5938" y="147.16" width="4" height="6" fill="#FFD27A"/>
+<rect x="29.1172" y="73.3203" width="13.44" height="82.68" fill="#11163A"/>
+<rect x="33.1484" y="83.3203" width="4" height="6" fill="#FFD27A"/>
+<rect x="33.1484" y="97.3203" width="4" height="6" fill="#FFD27A"/>
+<rect x="33.1484" y="111.32" width="4" height="6" fill="#FFD27A"/>
+<rect x="33.1484" y="125.32" width="4" height="6" fill="#FFD27A"/>
+<rect x="43.6797" y="106.08" width="13.44" height="49.92" fill="#11163A"/>
+<rect x="47.7109" y="116.08" width="4" height="6" fill="#FFD27A"/>
+<rect x="47.7109" y="130.08" width="4" height="6" fill="#FFD27A"/>
+<rect x="47.7109" y="144.08" width="4" height="6" fill="#FFD27A"/>
+<rect x="58.2422" y="84.2402" width="13.44" height="71.76" fill="#11163A"/>
+<rect x="62.2734" y="94.2402" width="4" height="6" fill="#FFD27A"/>
+<rect x="62.2734" y="108.24" width="4" height="6" fill="#FFD27A"/>
+<rect x="62.2734" y="122.24" width="4" height="6" fill="#FFD27A"/>
+<rect x="62.2734" y="136.24" width="4" height="6" fill="#FFD27A"/>
+<rect x="72.7969" y="117" width="13.44" height="39" fill="#11163A"/>
+<rect x="76.8281" y="127" width="4" height="6" fill="#FFD27A"/>
+<rect x="76.8281" y="141" width="4" height="6" fill="#FFD27A"/>
+<rect x="76.8281" y="155" width="4" height="6" fill="#FFD27A"/>
+<rect x="87.3594" y="95.1602" width="13.44" height="60.84" fill="#11163A"/>
+<rect x="91.3906" y="105.16" width="4" height="6" fill="#FFD27A"/>
+<rect x="91.3906" y="119.16" width="4" height="6" fill="#FFD27A"/>
+<rect x="91.3906" y="133.16" width="4" height="6" fill="#FFD27A"/>
+<rect x="91.3906" y="147.16" width="4" height="6" fill="#FFD27A"/>
+<rect x="101.922" y="73.3203" width="13.44" height="82.68" fill="#11163A"/>
+<rect x="105.953" y="83.3203" width="4" height="6" fill="#FFD27A"/>
+<rect x="105.953" y="97.3203" width="4" height="6" fill="#FFD27A"/>
+<rect x="105.953" y="111.32" width="4" height="6" fill="#FFD27A"/>
+<rect x="105.953" y="125.32" width="4" height="6" fill="#FFD27A"/>
+<circle cx="89.6" cy="24.3207" r="5.6" fill="#FFF3C4"/>
+</g>
+<defs>
+<linearGradient id="paint0_linear_877_113146" x1="56" y1="0" x2="56" y2="156" gradientUnits="userSpaceOnUse">
+<stop stop-color="#1B2350"/>
+<stop offset="1" stop-color="#3A2F70"/>
+</linearGradient>
+<clipPath id="clip0_877_113146">
+<rect width="112" height="156" rx="16" fill="white"/>
+</clipPath>
+</defs>
+</svg>

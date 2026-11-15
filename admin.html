@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mylo CRM</title>
+<link rel="icon" href="assets/favicon-32.png?v=20260821c" type="image/png" sizes="32x32">
+<link rel="icon" href="assets/favicon.svg?v=20260821c" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=20260821c">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/admin.css?v=20260920j">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.8/dist/umd/supabase.min.js"></script>
+<script src="js/config.js?v=20260920j"></script>
+</head>
+<body>
+<div id="mobile-block" class="mobile-block" hidden>
+  <div class="mobile-card">
+    <div class="gate-brand"><span class="brand-mark" aria-hidden="true"><img src="assets/mylo-logo.svg?v=20260821c" alt=""></span><span>Mylo CRM</span></div>
+    <h1>Desktop only</h1>
+    <p>Mylo CRM is for desktop screens only. Open this page on a laptop or monitor.</p>
+  </div>
+</div>
+
+<div id="login-view" class="login-view">
+  <div class="login-card">
+    <div class="gate-brand"><span class="brand-mark" aria-hidden="true"><img src="assets/mylo-logo.svg?v=20260821c" alt=""></span><span>Mylo CRM</span></div>
+    <h1>Sign in</h1>
+    <div class="field">
+      <label>Username or email</label>
+      <input id="admin-user" autocomplete="username" placeholder="xbigx">
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <div class="pass-wrap">
+        <input id="admin-pass" type="password" autocomplete="current-password" placeholder="enter your password">
+        <button type="button" class="pass-toggle" id="pass-toggle" aria-label="Show password">Show</button>
+      </div>
+    </div>
+    <button type="button" class="btn-primary" id="admin-login">Sign in</button>
+    <p class="err" id="login-err" hidden></p>
+  </div>
+</div>
+
+<div id="app-view" class="app-view" hidden>
+  <aside class="side">
+    <div class="side-brand">
+      <span class="brand-mark" aria-hidden="true"><img src="assets/mylo-logo.svg?v=20260821c" alt=""></span>
+      <div><strong>Mylo CRM</strong></div>
+    </div>
+    <nav>
+      <button type="button" class="nav on" data-tab="overview">Overview</button>
+      <button type="button" class="nav" data-tab="users">Users</button>
+      <button type="button" class="nav" data-tab="rooms">Rooms</button>
+      <button type="button" class="nav" data-tab="waitlist">Waitlist<span class="nav-count" id="waitlist-count" hidden></span></button>
+      <button type="button" class="nav" data-tab="bugs">Bugs<span class="nav-count" id="bugs-count" hidden></span></button>
+      <button type="button" class="nav" data-tab="features">Requests<span class="nav-count" id="features-count" hidden></span></button>
+    </nav>
+    <div class="side-foot">
+      <div id="admin-who" class="who">—</div>
+      <button type="button" class="btn-ghost" id="crm-theme">Dark mode</button>
+      <button type="button" class="btn-ghost" id="admin-logout">Sign out</button>
+      <a class="app-link" href="/" target="_blank" rel="noopener">Open app →</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <section id="tab-overview" class="tab">
+      <header class="page-head">
+        <div>
+          <h2>Overview</h2>
+        </div>
+        <button type="button" class="btn-ghost" id="refresh-overview">Refresh</button>
+      </header>
+      <div class="stat-grid" id="stat-grid"></div>
+    </section>
+
+    <section id="tab-users" class="tab" hidden>
+      <header class="page-head">
+        <div>
+          <h2>Users</h2>
+        </div>
+        <div class="tools">
+          <input id="user-q" placeholder="Search username…">
+          <button type="button" class="btn-ghost" id="refresh-users">Refresh</button>
+        </div>
+      </header>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Plan</th>
+              <th>Credits</th>
+              <th>Usage</th>
+              <th>Status</th>
+              <th>Joined</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="users-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="tab-rooms" class="tab" hidden>
+      <header class="page-head">
+        <div>
+          <h2>Rooms</h2>
+        </div>
+        <div class="tools">
+          <input id="room-q" placeholder="Search code or title…">
+          <button type="button" class="btn-ghost" id="refresh-rooms">Refresh</button>
+        </div>
+      </header>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Room</th>
+              <th>Code</th>
+              <th>Owner</th>
+              <th>Members</th>
+              <th>Goals</th>
+              <th>Created</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="rooms-body"></tbody>
+        </table>
+      </div>
+    </section>
+    <section id="tab-waitlist" class="tab" hidden>
+      <header class="page-head">
+        <div><h2>Waitlist</h2></div>
+        <div class="tools">
+          <button type="button" class="btn-ghost" id="copy-waitlist">Copy emails</button>
+          <button type="button" class="btn-ghost" id="refresh-waitlist">Refresh</button>
+        </div>
+      </header>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Joined</th>
+              <th>Referrals</th>
+              <th>Came from</th>
+              <th>Invited</th>
+            </tr>
+          </thead>
+          <tbody id="waitlist-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="tab-bugs" class="tab" hidden>
+      <header class="page-head">
+        <div><h2>Bug reports</h2></div>
+        <div class="tools">
+          <div class="seg" id="bug-filter" role="tablist">
+            <button type="button" class="on" data-bug-filter="new">New</button>
+            <button type="button" data-bug-filter="confirmed">Confirmed</button>
+            <button type="button" data-bug-filter="fixed">Fixed</button>
+            <button type="button" data-bug-filter="all">All</button>
+          </div>
+          <button type="button" class="btn-ghost" id="refresh-bugs">Refresh</button>
+        </div>
+      </header>
+      <div id="bugs-list" class="queue"></div>
+    </section>
+
+    <section id="tab-features" class="tab" hidden>
+      <header class="page-head">
+        <div><h2>Feature requests</h2></div>
+        <div class="tools">
+          <div class="seg" id="feature-filter" role="tablist">
+            <button type="button" class="on" data-feature-filter="open">Open</button>
+            <button type="button" data-feature-filter="planned">Planned</button>
+            <button type="button" data-feature-filter="building">Building</button>
+            <button type="button" data-feature-filter="shipped">Shipped</button>
+            <button type="button" data-feature-filter="all">All</button>
+          </div>
+          <button type="button" class="btn-ghost" id="refresh-features">Refresh</button>
+        </div>
+      </header>
+      <div id="features-list" class="queue"></div>
+    </section>
+  </main>
+</div>
+
+<div id="drawer" class="drawer" hidden aria-hidden="true">
+  <div class="drawer-panel">
+    <div class="drawer-head">
+      <div>
+        <h3 id="drawer-title">User</h3>
+        <p id="drawer-sub"></p>
+      </div>
+      <button type="button" class="icon-x" id="drawer-close" aria-label="Close">✕</button>
+    </div>
+    <div id="drawer-body"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="js/admin.js?v=20261102a"></script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="360" viewBox="0 0 300 360" fill="none">
+<g>
+<path d="M117 204H110C106.134 204 103 207.134 103 211V223C103 226.866 106.134 230 110 230H117C120.866 230 124 226.866 124 223V211C124 207.134 120.866 204 117 204Z" fill="#1D1D22" />
+<path d="M192 204H185C181.134 204 178 207.134 178 211V223C178 226.866 181.134 230 185 230H192C195.866 230 199 226.866 199 223V211C199 207.134 195.866 204 192 204Z" fill="#1D1D22" />
+<g>
+<path d="M99 198L125 192ZM203 198L177 192Z" fill="black" />
+<path d="M99 198L125 192M203 198L177 192" stroke-width="4" stroke-linecap="round" stroke="#1D1D22" />
+</g>
+<g>
+<path d="M119 215H183Z" fill="black" />
+<path d="M119 215H183" stroke-width="3.5" stroke-linecap="round" stroke="#1D1D22" />
+</g>
+<path d="M138 262C146.667 252.667 155.333 252.667 164 262" stroke-width="6" stroke-linecap="round" stroke="#1D1D22" />
+<path d="M206 236C210 244 210 250 206 254C202 250 202 244 206 236Z" fill="#7CC0FF" />
+</g>
+<defs>
+</defs>
+</svg>

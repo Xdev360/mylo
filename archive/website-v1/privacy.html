@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mylo — Privacy</title>
+<meta name="description" content="How Mylo handles your data: what we collect, what we do with it, where it lives, and how to get it deleted.">
+<meta name="theme-color" content="#050505">
+<meta name="color-scheme" content="dark">
+<meta name="robots" content="index, follow">
+<meta property="og:title" content="Mylo — Privacy">
+<meta property="og:description" content="How Mylo handles your data: what we collect, what we do with it, where it lives, and how to get it deleted.">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Mylo">
+<meta property="og:url" content="https://www.staymylo.com/privacy">
+<meta property="og:image" content="https://www.staymylo.com/og.png?v=2">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://www.staymylo.com/og.png?v=2">
+<link rel="canonical" href="https://www.staymylo.com/privacy">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 237 301'%3E%3Cpath d='M169.6 0c9 4.7 5 13 .8 21.8-4.5 9.7-9.3 19.8 2.5 26.1 13.1 7.1 24.8 16.7 34.5 28.2 2.5-.5 5.1-1.5 7.6-2.5 5.5-2.2 10.8-4.2 13.9 0-.1 1.3-.3 2.6-.5 4-1.2 7.3-3.4 14.1-6.3 20.4 11.4 21.5 16.4 46 14.4 70.4-2 24.5-10.8 47.7-25.4 66.9-1 1.4-2.1 2.7-3.2 4-3.3 11.1-6.5 22.2-9.7 33.5-2 7-4.6 16.1-8.6 22-9.7 14.3-27.1-4.4-35.2-11.8-3.5-.4-8.9-.2-12.5-.2l-22.2-.1-13.2-.2c-3.8 6.1-7 10.7-13 14.5-13.1 8.2-25-11-27.5-23.8-3.1 4.3-12.5 13.1-17.8 10-5.8-3.4-10.6-12.1-13-18.9-2.9-8.2-5.1-16.7-6.7-25.4h.2c-.3-.3-.5-.6-.7-.9C12.9 219.3 3.4 196.3.7 172c-2.6-24.4 1.7-49 12.5-70.8C31 65.2 81.4 13.3 161.3 1.1c2.7-.4 5.5-.8 8.3-1.1z' fill='%23fff'/%3E%3Cpath d='M99 198h34' stroke='%23000' stroke-width='8' stroke-linecap='round'/%3E%3Crect x='72' y='150' width='21' height='30' rx='9'/%3E%3Crect x='147' y='150' width='21' height='30' rx='9'/%3E%3Cpath d='M88.5 165h63' stroke='%23000' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#050505; --ink:#FAFAFA; --ink-2:rgba(250,250,250,.76); --muted:rgba(250,250,250,.5);
+  --faint:rgba(250,250,250,.3); --line:rgba(255,255,255,.09); --line-2:rgba(255,255,255,.16);
+  --glass:rgba(255,255,255,.04); --glass-2:rgba(255,255,255,.07);
+  --r:16px; --r-lg:22px; --ease:cubic-bezier(.16,1,.3,1);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--ink-2);
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-size:16px; line-height:1.68; -webkit-font-smoothing:antialiased; overflow-x:hidden;
+}
+body::before{
+  content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background:
+    radial-gradient(680px 560px at 84% -6%, rgba(120,120,200,.12), transparent 62%),
+    radial-gradient(520px 420px at 4% 2%, rgba(70,193,253,.06), transparent 60%);
+}
+a{color:var(--ink)}
+.wrap{width:100%; max-width:760px; margin:0 auto; padding-inline:clamp(18px,5vw,32px);
+      position:relative; z-index:1}
+.top{position:sticky; top:0; z-index:40; background:rgba(5,5,5,.74);
+     backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); border-bottom:1px solid var(--line)}
+.top-in{display:flex; align-items:center; justify-content:space-between; gap:14px; height:62px}
+.brand{display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:-.02em;
+       font-size:18px; text-decoration:none; color:var(--ink)}
+.brand-mark{width:28px; height:28px; border-radius:9px; background:#fff; display:grid;
+            place-items:center; flex:none}
+.brand-mark svg{width:17px; height:21px; margin-top:1px}
+.back{display:inline-flex; align-items:center; gap:7px; text-decoration:none; color:var(--ink);
+      font-size:14px; font-weight:600; padding:9px 17px; border-radius:100px;
+      border:1px solid var(--line-2); background:var(--glass);
+      transition:background .2s var(--ease)}
+.back:hover{background:var(--glass-2)}
+main{padding:clamp(38px,7vw,68px) 0 40px}
+h1{font-size:clamp(32px,6vw,46px); line-height:1.06; letter-spacing:-.04em; font-weight:700;
+   margin:0; color:var(--ink)}
+.sub{margin:14px 0 0; color:var(--muted); font-size:14px}
+.body{margin-top:clamp(26px,4vw,38px); padding:clamp(22px,3.4vw,34px);
+      background:var(--glass); border:1px solid var(--line); border-radius:var(--r-lg);
+      backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px)}
+.body h2{font-size:17px; font-weight:700; letter-spacing:-.02em; color:var(--ink);
+         margin:34px 0 8px; text-wrap:balance}
+.body h2:first-child{margin-top:0}
+.body p{margin:0 0 4px}
+.body ul{margin:8px 0 0; padding-left:20px}
+.body li{margin-bottom:7px}
+.note{margin-top:32px; padding:15px 18px; border-radius:var(--r); background:var(--glass);
+      border:1px solid var(--line-2); color:var(--muted); font-size:13.5px; line-height:1.6}
+.foot{margin-top:clamp(40px,6vw,66px); padding:26px 0 44px; border-top:1px solid var(--line);
+      display:flex; justify-content:space-between; gap:14px; flex-wrap:wrap;
+      color:var(--faint); font-size:13px}
+.foot a{color:var(--muted); text-decoration:none}
+.foot a:hover{color:var(--ink)}
+:focus-visible{outline:2px solid var(--ink); outline-offset:3px; border-radius:6px}
+@media (prefers-reduced-motion:reduce){*{transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap top-in">
+    <a class="brand" href="/"><span class="brand-mark"><svg viewBox="0 0 237 301"><path d="M169.6 0c9 4.7 5 13 .8 21.8-4.5 9.7-9.3 19.8 2.5 26.1 13.1 7.1 24.8 16.7 34.5 28.2 2.5-.5 5.1-1.5 7.6-2.5 5.5-2.2 10.8-4.2 13.9 0-.1 1.3-.3 2.6-.5 4-1.2 7.3-3.4 14.1-6.3 20.4 11.4 21.5 16.4 46 14.4 70.4-2 24.5-10.8 47.7-25.4 66.9-1 1.4-2.1 2.7-3.2 4-3.3 11.1-6.5 22.2-9.7 33.5-2 7-4.6 16.1-8.6 22-9.7 14.3-27.1-4.4-35.2-11.8-3.5-.4-8.9-.2-12.5-.2l-22.2-.1-13.2-.2c-3.8 6.1-7 10.7-13 14.5-13.1 8.2-25-11-27.5-23.8-3.1 4.3-12.5 13.1-17.8 10-5.8-3.4-10.6-12.1-13-18.9-2.9-8.2-5.1-16.7-6.7-25.4h.2c-.3-.3-.5-.6-.7-.9C12.9 219.3 3.4 196.3.7 172c-2.6-24.4 1.7-49 12.5-70.8C31 65.2 81.4 13.3 161.3 1.1c2.7-.4 5.5-.8 8.3-1.1z" fill="#fff"/><path d="M99 198h34" stroke="#000" stroke-width="8" stroke-linecap="round"/><rect x="72" y="150" width="21" height="30" rx="9"/><rect x="147" y="150" width="21" height="30" rx="9"/><path d="M88.5 165h63" stroke="#000" stroke-width="3" stroke-linecap="round"/></svg></span>Mylo</a>
+    <a class="back" href="/">Back to the site</a>
+  </div>
+</header>
+<main class="wrap">
+  <h1>Privacy</h1>
+  <p class="sub">Mylo · Wintech Studio · Lagos, Nigeria · last updated September 2026</p>
+  <div class="body">
+<h2>What we collect on this page</h2>
+    <p>Your email address, when you join the waitlist. Optionally the referral code you arrived with and the page that sent you. That's it — no tracking pixels, no third-party analytics, no ad scripts.</p>
+    <h2>What we do with it</h2>
+    <p>One email when your invite is ready. We don't sell it, rent it, or add it to a newsletter. If you refer a friend, we count the referral against your code; we never show your address to them or theirs to you.</p>
+    <h2>Inside the app</h2>
+    <p>Your account, goals, rooms, messages, stories and XP are stored so the app works. Rooms are private: only members can read a room, enforced at the database, not just in the interface. Stories expire after 24 hours. Connections you link (Google Calendar, Notion, Telegram) can be unlinked in one tap from You → Connect, which removes our access.</p>
+    <h2>Where it lives</h2>
+    <p>Data is stored with Supabase and served through Vercel. Payments, when they launch, are handled by Paystack — we never see or store card numbers.</p>
+    <h2>Your choices</h2>
+    <ul><li>Leave the waitlist or delete your account and data: email <a href="mailto:hello@staymylo.com">hello@staymylo.com</a> from the address you signed up with.</li><li>Ask what we hold about you, and we'll send it.</li></ul>
+    <div class="note">Plain-English draft written for launch. It should be reviewed against the Nigeria Data Protection Act before Mylo takes payments.</div>
+  </div>
+  <footer class="foot">
+    <span>© <span id="y"></span> Mylo</span>
+    <span><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="mailto:hello@staymylo.com">hello@staymylo.com</a></span>
+  </footer>
+</main>
+<script>document.getElementById('y').textContent=new Date().getFullYear();</script>
+</body>
+</html>

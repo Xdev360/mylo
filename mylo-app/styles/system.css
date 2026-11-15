@@ -1,0 +1,357 @@
+/* ──────────────────────────────────────────────────────────────────────────
+   System: settings ST1–ST13, DT8, permission primers, install, pull to
+   refresh, splash, skeletons, confirmations, offline and status screens.
+   Every colour is a token from globals.css so dark follows on its own.
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* ── Settings list: groups, rows, labels (ST1, ST2, ST5, ST6) ─────────── */
+/* Settings and the system screens are drawn without the tab bar. */
+body:has(.sys-screen) .tabbar{ display:none !important; }
+.sys-screen{ gap:0; }
+.sys-screen.screen{ padding-bottom:max(calc(env(safe-area-inset-bottom) + 20px), 54px); }
+.sys-screen > .screen-header{ flex:none; }
+.sys-label{ margin:22px 0 8px; font-size:13px; font-weight:600; line-height:16px; color:var(--text-2); }
+.screen-header + .sys-label, .screen-header + .sys-group{ margin-top:8px; }
+.screen-header + .sys-box{ margin-top:2px; }
+.sys-group{ flex:none; background:var(--surface); border-radius:20px; padding:1px 14px; overflow:hidden; }
+.sys-group + .sys-group{ margin-top:22px; }
+.sys-row{
+  position:relative; display:flex; align-items:center; gap:14px; width:100%; min-height:54px; padding:7px 0;
+  text-align:left; color:var(--ink);
+}
+.sys-row.has-sub{ min-height:64px; }
+/* Rows sit 56 apart: a 2px rule from the words to the row's end, as drawn. */
+.sys-row + .sys-row{ margin-top:2px; }
+.sys-row + .sys-row::before{ content:''; position:absolute; top:-2px; left:54px; right:0; height:2px; background:var(--line); }
+.sys-row:not(:has(> .sys-row-icon))::before{ left:0; }
+.sys-row-icon{ display:grid; place-items:center; width:40px; height:40px; flex:none; border-radius:12px; background:var(--bg); }
+.sys-row-text{ flex:1; min-width:0; display:flex; flex-direction:column; gap:5px; }
+.sys-row-label{ font-size:16px; font-weight:500; line-height:19px; letter-spacing:-.005em; }
+.sys-row-sub{ font-size:13px; font-weight:500; line-height:16px; color:var(--text-2); }
+.sys-row-value{ flex:none; max-width:46%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:14px; font-weight:500; line-height:17px; color:var(--text-3); }
+.sys-row-chev{ color:var(--text-3); margin-right:-2px; }
+.sys-row.is-danger{ color:var(--red); }
+.sys-row.is-danger .sys-row-icon{ color:var(--red); }
+a.sys-row, button.sys-row{ transition:opacity .15s ease; }
+a.sys-row:active, button.sys-row:active{ opacity:.6; }
+@media (hover:hover){ a.sys-row:hover .sys-row-label, button.sys-row:hover .sys-row-label{ opacity:.75; } }
+.sys-row select{ position:absolute; inset:0; width:100%; opacity:0; cursor:pointer; font-size:16px; }
+.sys-foot{ margin-top:22px; text-align:center; font-size:12px; font-weight:500; line-height:14px; color:var(--text-3); }
+
+/* Me card, ST1. */
+.sys-me{ display:flex; align-items:center; gap:10px; min-height:80px; padding:14px; border-radius:22px; background:var(--surface); margin-top:6px; }
+.sys-avatar{
+  display:grid; place-items:center; flex:none; width:52px; height:52px; border-radius:26px;
+  background:var(--primary); color:var(--on-primary); border:2px solid var(--bg); font-size:22px; font-weight:600; line-height:26px;
+}
+.sys-me-text{ flex:1; min-width:0; display:flex; flex-direction:column; gap:6px; }
+.sys-me-name{ font-size:17px; font-weight:600; line-height:20px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.sys-me-sub{ font-size:13px; font-weight:500; line-height:16px; color:var(--text-2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+/* Toggle, 46 × 28 with a 24 knob. */
+.sys-toggle{
+  position:relative; flex:none; width:46px; height:28px; border-radius:14px; background:var(--surface-2);
+  transition:background-color .2s ease;
+}
+.sys-toggle::after{
+  content:''; position:absolute; left:2px; top:2px; width:24px; height:24px; border-radius:50%; background:#fff;
+  box-shadow:0 1px 3px rgba(0,0,0,.18); transition:translate .25s cubic-bezier(.34,1.56,.64,1);
+}
+.sys-toggle[aria-checked="true"]{ background:var(--primary); }
+.sys-toggle[aria-checked="true"]::after{ translate:18px 0; }
+.sys-toggle.is-s{ width:44px; height:26px; border-radius:13px; }
+.sys-toggle.is-s::after{ left:3px; top:3px; width:20px; height:20px; background:var(--bg); box-shadow:none; }
+.sys-toggle.is-s[aria-checked="true"]::after{ background:var(--on-primary); }
+
+/* Segmented tabs, ST2. */
+.sys-seg{ display:flex; padding:4px; border-radius:99px; background:var(--surface); }
+.sys-seg button{
+  flex:1; min-width:0; height:32px; border-radius:99px; font-size:14px; font-weight:500; line-height:17px; color:var(--text-2);
+  transition:background-color .2s ease, color .2s ease;
+}
+.sys-seg button[aria-checked="true"]{ background:var(--bg); color:var(--ink); font-weight:600; box-shadow:0 1px 4px rgba(0,0,0,.08); }
+
+/* Text and inputs, ST7 and ST8. */
+.sys-intro{ margin-top:8px; font-size:14px; font-weight:500; line-height:21px; color:var(--text-2); }
+.sys-field-label{ display:block; margin:20px 0 6px; font-size:13px; font-weight:500; line-height:16px; color:var(--text-2); }
+.sys-field-label:first-of-type{ margin-top:14px; }
+.sys-input{
+  display:flex; align-items:center; gap:10px; height:52px; padding:0 16px; border-radius:16px; background:var(--surface);
+  border:1.5px solid transparent; transition:border-color .15s ease;
+}
+.sys-input:focus-within{ border-color:var(--ink); }
+.sys-input.is-read{ background:var(--surface-2); }
+.sys-input.is-danger, .sys-input.is-danger:focus-within{ border-color:var(--red); }
+.sys-input input{ flex:1; min-width:0; height:100%; border:0; outline:none; background:none; color:var(--ink); font:inherit; font-size:16px; line-height:19px; }
+.sys-input input::placeholder{ color:var(--text-3); }
+.sys-eye{ display:grid; place-items:center; width:32px; height:32px; margin-right:-6px; color:var(--text-3); border-radius:99px; }
+.sys-eye[aria-pressed="true"]{ color:var(--ink); }
+.sys-hint{ margin-top:12px; font-size:13px; font-weight:500; line-height:16px; color:var(--text-2); }
+.sys-hint a{ color:var(--ink); text-decoration:underline; text-underline-offset:2px; }
+.sys-error{ margin-top:12px; font-size:13px; font-weight:500; line-height:18px; color:var(--red); }
+.sys-ok{ margin-top:12px; font-size:13px; font-weight:500; line-height:18px; color:var(--green); }
+.sys-strength{ display:flex; gap:6px; margin-top:8px; }
+.sys-strength span{ flex:1; height:6px; border-radius:3px; background:var(--line); transition:background-color .2s ease; }
+.sys-strength-label{ margin-top:10px; font-size:12px; font-weight:600; line-height:14px; }
+
+/* Buttons, 52 high, 16/500 as the frames draw them. */
+.sys-actions{ margin-top:auto; padding-top:28px; display:flex; flex-direction:column; gap:8px; }
+/* Two buttons end 62 from the bottom, one ends 54, as every frame draws them. */
+.sys-actions:has(> :nth-child(2)){ padding-bottom:8px; }
+.sys-btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:8px; width:100%; height:52px; padding:0 20px;
+  border-radius:99px; background:var(--primary); color:var(--on-primary); font-size:16px; font-weight:500; line-height:19px;
+  transition:scale .2s cubic-bezier(.34,1.56,.64,1), opacity .15s ease;
+}
+.sys-btn:active{ scale:.97; }
+.sys-btn:disabled, .sys-btn[aria-disabled="true"]{ opacity:.4; cursor:default; scale:1; }
+.sys-btn.is-soft{ background:var(--surface); color:var(--ink); }
+.sys-btn.is-danger{ background:var(--red); color:#fff; }
+@media (hover:hover){ .sys-btn:not(:disabled):hover{ opacity:.9; } }
+
+/* ── People lists, ST3 ────────────────────────────────────────────────── */
+.sys-people{ margin-top:12px; }
+.sys-person{ position:relative; display:flex; align-items:center; gap:14px; min-height:64px; }
+.sys-person::after{ content:''; position:absolute; left:54px; right:0; bottom:0; height:1px; background:var(--line); }
+.sys-person + .sys-person{ margin-top:8px; }
+.sys-person-avatar{
+  display:grid; place-items:center; flex:none; width:40px; height:40px; border-radius:20px; border:2px solid var(--bg);
+  font-size:17px; font-weight:600; line-height:20px; color:var(--ink);
+}
+.sys-person-text{ flex:1; min-width:0; display:flex; flex-direction:column; gap:5px; }
+.sys-pill{
+  flex:none; display:inline-flex; align-items:center; justify-content:center; height:36px; min-width:90px; padding:0 16px;
+  border-radius:18px; background:var(--surface); font-size:14px; font-weight:500; line-height:17px;
+  transition:background-color .15s ease, scale .2s cubic-bezier(.34,1.56,.64,1);
+}
+.sys-pill:active{ scale:.95; }
+@media (hover:hover){ .sys-pill:hover{ background:var(--surface-2); } }
+.sys-tip{ display:flex; align-items:center; gap:12px; margin-top:20px; padding:11px 16px 11px 14px; border-radius:16px; background:var(--surface); color:var(--text-2); font-size:13px; font-weight:500; line-height:19px; }
+.sys-tip .icon{ color:var(--text-2); }
+.sys-words{ display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }
+.sys-word{ display:inline-flex; align-items:center; gap:6px; height:34px; padding:0 8px 0 14px; border-radius:99px; background:var(--surface); font-size:14px; }
+.sys-word button{ display:grid; place-items:center; width:22px; height:22px; border-radius:99px; color:var(--text-2); }
+@media (hover:hover){ .sys-word button:hover{ background:var(--surface-2); color:var(--ink); } }
+
+/* ── Language, ST4 ────────────────────────────────────────────────────── */
+.sys-search{ display:flex; align-items:center; gap:10px; height:48px; padding:0 14px; border-radius:16px; background:var(--surface); color:var(--text-3); margin-top:6px; }
+.sys-search:focus-within{ box-shadow:0 0 0 1.5px var(--ink); }
+.sys-search input{ flex:1; min-width:0; border:0; outline:none; background:none; color:var(--ink); font:inherit; font-size:16px; }
+.sys-search input::placeholder{ color:var(--text-3); }
+.sys-langs{ display:flex; flex-direction:column; gap:2px; margin-top:20px; }
+.sys-lang{ display:flex; align-items:center; justify-content:space-between; height:52px; padding:0 16px; border-radius:14px; font-size:16px; font-weight:500; line-height:19px; text-align:left; transition:background-color .15s ease; }
+.sys-lang[aria-checked="true"]{ background:var(--surface); }
+@media (hover:hover){ .sys-lang:hover{ background:var(--surface); } }
+.sys-empty-line{ padding:16px; color:var(--text-3); font-size:14px; }
+
+/* ── About, ST6 ───────────────────────────────────────────────────────── */
+.sys-about{ display:flex; flex-direction:column; align-items:center; text-align:center; padding-top:20px; }
+.sys-about-icon{ width:100px; height:100px; }
+.sys-about-name{ margin-top:18px; font-size:24px; font-weight:600; line-height:29px; letter-spacing:-.02em; }
+.sys-about-ver{ margin-top:5px; font-size:13px; font-weight:500; line-height:16px; color:var(--text-2); }
+.sys-about + .sys-group{ margin-top:32px; }
+.sys-tagline{ margin-top:86px; padding:0 0 24px; text-align:center; font-size:13px; font-weight:500; line-height:16px; color:var(--text-3); }
+
+/* ── Your data, ST13 ──────────────────────────────────────────────────── */
+.sys-box{
+  display:flex; align-items:center; gap:10px; width:100%; min-height:68px; padding:12px 12px 12px 14px; border-radius:18px;
+  background:var(--surface); border:1px solid var(--line); text-align:left; transition:opacity .15s ease;
+}
+.sys-box + .sys-box{ margin-top:8px; }
+.sys-box:active{ opacity:.6; }
+.sys-box-text{ flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; }
+.sys-box-label{ font-size:15px; font-weight:500; line-height:21px; }
+.sys-box-sub{ font-size:12px; font-weight:500; line-height:16px; color:var(--text-2); }
+.sys-danger-card{ display:flex; flex-direction:column; gap:4px; width:100%; margin-top:36px; padding:16px; border-radius:20px; background:var(--tint-red); text-align:left; transition:opacity .15s ease; }
+.sys-danger-card:active{ opacity:.7; }
+.sys-danger-card strong{ color:var(--red); font-size:16px; font-weight:600; line-height:22px; }
+.sys-danger-card span{ color:var(--text-2); font-size:12px; font-weight:500; line-height:16px; }
+
+/* ── Hero: a tinted disc, Mylo in it, a badge at the corner ──────────── */
+.sys-hero{ position:relative; flex:none; width:200px; height:200px; margin:0 auto; border-radius:50%; background:var(--surface); }
+.sys-hero-mylo{ position:absolute; left:40px; top:30px; width:100px; height:120px; }
+.sys-hero-badge{
+  position:absolute; left:140px; top:124px; display:grid; place-items:center; width:60px; height:60px; border-radius:30px;
+  background:var(--bg); color:var(--ink); box-shadow:0 4px 12px rgba(15,15,18,.12);
+}
+.sys-hero.is-s{ width:140px; height:140px; }
+.sys-hero.is-s .sys-hero-mylo{ left:25px; top:20px; width:75px; height:90px; }
+.tone-green{ background:var(--tint-green); } .tone-amber{ background:var(--tint-amber); }
+.tone-red{ background:var(--tint-red); } .tone-blue{ background:var(--tint-blue); } .tone-grey{ background:var(--surface); }
+
+.sys-state{ display:flex; flex-direction:column; align-items:center; text-align:center; }
+.sys-state-title{ margin-top:36px; font-size:24px; font-weight:600; line-height:29px; letter-spacing:-.02em; }
+.sys-state-body{ max-width:313px; margin-top:9px; font-size:15px; font-weight:500; line-height:23px; color:var(--text-2); }
+.sys-points{ display:flex; flex-direction:column; gap:2px; align-self:stretch; margin:34px 12px 0; text-align:left; }
+.sys-point{ display:flex; align-items:center; gap:14px; min-height:44px; font-size:14px; font-weight:500; line-height:17px; }
+.sys-code{ margin-top:24px; padding:8px 16px; border-radius:99px; background:var(--surface); color:var(--text-2); font-size:12px; font-weight:500; line-height:14px; }
+.sys-notes{ align-self:stretch; display:flex; flex-direction:column; gap:10px; margin-top:24px; padding:14px 16px; border-radius:18px; background:var(--surface); text-align:left; }
+.sys-notes li{ display:flex; align-items:center; gap:10px; list-style:none; font-size:14px; font-weight:500; line-height:17px; }
+.sys-notes .icon{ color:var(--green); }
+
+/* Full screens that cover the app (primers, status, splash). */
+.sys-cover{
+  position:fixed; inset:0; z-index:45; overflow:auto; background:var(--bg);
+  display:flex; flex-direction:column;
+}
+.sys-cover-inner{
+  width:100%; max-width:430px; min-height:100%; margin:0 auto; display:flex; flex-direction:column;
+  padding:max(calc(env(safe-area-inset-top) + 76px), 88px) 20px max(calc(env(safe-area-inset-bottom) + 20px), 54px);
+}
+.sys-cover-inner.has-head{ padding-top:max(env(safe-area-inset-top), 12px); }
+@media (min-width:1024px){ .sys-cover-inner{ justify-content:center; padding-top:48px; } .sys-cover-inner .sys-actions{ margin-top:32px; } }
+
+/* Offline bar, S27. */
+.sys-offline{
+  position:fixed; z-index:46; left:0; right:0; top:0; display:flex; align-items:center; gap:8px;
+  padding:calc(env(safe-area-inset-top) + 8px) 16px 8px; background:var(--primary); color:var(--on-primary);
+  font-size:13px; font-weight:500; line-height:16px; animation:sys-drop .3s cubic-bezier(.22,1,.36,1);
+}
+.sys-offline.is-inline{ position:relative; z-index:auto; margin:0 -20px; padding-top:10px; padding-bottom:10px; }
+@keyframes sys-drop{ from{ translate:0 -100%; } }
+
+/* Permission denied, S9. */
+.sys-denied-icon{ position:relative; display:grid; place-items:center; width:88px; height:88px; margin:30px auto 0; border-radius:44px; background:var(--surface); color:var(--text-2); }
+.sys-denied-icon::after{ content:''; position:absolute; left:-4px; top:42px; width:96px; height:3px; border-radius:2px; background:var(--red); rotate:40deg; }
+.sys-steps{ align-self:stretch; display:flex; flex-direction:column; gap:26px; margin-top:40px; padding:20px; border-radius:20px; background:var(--surface); text-align:left; }
+.sys-step{ display:flex; align-items:center; gap:14px; font-size:16px; font-weight:500; line-height:19px; }
+.sys-step-n{ display:grid; place-items:center; flex:none; width:32px; height:32px; border-radius:16px; background:var(--bg); font-size:15px; font-weight:600; line-height:18px; }
+.sys-cover .sys-state-title.is-tight{ margin-top:28px; }
+.sys-cover-inner.is-status .sys-state-title{ margin-top:32px; }
+
+/* ── Install, S10 and S11 ─────────────────────────────────────────────── */
+.sys-install-icon{ width:100px; height:100px; margin:10px auto 0; }
+.sys-install .sys-state-title{ margin-top:28px; }
+.sys-install .sys-state-body{ margin-top:7px; }
+.sys-install-steps{ align-self:stretch; display:flex; flex-direction:column; gap:12px; margin-top:28px; text-align:left; }
+.sys-install-step{ display:flex; align-items:center; gap:14px; width:100%; min-height:76px; padding:14px; border-radius:18px; background:var(--surface); text-align:left; }
+button.sys-install-step{ transition:scale .2s cubic-bezier(.34,1.56,.64,1); }
+button.sys-install-step:active{ scale:.98; }
+.sys-install-step-icon{ display:grid; place-items:center; flex:none; width:48px; height:48px; border-radius:14px; background:var(--bg); }
+.sys-install-step strong{ display:block; font-size:16px; font-weight:600; line-height:19px; }
+.sys-install-step span span{ display:block; margin-top:5px; font-size:13px; font-weight:500; line-height:16px; color:var(--text-2); }
+
+/* ── Delete account, ST10–ST12 ────────────────────────────────────────── */
+.sys-lose{ align-self:stretch; display:flex; flex-direction:column; gap:24px; margin-top:36px; padding:18px; border-radius:20px; background:var(--surface); text-align:left; }
+.sys-lose li{ display:flex; align-items:center; gap:12px; list-style:none; font-size:15px; font-weight:500; line-height:18px; }
+.sys-lose .icon{ color:var(--red); }
+.sys-reasons{ display:flex; flex-wrap:wrap; align-content:flex-start; gap:14px 8px; min-height:100px; margin-top:14px; }
+.sys-reason{ height:32px; padding:0 16px; border-radius:99px; background:var(--surface); font-size:13px; font-weight:500; line-height:16px; transition:background-color .15s ease, color .15s ease; }
+.sys-reason[aria-pressed="true"]{ background:var(--primary); color:var(--on-primary); }
+.sys-h2{ margin-top:14px; font-size:17px; font-weight:600; line-height:20px; }
+.sys-grace{ display:flex; align-items:center; gap:12px; margin-top:20px; padding:13px 14px; border-radius:16px; background:var(--surface); color:var(--text-2); font-size:13px; font-weight:500; line-height:19px; }
+.sys-sticker{ position:relative; width:163px; height:163px; margin:0 auto; }
+.sys-sticker img{ width:100%; height:100%; }
+
+/* ── Confirm dialog, S23–S26 and ST9 ──────────────────────────────────── */
+.sys-dialog-root{ position:fixed; inset:0; z-index:60; display:grid; place-items:center; padding:20px; pointer-events:none; }
+.sys-dialog-root.is-open{ pointer-events:auto; }
+.sys-dim{ position:absolute; inset:0; width:100%; background:rgba(11,11,14,.45); opacity:0; transition:opacity .2s ease; cursor:default; }
+.sys-dialog-root.is-open .sys-dim{ opacity:1; }
+.sys-dialog{
+  position:relative; width:min(321px, 100%); padding:26px 20px 22px; border-radius:26px; background:var(--bg); text-align:center;
+  box-shadow:var(--elev); opacity:0; scale:.94; transition:opacity .2s ease, scale .25s cubic-bezier(.34,1.56,.64,1);
+}
+.sys-dialog-root.is-open .sys-dialog{ opacity:1; scale:1; }
+.sys-dialog h2{ padding:0 4px; font-size:20px; font-weight:600; line-height:24px; letter-spacing:-.015em; }
+.sys-dialog p{ margin-top:12px; padding:0 4px; font-size:15px; font-weight:500; line-height:23px; color:var(--text-2); }
+.sys-dialog-actions{ display:flex; flex-direction:column; gap:8px; margin-top:22px; }
+.sys-dialog .sys-btn{ height:50px; }
+:root[data-theme="dark"] .sys-dialog{ border:1px solid var(--line); }
+
+/* ── Skeletons, S19–S22 ───────────────────────────────────────────────── */
+.sk{ display:block; background:var(--surface-2); border-radius:8px; animation:sk-pulse 1.4s ease-in-out infinite; }
+@keyframes sk-pulse{ 50%{ opacity:.55; } }
+.sk-col{ display:flex; flex-direction:column; }
+.sk-today-card{ display:flex; align-items:center; gap:14px; height:68px; padding:0 16px; border-radius:18px; background:var(--surface); }
+.sk-post{ display:flex; flex-direction:column; padding:16px; border-radius:22px; background:var(--bg); border:1px solid var(--line); }
+.sk-post-head{ display:flex; align-items:center; gap:10px; }
+.sk-chat{ display:flex; align-items:center; gap:14px; height:52px; }
+.sk-grid{ display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; }
+
+/* ── Pull to refresh, S12–S15 ─────────────────────────────────────────── */
+.ptr{ position:relative; }
+.ptr-area{
+  position:relative; overflow:hidden; height:0; margin:0 -20px; background:var(--surface);
+  display:flex; flex-direction:column; align-items:center; justify-content:flex-end;
+}
+.ptr.is-settling .ptr-area{ transition:height .35s cubic-bezier(.22,1,.36,1); }
+.ptr-mylo{ display:block; flex:none; transition:width .2s ease, height .2s ease; }
+.ptr-text{ height:14px; margin:2px 0 8px; font-size:12px; font-weight:600; line-height:14px; color:var(--text-2); }
+.ptr.is-refreshing .ptr-text{ margin-bottom:0; }
+.ptr.is-refreshing .ptr-mylo{ animation:ptr-hop .6s cubic-bezier(.34,1.3,.64,1) infinite alternate; }
+.ptr-shadow{ width:40px; height:6px; margin:0 0 2px; border-radius:50%; background:var(--line); }
+@keyframes ptr-hop{ to{ translate:0 -10px; } }
+.ptr-toast{
+  position:fixed; z-index:40; left:50%; top:calc(env(safe-area-inset-top) + 16px); translate:-50% 0;
+  display:inline-flex; align-items:center; gap:12px; padding:12px 20px 12px 16px; border-radius:99px;
+  background:var(--primary); color:var(--on-primary); font-size:14px; font-weight:500; line-height:17px;
+  box-shadow:0 8px 24px rgba(15,15,18,.18); animation:ptr-toast 1.8s ease forwards;
+}
+@keyframes ptr-toast{ 0%{ opacity:0; translate:-50% -12px; } 12%,80%{ opacity:1; translate:-50% 0; } 100%{ opacity:0; translate:-50% -8px; } }
+
+/* ── Splash, S16–S18 ──────────────────────────────────────────────────── */
+.splash{ position:fixed; inset:0; z-index:70; background:var(--bg); transition:opacity .35s ease; }
+.splash.is-out{ opacity:0; pointer-events:none; }
+.splash-icon{
+  position:absolute; left:50%; top:calc(50% - 80px); width:120px; height:120px; translate:-50% 0; border-radius:50%;
+  transition:top .45s cubic-bezier(.34,1.3,.64,1), width .45s ease, height .45s ease, opacity .25s ease;
+}
+.splash.is-pop .splash-icon{ top:calc(50% - 176px); width:100px; height:100px; }
+.splash.is-loading .splash-icon{ opacity:0; }
+.splash-pop{
+  position:absolute; left:50%; top:calc(50% - 46px); width:125px; height:150px; translate:-50% 0;
+  opacity:0; scale:.3; transform-origin:50% 0; transition:opacity .2s ease, scale .5s cubic-bezier(.34,1.56,.64,1);
+}
+.splash.is-pop .splash-pop{ opacity:1; scale:1; }
+.splash.is-loading .splash-pop{ opacity:0; transition:opacity .2s ease; }
+.splash-load{
+  position:absolute; left:0; right:0; top:calc(50% - 146px); display:flex; flex-direction:column; align-items:center;
+  opacity:0; transition:opacity .3s ease;
+}
+.splash.is-loading .splash-load, .splash.is-loading .splash-tip{ opacity:1; }
+.splash-mylo{ width:125px; height:150px; }
+.splash-name{ margin-top:22px; font-size:28px; font-weight:600; line-height:34px; letter-spacing:-.02em; }
+.splash-track{ position:relative; width:100px; height:4px; margin-top:14px; border-radius:2px; background:var(--line); overflow:hidden; }
+.splash-fill{ position:absolute; inset:0 auto 0 0; border-radius:2px; background:var(--ink); transition:width .3s ease; }
+.splash-fill.is-indeterminate{ width:62%; animation:splash-run 1.2s ease-in-out infinite; }
+@keyframes splash-run{ 0%{ translate:-100% 0; } 100%{ translate:170% 0; } }
+.splash-tip{
+  position:absolute; left:40px; right:40px; bottom:calc(env(safe-area-inset-bottom) + 76px); text-align:center;
+  font-size:13px; font-weight:500; line-height:16px; color:var(--text-3); opacity:0; transition:opacity .3s ease;
+}
+
+/* ── DT8 · Settings, desktop ──────────────────────────────────────────── */
+.dt8{ flex-direction:column; gap:24px; min-height:100dvh; padding:32px 40px; max-width:1240px; }
+.dt8-title{ font-size:28px; font-weight:600; line-height:36px; letter-spacing:-.02em; }
+.dt8-cols{ display:flex; gap:24px; align-items:flex-start; }
+.dt8-nav{ position:sticky; top:32px; width:240px; flex:none; display:flex; flex-direction:column; gap:2px; }
+.dt8-nav button{
+  display:flex; align-items:center; gap:12px; height:38px; padding:0 12px; border-radius:12px; text-align:left;
+  font-size:14px; font-weight:500; line-height:18px; color:var(--text-2); transition:background-color .15s ease, color .15s ease;
+}
+.dt8-nav button[aria-current="true"]{ background:var(--surface); color:var(--ink); font-weight:600; }
+@media (hover:hover){ .dt8-nav button:not([aria-current="true"]):hover{ background:var(--surface); color:var(--ink); } }
+.dt8-main{ flex:1; min-width:0; max-width:848px; display:flex; flex-direction:column; gap:16px; }
+.dt8-card{ border-radius:16px; background:var(--surface); }
+.dt8-card-head{ padding:18px 20px 6px; font-size:15px; font-weight:600; line-height:20px; }
+.dt8-row{ position:relative; display:flex; align-items:center; gap:12px; width:100%; min-height:46px; padding:14px 20px; text-align:left; transition:background-color .15s ease; }
+.dt8-row:last-child{ border-radius:0 0 16px 16px; }
+a.dt8-row:hover, button.dt8-row:hover, label.dt8-row:hover{ background:var(--surface-2); }
+.dt8-row-text{ flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+.dt8-row-label{ font-size:14px; font-weight:500; line-height:18px; }
+.dt8-row-sub{ font-size:13px; font-weight:500; line-height:17px; color:var(--text-2); }
+.dt8-row-value{ font-size:14px; font-weight:500; line-height:18px; color:var(--text-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:50%; }
+.dt8-row select{ position:absolute; inset:0; width:100%; opacity:0; cursor:pointer; }
+.dt8-danger{ display:flex; align-items:center; gap:12px; padding:20px; border-radius:16px; background:var(--surface); }
+.dt8-danger strong{ display:block; color:var(--red); font-size:14px; font-weight:600; line-height:18px; }
+.dt8-danger span{ display:block; margin-top:2px; color:var(--text-2); font-size:13px; font-weight:500; line-height:17px; }
+.dt8-danger a{ flex:none; display:inline-flex; align-items:center; height:40px; padding:0 20px 0 18px; border-radius:999px; font-size:14px; font-weight:600; line-height:18px; transition:background-color .15s ease; }
+.dt8-danger a:hover{ background:var(--surface-2); }
+.dt8-body{ max-width:560px; display:flex; flex-direction:column; }
+.dt8-body .sys-label:first-child{ margin-top:0; }
+
+/* ST13 draws its header 4 higher, with a 16 title. */
+.sys-data > .screen-header{ margin-top:-4px; }
+.sys-data > .screen-header .screen-header-title{ font-size:16px; line-height:22px; }
+.sys-data > .screen-header + .sys-box{ margin-top:6px; }

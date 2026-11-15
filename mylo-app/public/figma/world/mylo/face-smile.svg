@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="360" viewBox="0 0 300 360" fill="none">
+<g>
+<path d="M117 200H110C106.134 200 103 203.134 103 207V223C103 226.866 106.134 230 110 230H117C120.866 230 124 226.866 124 223V207C124 203.134 120.866 200 117 200Z" fill="#1D1D22" />
+<path d="M192 200H185C181.134 200 178 203.134 178 207V223C178 226.866 181.134 230 185 230H192C195.866 230 199 226.866 199 223V207C199 203.134 195.866 200 192 200Z" fill="#1D1D22" />
+<g>
+<path d="M119 215H183Z" fill="black" />
+<path d="M119 215H183" stroke-width="3.5" stroke-linecap="round" stroke="#1D1D22" />
+</g>
+<path d="M138 250C146.667 259.333 155.333 259.333 164 250" stroke-width="6" stroke-linecap="round" stroke="#1D1D22" />
+</g>
+<defs>
+</defs>
+</svg>

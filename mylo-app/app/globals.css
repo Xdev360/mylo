@@ -1,0 +1,506 @@
+/* ──────────────────────────────────────────────────────────────────────────
+   Tokens, from "App · Developer handoff" §3. Light is the bare :root; dark
+   follows the phone, and a stored choice in Settings stamps data-theme.
+   ────────────────────────────────────────────────────────────────────────── */
+:root{
+  --bg:#FFFFFF; --surface:#F5F5F7; --surface-2:#EDEDF0; --line:#E9E9EE;
+  --ink:#0F0F12; --text-2:#6B6B73; --text-3:#A3A3AB;
+  --green:#2FA36B; --amber:#E8950F; --red:#E5574A; --blue:#3E7BFA;
+  --tint-green:#E7F6EE; --tint-blue:#EAF1FF; --tint-amber:#FEF4E2; --tint-red:#FDECE8;
+  --primary:#0F0F12; --on-primary:#FFFFFF;
+  --hero:#0F0F12; --on-hero:#FFFFFF; --on-hero-2:rgba(255,255,255,.6); --on-hero-line:rgba(255,255,255,.12);
+  --progress:#5EC48A;
+  --glass:rgba(255,255,255,.5); --glass-stroke:rgba(255,255,255,.85);
+  --tab-on:#EDEDF0;
+  /* Figma draws the bar's drop shadow behind its glass too, which greys it a
+     touch in light; CSS never paints a shadow under its own box, so this does. */
+  --glass-shade:rgba(0,0,0,.04);
+  /* The layer under a sheet: D1 dims the page to about half in light, far more in dark. */
+  --scrim:rgba(15,15,18,.5);
+  /* C2's "Today number" card and DT2's "Today live": ink in light, a raised grey in dark. */
+  --hero-card:#0F0F12; --hero-chip:rgba(255,255,255,.12); --hero-desk-chip:#2A2A2F; --hero-card-line:transparent;
+  --live:#34C759; --check-line:#C9C9D1;
+  --elev:0 2px 6px rgba(0,0,0,.06), 0 12px 32px rgba(0,0,0,.12);
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#161618; --surface:#1F1F23; --surface-2:#2A2A2F; --line:#313137;
+    --ink:#F5F5F7; --text-2:#A3A3AC; --text-3:#6C6C75;
+    --green:#4CC38A; --amber:#F5B13D; --red:#FF7B6B; --blue:#6E9BFF;
+    --tint-green:#13261C; --tint-blue:#16213A; --tint-amber:#2A2214; --tint-red:#2C1814;
+    --primary:#F5F5F7; --on-primary:#0F0F12;
+    --hero:#0B0B0D; --glass:rgba(38,38,44,.5); --glass-stroke:rgba(255,255,255,.12);
+    --tab-on:#2A2A2F; color-scheme:dark;
+    --glass-shade:transparent; --scrim:rgba(5,5,5,.76); --hero-card:#26262B; --hero-chip:rgba(255,255,255,.08); --hero-desk-chip:#34343A; --hero-card-line:#313137;
+    --live:#30D158; --check-line:#4A4A52;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#161618; --surface:#1F1F23; --surface-2:#2A2A2F; --line:#313137;
+  --ink:#F5F5F7; --text-2:#A3A3AC; --text-3:#6C6C75;
+  --green:#4CC38A; --amber:#F5B13D; --red:#FF7B6B; --blue:#6E9BFF;
+  --tint-green:#13261C; --tint-blue:#16213A; --tint-amber:#2A2214; --tint-red:#2C1814;
+  --primary:#F5F5F7; --on-primary:#0F0F12;
+  --hero:#0B0B0D; --glass:rgba(38,38,44,.5); --glass-stroke:rgba(255,255,255,.12);
+  --tab-on:#2A2A2F; color-scheme:dark;
+  --glass-shade:transparent; --scrim:rgba(5,5,5,.76); --hero-card:#26262B; --hero-chip:rgba(255,255,255,.08); --hero-desk-chip:#34343A; --hero-card-line:#313137;
+  --live:#30D158; --check-line:#4A4A52;
+}
+
+*,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
+html,body{ background:var(--bg); color:var(--ink); }
+body{
+  font-family:var(--font-figtree), system-ui, sans-serif; font-weight:500;
+  overscroll-behavior-y:contain;
+  -webkit-font-smoothing:antialiased; -webkit-tap-highlight-color:transparent;
+  text-size-adjust:100%;
+}
+a{ color:inherit; text-decoration:none; }
+button{ font:inherit; color:inherit; background:none; border:0; cursor:pointer; }
+img{ display:block; max-width:100%; }
+:where(a,button,input,textarea,[tabindex]):focus-visible{ outline:2px solid var(--ink); outline-offset:2px; border-radius:inherit; }
+
+/* Type, §4: only these sizes, 500 and 600, 130% titles, 150% body. */
+.t-display{ font-size:64px; font-weight:600; line-height:1; letter-spacing:-.04em; }
+.t-title-m{ font-size:20px; font-weight:600; line-height:26px; letter-spacing:-.015em; }
+.t-title-s{ font-size:16px; font-weight:600; line-height:22px; letter-spacing:-.01em; }
+.t-body{ font-size:15px; font-weight:500; line-height:21px; letter-spacing:-.005em; }
+.t-body-s{ font-size:13px; font-weight:500; line-height:18px; }
+.t-caption{ font-size:12px; font-weight:500; line-height:16px; }
+.t-label{ font-size:11px; font-weight:600; line-height:14px; letter-spacing:.06em; text-transform:uppercase; }
+.c-2{ color:var(--text-2); } .c-3{ color:var(--text-3); } .c-ink{ color:var(--ink); }
+
+/* An icon from the set, drawn as a mask so it takes the text colour. */
+.icon{
+  display:inline-block; flex:none; width:var(--s,22px); height:var(--s,22px);
+  background-color:currentColor;
+  -webkit-mask:var(--m) center/contain no-repeat; mask:var(--m) center/contain no-repeat;
+}
+.icon-pair{ position:relative; display:inline-block; flex:none; width:var(--s,22px); height:var(--s,22px); }
+.icon-pair > .icon{ position:absolute; inset:0; width:100%; height:100%; }
+.icon-pair > .icon-w{ background-color:#fff; }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   The frame. 393 wide by design, 360 to 430 in practice, with the safe areas
+   respected. On a wider screen the phone column sits in the middle.
+   ────────────────────────────────────────────────────────────────────────── */
+.screen{
+  position:relative; width:100%; max-width:430px; min-height:100dvh; margin:0 auto;
+  padding:max(env(safe-area-inset-top), 12px) 20px calc(env(safe-area-inset-bottom) + 132px);
+  display:flex; flex-direction:column; gap:20px;
+}
+
+/* Tab bar · glass, §2 (877:108515): 353 x 64, 22 from the bottom of the
+   frame (over the home indicator's strip, as iOS floats it), the active tab a pill. */
+.tabbar{
+  position:fixed; z-index:20; left:50%; translate:-50% 0;
+  bottom:max(22px, calc(env(safe-area-inset-bottom) - 12px));
+  width:min(353px, calc(100vw - 40px)); height:64px; padding:0 12px;
+  display:flex; align-items:center; justify-content:space-between;
+  border-radius:999px; background:linear-gradient(var(--glass-shade), var(--glass-shade)), var(--glass); border:1px solid var(--glass-stroke);
+  /* Real glass, at the owner's ask: more see-through than the frame's .70,
+     with a stronger blur and a little saturation so what passes under it
+     reads as colour, and a bright rim along the top edge. */
+  -webkit-backdrop-filter:blur(22px) saturate(180%); backdrop-filter:blur(22px) saturate(180%);
+  box-shadow:var(--elev), inset 0 1px 0 rgba(255,255,255,.5);
+}
+.tab{
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+  width:62px; height:48px; border-radius:16px; color:var(--text-3);
+  font-size:10px; font-weight:500; line-height:16px;
+  transition:background-color .2s ease, color .2s ease, scale .2s cubic-bezier(.34,1.56,.64,1);
+}
+.tab[aria-current="page"]{ background:var(--tab-on); color:var(--ink); }
+.tab[aria-disabled="true"]{ cursor:default; }
+.tab:active{ scale:.94; }
+.tab-add{
+  display:grid; place-items:center; width:48px; height:48px; border-radius:999px;
+  background:var(--primary); color:var(--on-primary);
+  transition:scale .2s cubic-bezier(.34,1.56,.64,1);
+}
+.tab-add:active{ scale:.92; }
+
+/* Shared pieces. */
+.card{ position:relative; background:var(--surface); border:1px solid var(--line); border-radius:22px; }
+.round-btn{
+  position:relative; display:grid; place-items:center; width:38px; height:38px; border-radius:999px;
+  background:var(--surface); border:1px solid var(--line);
+}
+.avatar{
+  position:relative; display:grid; place-items:center; flex:none; border-radius:999px;
+  color:#fff; font-weight:600;
+}
+.section-head{ display:flex; align-items:center; justify-content:space-between; }
+.list > * + *{ border-top:1px solid var(--line); }
+.tag{ display:inline-flex; align-items:center; padding:3px 8px; border-radius:999px; font-size:12px; line-height:16px; }
+
+@media (prefers-reduced-motion: reduce){ *{ transition:none !important; animation:none !important; } }
+
+.sr-only{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+
+/* ── C2 · Today ─────────────────────────────────────────────────────────── */
+.today-top{ display:flex; align-items:center; justify-content:space-between; }
+.today-me{ position:relative; display:block; width:38px; height:38px; margin-top:1px; }
+.today-online{ position:absolute; left:28px; top:28px; width:10px; height:10px; border-radius:50%; background:var(--live); box-shadow:0 0 0 2px var(--bg); }
+.me-av{ display:block; flex:none; width:100%; height:100%; border-radius:50%; object-fit:cover; }
+.me-av.is-initial{ display:grid; place-items:center; background:#2B3150; color:#fff; font-size:14px; font-weight:600; line-height:1; }
+.today-top-right{ display:flex; align-items:center; gap:8px; }
+.streak{ display:flex; align-items:center; gap:5px; padding:8px 12px; border-radius:999px; background:var(--tint-amber); border:1px solid var(--tint-amber); }
+.today-top{ min-height:40px; }
+.bell-dot{ position:absolute; left:26px; top:4px; width:9px; height:9px; }
+.today-hello{ display:flex; flex-direction:column; gap:4px; }
+.today-greeting{ font-size:24px; font-weight:600; line-height:32px; letter-spacing:-.02em; }
+
+.week-card{ padding:8px; box-shadow:inset 0 1px 0 rgba(255,255,255,.06); }
+.week{ display:flex; justify-content:space-between; }
+.day-n{ font-size:16px; font-weight:600; line-height:22px; letter-spacing:-.01em; }
+.day{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; width:40px; height:64px; border-radius:15px; }
+.day-d{ color:var(--text-3); }
+.day-dot{ width:5px; height:5px; border-radius:50%; }
+.dot-done{ background:var(--green); }
+.dot-part{ background:var(--text-3); }
+.dot-empty{ background:transparent; }
+.day.is-today{ background:var(--primary); color:var(--on-primary); }
+.day.is-today .day-d{ color:var(--on-primary); }
+.dot-today{ background:var(--on-primary); }
+/* The days still to come are greyed on the phone; DT2 keeps them ink. */
+.day.is-future .day-n{ color:var(--text-2); }
+.desk-week .day.is-future .day-n{ color:var(--ink); }
+
+.hero-card{
+  position:relative; display:flex; align-items:flex-end; gap:8px; padding:20px 8px 0 20px; overflow:hidden;
+  border-radius:26px; background:var(--hero-card); color:var(--on-hero);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08);
+}
+.hero-text{ flex:1; min-width:0; display:flex; flex-direction:column; gap:8px; padding-bottom:20px; }
+/* The chips run on under Mylo's side as drawn, rather than wrap. */
+.hero-text{ position:relative; z-index:1; }
+.hero-live{ display:flex; align-items:center; gap:8px; color:var(--on-hero-2); }
+.live-dot{ width:7px; height:7px; border-radius:50%; background:var(--live); }
+.hero-count{ display:flex; align-items:baseline; gap:8px; }
+.hero-count .t-body{ color:var(--on-hero-2); }
+.hero-chips{ display:flex; gap:8px; white-space:nowrap; }
+.hero-chip{ display:inline-flex; align-items:center; gap:5px; padding:5px 12px 5px 8px; border-radius:999px; background:var(--hero-chip); }
+.hero-mylo{ flex:none; width:112px; height:135px; }
+
+.progress{ display:flex; flex-direction:column; gap:16px; padding:16px; }
+.bar{ position:relative; height:32px; }
+.bar::before,.bar-fill{ content:''; position:absolute; left:0; top:11px; height:10px; border-radius:5px; }
+.bar::before{ right:0; background:var(--surface-2); }
+.bar-fill{ background:var(--progress); }
+.bar-face{ position:absolute; top:2px; width:28px; height:28px; font-size:11px; line-height:14px; border:2px solid var(--surface); }
+.progress-foot{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.see-all{ display:inline-flex; align-items:center; gap:2px; white-space:nowrap; }
+
+.next-level{ display:flex; align-items:center; gap:12px; padding:12px 16px; }
+.level-badge{ width:40px; height:40px; flex:none; }
+.next-level-text{ flex:1; min-width:0; display:flex; flex-direction:column; gap:8px; }
+.xp-track{ display:block; height:6px; border-radius:99px; background:var(--surface-2); overflow:hidden; }
+.xp-track > span{ display:block; height:100%; border-radius:99px; background:var(--amber); }
+
+.todo{ overflow:hidden; }
+.todo-row{ display:flex; align-items:center; gap:12px; width:100%; padding:12px 16px; text-align:left; transition:background-color .15s ease; }
+.todo-add{ padding-right:12px; }
+.todo-plus{ display:grid; place-items:center; width:22px; height:22px; border-radius:999px; background:var(--surface-2); color:var(--text-2); flex:none; }
+.todo-input{ flex:1; min-width:0; border:0; outline:none; background:none; color:var(--ink); font:inherit; font-size:15px; }
+.todo-input::placeholder{ color:var(--text-3); }
+.todo-key{ padding:3px 8px; border-radius:6px; background:var(--bg); border:1px solid var(--line); }
+.todo-check{
+  display:grid; place-items:center; width:22px; height:22px; flex:none; border-radius:999px;
+  border:1.6px solid var(--text-3); color:var(--on-primary);
+  transition:background-color .2s ease, border-color .2s ease, scale .25s cubic-bezier(.34,1.56,.64,1);
+}
+.todo-row.is-done .todo-check{ background:var(--primary); border-color:var(--primary); }
+.todo-row:active .todo-check{ scale:.86; }
+.todo-text{ flex:1; min-width:0; }
+/* C3's tick moment on a row: green behind it, the circle filled green. */
+.todo-row.is-burst, .task-row.is-burst{ background-color:var(--tint-green); }
+.todo-row.is-burst .todo-check{ background:var(--progress); border-color:var(--progress); color:#fff; animation:g-pop .45s cubic-bezier(.34,1.56,.64,1); }
+.todo-row.is-done .todo-text{ color:var(--text-3); text-decoration:line-through; }
+@media (hover:hover){ button.todo-row:hover{ background:var(--surface-2); } }
+
+.task-row{ display:flex; align-items:center; gap:12px; width:100%; padding:16px; text-align:left; transition:background-color .15s ease; }
+.task-row.is-done .task-title{ color:var(--text-3); text-decoration:line-through; }
+@media (hover:hover){ .task-row:hover{ background:var(--surface-2); } }
+.task-bar{ width:4px; height:36px; border-radius:2px; flex:none; }
+.task-text{ flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Phone or desktop. Below 1024 the phone screens and the glass tab bar; from
+   1024 the DT screens with the sidebar.
+   ────────────────────────────────────────────────────────────────────────── */
+.app{ min-height:100dvh; }
+.sidebar{ display:none; }
+.only-desk{ display:none !important; }
+@media (min-width:1024px){
+  .only-phone{ display:none !important; }
+  .only-desk{ display:flex !important; }
+  .tabbar{ display:none; }
+  .app{ display:flex; }
+  .app-main{ flex:1; min-width:0; }
+}
+
+/* DT2 sidebar, 248 wide on the surface grey. */
+.sidebar{
+  position:sticky; top:0; height:100dvh; width:248px; flex:none;
+  flex-direction:column; gap:4px; padding:28px 20px 24px; background:var(--surface);
+}
+@media (min-width:1024px){ .sidebar{ display:flex; } }
+.side-logo{ display:flex; align-items:center; gap:10px; padding:0 0 0 8px; font-size:24px; font-weight:600; line-height:1.3; }
+.side-nav{ display:flex; flex-direction:column; gap:4px; }
+.side-item{
+  display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:12px;
+  color:var(--text-2); font-size:15px; font-weight:500; line-height:1.3;
+  transition:background-color .15s ease, color .15s ease;
+}
+.side-item[aria-current="page"]{ background:var(--bg); color:var(--ink); font-weight:600; }
+.side-item[aria-current="page"] .icon{ color:var(--ink); }
+.side-item[aria-disabled="true"]{ cursor:default; opacity:.55; }
+@media (hover:hover){ a.side-item:not([aria-current="page"]):hover{ background:var(--surface-2); color:var(--ink); } }
+
+/* DT2 main column. */
+.desk{ flex-direction:column; gap:24px; min-height:100dvh; padding:32px 40px; max-width:1240px; }
+.desk-head{ display:flex; align-items:center; gap:16px; }
+.desk-hello{ flex:1; min-width:0; display:flex; flex-direction:column; gap:4px; }
+.desk-greeting{ font-size:28px; font-weight:600; line-height:1.3; }
+.desk-date{ font-size:13px; font-weight:500; line-height:1.3; color:var(--text-2); }
+.desk-line{ font-size:15px; font-weight:500; line-height:1.3; color:var(--text-2); }
+.desk-search{
+  display:flex; align-items:center; gap:8px; width:280px; height:40px; padding:0 14px;
+  border-radius:12px; background:var(--surface); color:var(--text-3);
+}
+.desk-search input{ flex:1; min-width:0; border:0; outline:none; background:none; color:var(--ink); font:inherit; font-size:14px; }
+.desk-search input::placeholder{ color:var(--text-3); }
+.desk-search:focus-within{ box-shadow:0 0 0 1.5px var(--ink); }
+.desk-bell{ display:grid; place-items:center; width:40px; height:40px; border-radius:12px; background:var(--surface); }
+.desk-new{
+  display:inline-flex; align-items:center; gap:8px; padding:11px 20px 11px 18px; border-radius:999px;
+  background:var(--primary); color:var(--on-primary); font-size:14px; font-weight:600; line-height:1.3;
+  transition:scale .2s cubic-bezier(.34,1.56,.64,1), opacity .15s ease;
+}
+.desk-new:hover{ opacity:.9; } .desk-new:active{ scale:.96; }
+.desk-week .week{ gap:8px; }
+.desk-week .day{ flex:1; width:auto; height:auto; padding:10px 0; border-radius:16px; background:var(--surface); }
+.desk-week .day-d{ color:var(--text-2); }
+.desk-week .day-n{ font-size:17px; line-height:1.3; }
+.desk-week .day-dot{ width:6px; height:6px; }
+.desk-week .day.is-today{ background:var(--primary); }
+.desk-cols{ display:flex; gap:24px; align-items:flex-start; }
+.desk-tasks{ flex:1; min-width:0; display:flex; flex-direction:column; gap:10px; }
+.desk-list-head{ display:flex; align-items:center; justify-content:space-between; padding-bottom:4px; }
+.desk-list-title{ font-size:17px; font-weight:600; line-height:1.3; }
+.desk-list-count{ font-size:13px; font-weight:500; line-height:1.3; color:var(--text-2); }
+.desk-task-sub{ font-size:13px; font-weight:500; line-height:1.3; color:var(--text-2); }
+.desk-task{
+  display:flex; align-items:center; gap:14px; width:100%; padding:14px 16px; border-radius:16px;
+  background:var(--surface); text-align:left; transition:background-color .15s ease, scale .2s cubic-bezier(.34,1.56,.64,1);
+}
+@media (hover:hover){ .desk-task:hover{ background:var(--surface-2); } }
+.desk-task:active{ scale:.99; }
+.desk-check{
+  display:grid; place-items:center; width:24px; height:24px; flex:none; border-radius:999px;
+  border:1.5px solid var(--check-line); color:var(--on-primary); transition:background-color .2s ease, border-color .2s ease;
+}
+.desk-task.is-done .desk-check{ background:var(--primary); border-color:var(--primary); }
+.desk-task-title{ font-size:15px; font-weight:600; line-height:1.3; }
+.desk-task.is-done .desk-task-title{ color:var(--text-3); }
+.desk-task .tag{ padding:4px 10px; border-radius:12px; line-height:1.3; color:var(--ink); }
+.desk-rail{ width:360px; flex:none; display:flex; flex-direction:column; gap:16px; }
+.hero-card.is-desk{ flex-direction:column; align-items:stretch; gap:12px; padding:20px; border-radius:16px; border:1px solid var(--hero-card-line); }
+.hero-desk-top{ display:flex; align-items:center; gap:16px; }
+.hero-desk-text{ flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+.hero-desk-label{ letter-spacing:0; line-height:1.3; color:#A3A3AB; }
+.hero-desk-count{ font-size:56px; font-weight:600; line-height:1; }
+.hero-desk-words{ font-size:14px; font-weight:500; line-height:1.3; color:#A3A3AB; }
+.hero-desk-chips{ display:flex; gap:8px; white-space:nowrap; }
+.hero-desk-chip{ padding:6px 10px; border-radius:12px; background:var(--hero-desk-chip); font-size:12px; font-weight:500; line-height:1.3; }
+.hero-mylo-desk{ width:92px; height:110px; flex:none; }
+
+/* O17's empty state, and the same card in DT2's list column. */
+.empty-day{
+  position:relative; display:flex; flex-direction:column; align-items:center; text-align:center;
+  padding:27px 20px 21px; border-radius:28px; background:var(--surface); border:1px solid var(--line);
+}
+.empty-disc{ width:120px; height:120px; border-radius:60px; background:var(--surface-2); }
+.empty-mylo{ position:absolute; top:35.88px; left:50%; translate:-50% 0; width:96px; height:115px; }
+.empty-day .t-label{ margin-top:20px; }
+.empty-day .t-title-m{ margin-top:8px; }
+.empty-day .t-body-s{ margin-top:6px; }
+.empty-day .empty-btn{ width:241px; height:50px; margin-top:16px; gap:8px; }
+.empty-chips{ display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin:18px -18px 0; }
+.empty-chips .chip{ padding:0 15px; }
+.empty-day.is-big{ padding:48px 20px 40px; }
+
+/* Buttons and chips, from the components page. */
+.btn-primary{
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  height:56px; padding:0 24px; border-radius:999px; background:var(--primary); color:var(--on-primary);
+  font-size:15px; font-weight:600; line-height:20px; letter-spacing:-.005em;
+  transition:scale .2s cubic-bezier(.34,1.56,.64,1), opacity .15s ease;
+}
+.btn-primary:active{ scale:.97; }
+.btn-primary:disabled{ opacity:.5; cursor:default; }
+@media (hover:hover){ .btn-primary:hover{ opacity:.92; } }
+.chip{
+  display:inline-flex; align-items:center; gap:6px; height:34px; padding:0 14px; border-radius:999px;
+  background:var(--surface-2); color:var(--primary); font-size:13px; font-weight:600; line-height:1.4;
+}
+.chip-plain{ background:var(--surface); border:1px solid var(--line); color:var(--ink); font-weight:500; transition:background-color .15s ease, scale .2s cubic-bezier(.34,1.56,.64,1); }
+.chip-plain:active{ scale:.95; }
+@media (hover:hover){ .chip-plain:hover{ background:var(--surface-2); } }
+.icon-btn{ display:grid; place-items:center; width:36px; height:36px; flex:none; border-radius:999px; background:var(--surface-2); border:1px solid var(--line); }
+.icon-btn[aria-disabled="true"]{ cursor:default; opacity:.6; }
+.spacer{ flex:1; }
+
+/* D1 · Capture sheet. */
+.sheet-root{ position:fixed; inset:0; z-index:50; pointer-events:none; }
+.sheet-root.is-open{ pointer-events:auto; }
+.scrim{ position:absolute; inset:0; width:100%; background:var(--scrim); opacity:0; transition:opacity .25s ease; cursor:default; }
+.sheet-root.is-open > .scrim{ opacity:1; }
+.sheet{
+  position:absolute; left:0; right:0; bottom:0; max-height:calc(100dvh - 40px); overflow:auto;
+  background:var(--bg); box-shadow:inset 0 0 0 1px var(--line); border-radius:32px 32px 0 0;
+  padding-bottom:calc(env(safe-area-inset-bottom) + 40px);
+  translate:0 100%; transition:translate .38s cubic-bezier(.22,1,.36,1);
+}
+/* Only this sheet's own panel: a sheet opened from inside another (D2 from
+   D1) stays down until it is opened itself. */
+.sheet-root.is-open > .sheet{ translate:0 0; }
+@media (min-width:1024px){
+  .sheet{ left:50%; right:auto; bottom:auto; top:50%; width:480px; border-radius:32px; translate:-50% -46%; opacity:0;
+          transition:translate .3s cubic-bezier(.22,1,.36,1), opacity .2s ease; }
+  .sheet-root.is-open > .sheet{ translate:-50% -50%; opacity:1; }
+  .grabber{ display:none !important; }
+}
+.sheet-head{ display:flex; flex-direction:column; align-items:center; gap:14px; padding:10px 20px 0; touch-action:none; }
+.grabber{ width:36px; height:5px; border-radius:3px; background:var(--ink); }
+.sheet-row{ display:flex; gap:12px; width:100%; align-items:flex-start; }
+.sheet-text{ flex:1; display:flex; flex-direction:column; gap:4px; }
+.sheet-title{ font-size:22px; font-weight:600; line-height:1.18; letter-spacing:-.02em; }
+.sheet-body{ display:flex; flex-direction:column; gap:16px; padding:16px 20px 0; }
+.smart{
+  display:flex; flex-direction:column; gap:12px; padding:16px 16px 12px; border-radius:24px;
+  background:var(--surface); border:1.5px solid var(--text-2);
+}
+.smart-input{
+  width:calc(100% + 4px); margin:0 -2px; padding:0 2px; resize:none; border:0; outline:none; background:none; color:var(--ink);
+  font:inherit; font-size:17px; font-weight:600; line-height:1.24; letter-spacing:-.01em;
+}
+.smart-input::placeholder{ color:var(--text-3); }
+.smart-chips{ display:flex; flex-wrap:wrap; gap:6px 8px; }
+.smart-foot{ display:flex; align-items:center; gap:8px; color:var(--text-2); }
+.smart-note{ font-size:11px; font-weight:500; line-height:1.36; }
+.sheet-body > .t-label{ line-height:1.2; }
+.types{ display:flex; gap:8px; }
+.type{
+  flex:1; min-width:0; display:flex; flex-direction:column; align-items:flex-start; gap:8px; padding:16px;
+  border-radius:20px; background:var(--surface); border:1px solid var(--line); text-align:left;
+  transition:border-color .15s ease, background-color .15s ease, scale .2s cubic-bezier(.34,1.56,.64,1);
+}
+.type:active{ scale:.97; }
+.type.is-on{ border-color:var(--ink); background:var(--bg); }
+.type-label{ font-size:15px; font-weight:600; line-height:1.36; }
+.type-sub{ font-size:11px; font-weight:500; line-height:1.36; color:var(--text-3); }
+
+/* Mylo's own soft shadow, lifted out of the drawings so Safari keeps them sharp. */
+.hero-mylo{ filter:drop-shadow(0 3px 8px rgba(15,15,26,.14)); }
+.empty-mylo{ filter:drop-shadow(0 2.55px 6.8px rgba(15,15,26,.14)); }
+
+
+/* The sidebar folds to its icons: 248 wide open, 88 folded. Every icon keeps
+   its place; only the words go. */
+/* DT2's logo block is 56 high (the mark, then 24 below); the fold button sits
+   level with the mark. */
+.side-top{ position:relative; display:flex; align-items:flex-start; justify-content:space-between; padding-bottom:24px; }
+.side-fold{
+  display:grid; place-items:center; width:28px; height:28px; margin-top:2px; border-radius:999px; flex:none;
+  color:var(--text-2); rotate:180deg; transition:background-color .15s ease, rotate .25s ease, opacity .15s ease;
+}
+.side-fold:hover{ background:var(--surface-2); color:var(--ink); }
+.side-label{ white-space:nowrap; transition:opacity .15s ease; }
+.side-me{ margin-top:8px; }
+/* DT2 "Me" (943:27378): a 36 avatar, your name at 14/600, a line under it. */
+a.side-me:not(.side-item){ display:flex; align-items:center; gap:10px; padding:12px 0 0 8px; border-radius:12px; color:var(--ink); }
+a.side-me:not(.side-item) > .me-av{ width:36px; height:36px; }
+a.side-me .me-av.is-initial{ font-size:15px; }
+.side-me-text{ display:flex; flex-direction:column; gap:2px; min-width:0; overflow:hidden; }
+.side-me-name{ font-size:14px; font-weight:600; line-height:1.3; overflow:hidden; text-overflow:ellipsis; }
+.side-me-sub{ font-size:12px; font-weight:500; line-height:1.3; color:var(--text-2); overflow:hidden; text-overflow:ellipsis; }
+.sidebar{ transition:width .28s cubic-bezier(.22,1,.36,1); overflow:hidden; }
+:root[data-side="rail"] .sidebar{ width:88px; }
+:root[data-side="rail"] .side-label{ opacity:0; width:0; }
+/* Folded, the fold button lies over the mark and shows on hover or focus, so
+   nothing below it moves. */
+:root[data-side="rail"] .side-fold{ position:absolute; left:8px; top:0; width:32px; height:32px; margin:0; rotate:0deg; opacity:0; background:var(--surface-2); color:var(--ink); }
+:root[data-side="rail"] .side-top:hover .side-fold,
+:root[data-side="rail"] .side-fold:focus-visible{ opacity:1; }
+:root[data-side="rail"] .side-item{ width:48px; }
+
+/* Pushed screens, handoff §2. */
+.screen-header{ position:relative; display:flex; align-items:center; justify-content:space-between; height:56px; }
+.back-btn{ display:grid; place-items:center; width:40px; height:40px; border-radius:999px; background:var(--surface); border:1px solid var(--line); }
+.screen-header-title{ position:absolute; left:56px; right:56px; text-align:center; font-size:17px; font-weight:600; line-height:1.3; pointer-events:none; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.screen-header-actions{ display:flex; gap:8px; min-width:40px; justify-content:flex-end; }
+.flip{ rotate:180deg; }
+
+/* A phone screen on a wide display, where no DT frame is drawn: the same
+   column, centred in the main area. */
+@media (min-width:1024px){
+  .screen.on-desk{ max-width:640px; padding-top:32px; padding-bottom:48px; }
+}
+
+/* Screens Figma draws without the tab bar. */
+body:has(.no-tabs) .tabbar{ display:none; }
+.today-signin{ display:inline-flex; align-items:center; height:38px; padding:0 16px; border-radius:999px; background:var(--primary); color:var(--on-primary); font-size:15px; font-weight:600; }
+
+/* The logo is a round picture, not a mark: it sits in the column as a 32 disc. */
+.side-logo-img{ width:32px; height:32px; border-radius:50%; flex:none; }
+
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Moving between screens. Opening something slides it in from the right
+   over the screen it came from; going back slides it away; switching tabs
+   crossfades with a small rise. The sidebar and the tab bar hold still, so
+   only the page moves. Browsers without view transitions simply change.
+   ────────────────────────────────────────────────────────────────────────── */
+.vt-tick{ position:absolute; width:1px; height:1px; pointer-events:none; }
+.sidebar{ view-transition-name:sidebar; }
+.tabbar{ view-transition-name:tabbar; }
+::view-transition-group(*){ animation-duration:.34s; animation-timing-function:cubic-bezier(.22,1,.36,1); }
+::view-transition-old(root),::view-transition-new(root){ animation-duration:.34s; animation-timing-function:cubic-bezier(.22,1,.36,1); }
+
+:root[data-nav="tab"]::view-transition-old(root){ animation:navFadeOut .18s ease-out both; }
+:root[data-nav="tab"]::view-transition-new(root){ animation:navRise .3s cubic-bezier(.22,1,.36,1) both; }
+
+@media (max-width:1023px){
+  :root[data-nav="push"]::view-transition-old(root){ animation:navLeftAway .34s cubic-bezier(.22,1,.36,1) both; }
+  :root[data-nav="push"]::view-transition-new(root){ animation:navFromRight .34s cubic-bezier(.22,1,.36,1) both; }
+  :root[data-nav="pop"]::view-transition-old(root){ animation:navToRight .3s cubic-bezier(.22,1,.36,1) both; z-index:2; }
+  :root[data-nav="pop"]::view-transition-new(root){ animation:navFromLeft .3s cubic-bezier(.22,1,.36,1) both; }
+}
+@media (min-width:1024px){
+  /* On desktop the sidebar frames the page: a quick fade and rise reads better than a slide. */
+  :root[data-nav]::view-transition-old(root){ animation:navFadeOut .16s ease-out both; }
+  :root[data-nav]::view-transition-new(root){ animation:navRise .28s cubic-bezier(.22,1,.36,1) both; }
+}
+@keyframes navFadeOut{ to{ opacity:0; } }
+@keyframes navRise{ from{ opacity:0; translate:0 10px; } }
+@keyframes navFromRight{ from{ translate:100% 0; box-shadow:-12px 0 32px rgba(0,0,0,.12); } to{ box-shadow:-12px 0 32px rgba(0,0,0,0); } }
+@keyframes navLeftAway{ to{ translate:-28% 0; opacity:.6; } }
+@keyframes navToRight{ to{ translate:100% 0; } }
+@keyframes navFromLeft{ from{ translate:-28% 0; opacity:.6; } }
+@media (prefers-reduced-motion: reduce){
+  ::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){ animation:none !important; }
+}
+
+/* Everything you can press answers it. */
+@media (hover:hover){
+  a.card:hover,button.card:hover{ background:var(--surface-2); }
+}
+:where(button,[role="button"],a.card,a.side-item,a.tab,.chip,.task-row,.desk-task,.todo-row){
+  transition-property:background-color, color, opacity, scale, translate, box-shadow, border-color;
+  transition-duration:.18s; transition-timing-function:cubic-bezier(.34,1.56,.64,1);
+}
+:where(button:not(:disabled),[role="button"],a.card,.chip):active{ scale:.97; transition-duration:.08s; }

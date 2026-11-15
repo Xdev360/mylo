@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="173" height="160" viewBox="0 0 173 160" fill="none">
+<g>
+<g clip-path="url(#clip0_879_193108)">
+<rect width="173" height="160" rx="22" fill="#121316" />
+<path opacity="0.06" d="M-160 160L0 0" stroke-linecap="round" stroke-linejoin="round" stroke="white" />
+<path opacity="0.06" d="M-144 160L16 0" stroke-linecap="round" stroke-linejoin="round" stroke="white" />
+<path opacity="0.06" d="M-128 160L32 0" stroke-linecap="round" stroke-linejoin="round" stroke="white" />
+<path opacity="0.06" d="M-112 160L48 0" stroke-linecap="round" stroke-linejoin="round" stroke="white" />
+<path opacity="0.06" d="M-96 160L64 0" stroke-linecap="round" stroke-linejoin="round" stroke="white" />
+<path opacity="0.06" d="M-80 160L80 0" stroke-linecap="round" stroke-linejoin="round" stroke="white" />
+<path opacity="0.06" d="M-64 160L96 0" stroke-linecap="round" stroke-linejoin="round" stroke="white" />
+<path opacity="0.06" d="M-48 160L112 0" stroke-linecap="round" stroke-linejoin="round" stroke="white" />
+<path opacity="0.06" d="M-32 160L128 0" stroke-linecap="round" stroke-linejoin="round" stroke="white" />
+<path opacity="0.06" d="M-16 160L144 0" stroke-linecap="round" stroke-linejoin="round" stroke="white" />
+<path opacity="0.06" d="M0 160L160 0" stroke-linecap="round" stroke-linejoin="round" stroke="white" />
+<path opacity="0.06" d="M16 160L176 0" stroke-linecap="round" stroke-linejoin="round" stroke="white" />
+<path opacity="0.06" d="M32 160L192 0" stroke-linecap="round" stroke-linejoin="round" stroke="white" />
+<path opacity="0.06" d="M48 160L208 0" stroke-linecap="round" stroke-linejoin="round" stroke="white" />
+<path opacity="0.06" d="M64 160L224 0" stroke-linecap="round" stroke-linejoin="round" stroke="white" />
+<path opacity="0.06" d="M80 160L240 0" stroke-linecap="round" stroke-linejoin="round" stroke="white" />
+<path opacity="0.06" d="M96 160L256 0" stroke-linecap="round" stroke-linejoin="round" stroke="white" />
+<path opacity="0.06" d="M112 160L272 0" stroke-linecap="round" stroke-linejoin="round" stroke="white" />
+<path opacity="0.06" d="M128 160L288 0" stroke-linecap="round" stroke-linejoin="round" stroke="white" />
+<path opacity="0.06" d="M144 160L304 0" stroke-linecap="round" stroke-linejoin="round" stroke="white" />
+<path opacity="0.06" d="M160 160L320 0" stroke-linecap="round" stroke-linejoin="round" stroke="white" />
+<rect x="14" y="22" width="96" height="30" rx="15" fill="#25262B" />
+<rect x="63" y="62" width="96" height="30" rx="15" fill="#D4FF3A" />
+<rect x="14" y="102" width="70" height="30" rx="15" fill="#25262B" />
+</g>
+<rect x="0.5" y="0.5" width="172" height="159" rx="21.5" stroke="#E9E9EE" />
+</g>
+<defs>
+<clipPath id="clip0_879_193108">
+<rect width="173" height="160" rx="22" fill="white" />
+</clipPath>
+</defs>
+</svg>
